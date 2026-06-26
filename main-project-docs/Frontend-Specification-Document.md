@@ -41,10 +41,12 @@ Routing is managed via **React Router** (DOM v6/v7) utilizing data routers. Nest
     *   `/accept-invite/:token`: Accept membership invitation path.
 *   **Private Routes (Authenticated - Requires Auth Guard)**:
     *   `/onboarding`: Multi-step onboarding wizard layout.
-        *   `/onboarding/org-creation`: Step 2 (Enter Name, Slug, Timezone, Industry, Website Q).
-        *   `/onboarding/website-crawl`: Step 3 (Website URL, Crawling progress tracker).
-        *   `/onboarding/business-config`: Step 4 (Description, services, hours, locations, dynamic fields).
-        *   `/onboarding/voice-setup`: Step 5 (Voice settings selection and LiveKit sandbox tester).
+        *   `/onboarding/connect`: Step 1 (Registration, verification, org creation, initial setup).
+        *   `/onboarding/learn`: Step 2 (Website analysis, knowledge base, business niche, industry details).
+        *   `/onboarding/configure`: Step 3 (Voice agent, AI settings, language, hours, routing, prompt).
+        *   `/onboarding/customize`: Step 4 (Branding, voice selection, KB editing, personality, custom instructions).
+        *   `/onboarding/activate`: Step 5 (Test agent, validation checks, final review, go live).
+        *   `/onboarding/resume`: Restores persisted onboarding session state.
 *   **Organization-Scoped Private Routes (Requires Organization Guard & Completed Onboarding)**:
     *   `/dashboard`: Core activity metrics landing page.
     *   `/knowledge-base`: Markdown knowledge base manager dashboard (list, view, edit).
@@ -70,16 +72,30 @@ A centered, focused screen container template designed for authentication routes
 ### 3.2 Dashboard Layout (`DashboardLayout.tsx`)
 A flexible, high-productivity structure used for all organization-scoped screens.
 *   **Layout Elements**:
-    *   **Sidebar (Responsive Collapsible)**: Navigation drawer linking dashboard modules (including new **Knowledge Base** item). Collapses to icons on tablet sizes and hides behind a hamburger menu button on mobile.
+    *   **Sidebar (Responsive Collapsible)**: Navigation drawer linking command center, AI management, administration, and support areas. Collapses to icons on tablet sizes and hides behind a hamburger menu button on mobile.
     *   **Topbar (Header Pane)**: Displays active organization selector dropdown, active notifications list, and user profile avatar dropdown (profile settings, log out).
     *   **Main Content Port**: Scrollable viewport container with standard padding wrapping child routing pages. Injects loading skeletons during transition states.
+
+### 3.2.1 Sidebar Layout Behavior
+*   Sidebar data is fetched from the navigation configuration endpoint after organization context loads.
+*   Parent sections can expand independently, and the current route is reflected in both the section label and active item.
+*   Collapsed desktop mode keeps tooltips visible for icon-only items.
+*   Mobile drawer uses the same tree, but closes immediately after a route is selected.
+*   Hidden items are removed from the render tree rather than being visually disabled unless a loading state is pending.
 
 ### 3.3 Onboarding Layout (`OnboardingLayout.tsx`)
 A linear, focused layout used during the user registration and workspace setup wizard.
 *   **Layout Elements**:
-    *   **Progress Header Bar**: Displays a visual horizontal stepper illustrating the 6 onboarding steps (Registration, Org Creation, KB Setup, Config, Voice Agent, Complete).
+    *   **Progress Header Bar**: Displays a visual horizontal stepper illustrating the 5 onboarding steps (Connect, Learn, Configure, Customize, Activate).
     *   **Wizard Panel**: Card container centered on screen with smooth horizontal slide-in transition animations on step change.
-    *   **Footer Controls**: Unified navigation buttons ("Back", "Continue", "Skip", "Complete Onboarding") with loading states. Prevents back navigation during active crawl or provisioning.
+    *   **Footer Controls**: Unified navigation buttons ("Back", "Continue", "Save & Resume", "Complete Onboarding") with loading states. Prevents back navigation during active crawl or provisioning.
+
+### 3.3.1 Onboarding Behavior
+*   Each step has required validations before the next step can be unlocked.
+*   Progress is persisted server-side so users can safely refresh or switch devices.
+*   Failure states should offer retry, save draft, or return to previous step based on the failed action.
+*   Step completion status is shown in the progress header and updated after every successful save.
+*   Mobile and desktop share the same flow with no hidden required actions.
 
 ---
 
@@ -110,14 +126,17 @@ A linear, focused layout used during the user registration and workspace setup w
 *   **SummaryPanel**: Card container showcasing AI summaries, detected tags, and structured list items outlining actions.
 
 ### 4.5 Onboarding Module Components
-*   **OnboardingStepper**: Horizontal navigation widget mapping active steps with text descriptions and completion indicators.
-*   **WebsiteCrawlProgress**: Step 3 progress card. Displays the crawling status (validating, crawling page list, processing with LLM, completed) utilizing interactive loading spinners, success checkmarks, and percentage bars.
-*   **DynamicConfigForm**: Step 4 dynamic form loader. Fetches a schema mapping the user's selected industry (e.g. Healthcare, Real Estate) to specific input fields (e.g. clinic specialties, property details) and binds hooks.
-*   **LiveKitSandbox**: Step 5 test sandbox widget. Incorporates:
-    *   **Start Conversation Button**: Connects client browser to LiveKit agent room using WebRTC.
-    *   **Audio Visualizer**: Waveform indicator showing active mic input and speaker output.
-    *   **Sandbox Configuration Panel**: Sliders modifying Voice model settings (speed, pitch) and prompt overrides in real-time.
-    *   **Live Transcript Window**: Chat log updating with real-time text turns.
+*   **OnboardingStepper**: Horizontal navigation widget mapping Connect, Learn, Configure, Customize, and Activate with text descriptions and completion indicators.
+*   **WebsiteScanProgress**: Learn-step progress card. Displays the crawling status (validating, crawling page list, processing with LLM, completed) utilizing interactive loading spinners, success checkmarks, and percentage bars.
+*   **BusinessNicheSelect**: Dropdown-driven niche selector used during Learn and Configure steps.
+*   **DynamicConfigForm**: Step 3 and Step 4 dynamic form loader. Fetches a schema mapping the user's selected industry (e.g. Healthcare, Real Estate) to specific input fields (e.g. clinic specialties, property details) and binds hooks.
+*   **VapiSandbox**: Activate-step test sandbox widget. Incorporates:
+    *   **Initiate Test Call Button**: Triggers a Vapi outbound test call to the user's registered phone number via Exotel SIP trunk, replicating the real production call path.
+    *   **Call Status Indicator**: Live badge showing call state (Idle / Connecting / In Progress / Completed).
+    *   **Language Indicator**: Real-time display of the active conversation language (English / Hindi / Punjabi), updating as the agent detects language switches mid-call.
+    *   **Sandbox Configuration Panel**: Sliders modifying Voice model settings (speed, pitch), prompt overrides, and supported languages in real-time; re-provisions the Vapi assistant on save.
+    *   **Live Transcript Window**: Chat log updating with real-time text turns, annotated with detected language per turn.
+*   **ResumeBanner**: Inline prompt allowing users to return to a saved onboarding session.
 
 ### 4.6 Knowledge Base Module Components
 *   **SidebarLink**: Navigation link in sidebar leading to `/knowledge-base` route.
@@ -126,6 +145,14 @@ A linear, focused layout used during the user registration and workspace setup w
 *   **MarkdownEditor**: CodeMirror/textarea component allowing direct document editing with save triggers.
 *   **UploadDocModal**: Drag-and-drop modal accepting `.txt`, `.md`, and `.pdf` documents to enrich the workspace.
 *   **SyncTrigger**: Button triggering crawl jobs with polling.
+
+### 4.7 Sidebar Module Components
+*   **SidebarShell**: Persistent navigation container that loads organization-scoped menu payloads.
+*   **SidebarSection**: Collapsible group wrapper for Command Center, AI Management, Administration, and Support & Training.
+*   **SidebarItem**: Route link element with active state, icon, role gate, and feature flag handling.
+*   **SidebarDrawer**: Mobile slide-over navigation panel with focus trap and close-on-select behavior.
+*   **SidebarCollapseToggle**: Desktop control for compact and expanded modes.
+*   **SidebarTooltip**: Hover and focus helper for icon-only collapsed states.
 
 ---
 
@@ -151,6 +178,8 @@ Handles data synchronization, mutations, and pagination caching configurations:
     *   `['members', orgId]`: Caches membership list.
     *   `['crawlStatus', tempOrgId]`: Polling cache tracking active website crawler status.
     *   `['documents', orgId]`: Caches list of Markdown documents in knowledge base.
+    *   `['navigationConfig', orgId]`: Caches sidebar navigation payloads and feature-flag decisions.
+    *   `['onboardingSession', userId, orgId]`: Caches persisted onboarding progress and step completion state.
 *   **Cache Policy**: `staleTime` is set to 30 seconds for real-time pages (Dashboard) and 5 minutes for settings configurations.
 
 ---
@@ -165,3 +194,4 @@ Handles data synchronization, mutations, and pagination caching configurations:
 *   **Theme Engine**: TailwindCSS dark-mode selectors (`dark:bg-slate-950`). Default state is system-matching with manual toggles saved in browser local storage.
 *   **Optimistic UI Updates**: Core interactions (e.g., toggling voice agent status) should update the local UI state instantly, rolling back changes only if the server API responds with an error.
 *   **Resiliency**: Core dashboard route endpoints are wrapped with custom React **Error Boundaries** to catch component crashes and present user recovery screens without breaking the entire client app.
+*   **Sidebar UX**: Navigation must keep one primary item active, expand only the relevant branch by default, and preserve scroll position when switching sections.

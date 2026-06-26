@@ -17,11 +17,13 @@ Layer 1: Platform Foundation   [Days 1 - 7]
 Layer 2: Identity & Onboarding [Days 8 - 14]
   ├── JWT Auth & Onboarding Stepper UI
   ├── Crawler & Markdown Extraction Engine
-  ├── KB Manager & LiveKit WebRTC Sandbox
+  ├── KB Manager & Vapi Test Call Sandbox
+  ├── Sidebar shell & menu access policy
+  ├── Guided onboarding state machine
   └── Onboarding State & Middleware Guards
 
 Layer 3: Voice AI              [Days 15 - 22]
-  ├── LiveKit room orchestration
+  ├── Vapi + Exotel voice orchestration
   └── Agent prompt configuration
 
 Layer 4: Intelligence          [Days 23 - 29]
@@ -62,6 +64,7 @@ Layer 5: Observability         [Days 30 - 35]
         *   Create register, login, and verify routes on the backend.
         *   Implement HTTP-Only cookie token storage and user activation.
         *   Build `OnboardingLayout` and stepper controller in React.
+        *   Build onboarding save/resume persistence and step validation gates.
         *   Build Step 2 Organization Creation and website availability forms.
     *   **T2.2: Website Crawler & Markdown Extraction Engine** (Duration: 3 Days)
         *   Implement headless crawler tasks in Redis/BullMQ.
@@ -72,10 +75,13 @@ Layer 5: Observability         [Days 30 - 35]
         *   Create `Document` schemas, REST API CRUD endpoints, and sidebar navigation.
         *   Build document list table, visual Markdown previewer, and text editor.
         *   Build document upload drop-zone supporting text/PDF parsing.
-    *   **T2.4: LiveKit Client-Side WebRTC Sandbox Tester** (Duration: 2 Days)
-        *   Configure onboarding audio room token generator APIs.
-        *   Build frontend sandbox microphone WebRTC connectors, visualizers, and sliders.
-    *   **T2.5: Access Guards & Multi-Tenant Middleware** (Duration: 2 Days)
+    *   **T2.4: Sidebar Navigation Shell** (Duration: 2 Days)
+        *   Implement role-aware navigation configuration retrieval and responsive sidebar rendering.
+        *   Add active route highlighting, expand/collapse behavior, and mobile drawer support.
+    *   **T2.5: Vapi Test Call Sandbox** (Duration: 2 Days)
+        *   Configure Vapi assistant provisioning API and `POST /onboarding/voice-agent/test-call` endpoint.
+        *   Build frontend sandbox call status indicator, live transcript window, language switcher display, and configuration sliders.
+    *   **T2.6: Access Guards & Multi-Tenant Middleware** (Duration: 2 Days)
         *   Build `validateOrganization` and Onboarding State middleware checks.
         *   Establish Owner memberships and activate workspace upon completion.
 *   **Dependencies**: Layer 1 complete.
@@ -88,12 +94,13 @@ Layer 5: Observability         [Days 30 - 35]
     *   **T3.1: Voice Agent Profile Management** (Duration: 3 Days)
         *   Build Mongoose `voice_agents` configuration collection.
         *   Implement agent creation forms, system prompt editors, and voice selectors.
-    *   **T3.2: LiveKit Rooms API Integration** (Duration: 3 Days)
-        *   Integrate LiveKit Server SDK to create rooms and generate credentials.
-        *   Build token generation endpoint to authorize voice agents joining WebRTC rooms.
-    *   **T3.3: LiveKit Voice Agent SDK Implementation** (Duration: 4 Days)
-        *   Configure Python/Node agent runner to hook audio streams.
-        *   Wire Deepgram (STT), OpenAI Realtime (LLM), and ElevenLabs/Cartesia (TTS) pipelines.
+    *   **T3.2: Vapi + Exotel SIP Integration** (Duration: 3 Days)
+        *   Configure Exotel SIP trunk to route Indian virtual/toll-free numbers to Vapi.
+        *   Integrate Vapi Server SDK to provision assistants and manage call sessions.
+        *   Build webhook receiver endpoints for `call.started` and `call.completed` events.
+    *   **T3.3: Vapi Agent Configuration & Multi-lingual Implementation** (Duration: 4 Days)
+        *   Configure Vapi assistant with Deepgram (STT), OpenAI GPT-4o (LLM), and ElevenLabs/Cartesia (TTS).
+        *   Implement multi-lingual support: English as primary, with mid-call auto-detection and switching to Hindi (`hi-IN`) and Punjabi (`pa-IN`).
     *   **T3.4: Ingress Routing Rules Validation Webhooks** (Duration: 2 Days)
         *   Implement routing validators ensuring incoming calls route to active voice agents during business hours.
 *   **Dependencies**: Layer 2 complete.
@@ -107,7 +114,7 @@ Layer 5: Observability         [Days 30 - 35]
         *   Capture webhook notifications to record metadata and upload audio files.
         *   Build database collections logging completed calls.
     *   **T4.2: Conversational Transcripts Aggregator** (Duration: 2 Days)
-        *   Compile LiveKit turn events and save to `transcripts`.
+        *   Compile Vapi turn events (received via webhook) and save to `transcripts`.
         *   Build frontend Transcript Viewer displaying alternate bubble streams.
     *   **T4.3: Redis/BullMQ Post-Call Pipelines** (Duration: 3 Days)
         *   Configure BullMQ to queue post-call analysis tasks asynchronously.

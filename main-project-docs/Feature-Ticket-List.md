@@ -103,17 +103,18 @@ This document contains detailed Jira-style development tickets for all 15 core f
 
 ---
 
-### A-008: LiveKit Voice Gateway Integration
+### A-008: Vapi + Exotel Voice Gateway Integration
 *   **Priority**: P0
 *   **Estimated Effort**: 7 Days
 *   **Dependencies**: A-007
 *   **Description**:
-    Integrate backend with LiveKit APIs to handle WebRTC/SIP call connections, initialize rooms, and spin up voice agent runs.
+    Integrate backend with Vapi and Exotel APIs to handle inbound SIP call connections, provision AI agents, and manage voice agent runs. Exotel provides Indian virtual/toll-free/city numbers with SIP trunking; Vapi handles the AI agent runtime (STT → LLM → TTS pipeline).
 *   **Acceptance Criteria**:
-    1. Inbound Webhooks are verified using cryptographic signatures.
+    1. Inbound Vapi webhooks are verified using cryptographic signatures.
     2. Validates operational hours and fallback paths before starting a call session.
-    3. Generates tokens to connect the LiveKit Agent to the correct WebRTC room.
-    4. Bridges WebRTC audio stream to ElevenLabs/Cartesia TTS and Deepgram STT services.
+    3. Vapi assistant is provisioned and linked to the active organization's voice agent configuration and knowledge base.
+    4. Vapi pipeline bridges Deepgram STT, OpenAI GPT-4o LLM, and ElevenLabs/Cartesia TTS.
+    5. Agent supports multi-lingual conversations: starts in English, auto-detects and switches to Hindi or Punjabi based on customer speech.
 
 ---
 
@@ -138,7 +139,7 @@ This document contains detailed Jira-style development tickets for all 15 core f
 *   **Description**:
     Store turn-by-turn conversational blocks and render them in a responsive transcript viewer.
 *   **Acceptance Criteria**:
-    1. LiveKit Agent outputs turn events, which are aggregated and saved to the `transcripts` collection.
+    1. Vapi call outputs turn events via webhook, which are aggregated and saved to the `transcripts` collection.
     2. UI displays alternative chat-bubble bubbles: Left (Caller) vs Right (Agent).
     3. Renders timestamps for each conversational turn.
     4. Search bar highlights text matches in real time.
@@ -273,15 +274,47 @@ This document contains detailed Jira-style development tickets for all 15 core f
 
 ---
 
-### A-020: LiveKit Client-Side WebRTC Testing Sandbox Widget
+### A-020: Vapi Test Call Sandbox Widget
 *   **Priority**: P0
 *   **Estimated Effort**: 4 Days
 *   **Dependencies**: A-008, A-016
 *   **Description**:
-    Build Step 5 testing sandbox. Allow users to connect their browser microphone via WebRTC to speak with the auto-provisioned AI agent.
+    Build Step 5 testing sandbox. Allow users to initiate a Vapi test call to speak with the auto-provisioned AI agent. The test call is routed via Exotel SIP trunk so it replicates the real production call path.
 *   **Acceptance Criteria**:
-    1. Auto-provisions an initial voice agent config using the extracted business configuration and knowledge base documents.
-    2. Inbound WebRTC endpoint `/onboarding/voice-agent/test-token` returns short-lived LiveKit room tokens.
-    3. Sandbox UI includes: Start/Stop conversation triggers, Microphone toggle, Audio waveform visualization, and a real-time transcript box.
-    4. Sandbox configuration sliders allow updating agent settings (speed, pitch, prompt) instantly in the room.
+    1. Auto-provisions an initial Vapi assistant config using the extracted business configuration and knowledge base documents.
+    2. Backend endpoint `POST /onboarding/voice-agent/test-call` triggers a Vapi outbound test call to the user's registered phone number.
+    3. Sandbox UI includes: Initiate Test Call button, live call status indicator, real-time transcript box, and language indicator showing active language (English / Hindi / Punjabi).
+    4. Sandbox configuration panel allows updating agent settings (speed, pitch, prompt, supported languages) and re-provisioning the Vapi assistant instantly.
     5. Clicking "Complete Onboarding" activates the organization, registers Owner memberships, and redirects the user to `/dashboard`.
+
+---
+
+### A-021: Sidebar Navigation System
+*   **Priority**: P0
+*   **Estimated Effort**: 4 Days
+*   **Dependencies**: A-005, A-006, A-014, A-018
+*   **Description**:
+    Build the role-aware sidebar navigation shell for all authenticated routes, including collapse behavior, organization-specific menu resolution, and mobile drawer support.
+*   **Acceptance Criteria**:
+    1. Sidebar renders the approved hierarchy: Command Center, AI Management, Administration, and Support & Training.
+    2. Menu items are filtered by role, organization, onboarding status, subscription plan, and feature flags.
+    3. Desktop supports expanded and collapsed states; mobile uses a drawer with focus trap and close-on-select behavior.
+    4. Active route state persists across reloads and deep links.
+    5. Navigation events are logged for analytics and audit visibility.
+    6. Keyboard navigation and screen-reader labels are validated for accessibility.
+
+---
+
+### A-022: Guided Onboarding Flow System
+*   **Priority**: P0
+*   **Estimated Effort**: 6 Days
+*   **Dependencies**: A-001, A-002, A-003, A-017, A-018, A-020
+*   **Description**:
+    Build the five-step onboarding state machine with save/resume, validation gates, progress persistence, and activation controls.
+*   **Acceptance Criteria**:
+    1. Onboarding persists step status and draft payloads server-side for Connect, Learn, Configure, Customize, and Activate.
+    2. Users can save progress, refresh, sign out, and resume without losing work.
+    3. Each step blocks progression until required validations pass.
+    4. Activation is disabled until knowledge base, agent, and test validations succeed.
+    5. Failed crawl or test states expose retry and recovery actions.
+    6. Progress indicators and completion states are visible on mobile and desktop.
