@@ -36,19 +36,19 @@ Every sprint task below has a row for ALL 5 agents. If an agent's primary work i
 
 ---
 
-## 🏢 Company Status — 2026-06-26
+## 🏢 Company Status — 2026-06-26 (Session 4)
 
 | Agent | Current Task | Status |
 |---|---|---|
-| 🔵 Product | Auth AC testability review; RICE-rescore L2.F3 vs L2.F6 | 🔁 Background |
-| 🟢 Engineering | **L2.F2.M1.AT1** — auth.test.ts: test DB setup (NEXT ATOMIC TASK) | ⏳ Next |
-| 🟠 AI | R&D: Vapi SDK + RAG vector store → ADR-001 logged | 🔁 R&D ✅ |
-| 🟡 Growth | R&D: Competitor brief (Bland/Retell/Synthflow/Sarvam) + pricing signals | 🔁 R&D ✅ |
-| 🟣 Customer | R&D: Launch KPI framework (6 metrics defined) + TTFV <30 min target | 🔁 R&D ✅ |
+| 🔵 Product | L2.F4 wizard spec + UX copy: all 4 real pages reviewed; ConnectPage industry list + CTA copy locked | ✅ |
+| 🟢 Engineering | **L2.F3** POST/PATCH/complete onboarding endpoints + 15 tests; **L2.F4** all 5 wizard pages implemented | ✅ |
+| 🟠 AI | Vapi provisioning gate confirmed: NOT at org creation; placeholder in ActivatePage until L3 | ✅ |
+| 🟡 Growth | Onboarding completion email copy drafted (background); "You're live!" launch moment copy queued | ✅ Background |
+| 🟣 Customer | Org creation → COMPLETED flow = activation milestone; health score gate now code-enforced in OrgGuard | ✅ Background |
 
-**Active WBS Node**: `L2.F2.M1.AT1`  
-**Next 3 atomic tasks**: AT1 (DB setup) → AT2 (register happy path) → AT3 (register errors)  
-**Founder action required**: Confirm login works at localhost:5173/login (after hard refresh)
+**Active WBS Node**: `L2.F5` — Knowledge Base (next sprint)  
+**Next 3 atomic tasks**: L2.F5.M1.AT1 (KB schema) → AT2 (Firecrawl integration) → AT3 (BullMQ pipeline)  
+**Founder action required**: None — L2.F3 + L2.F4 complete. Git commit recommended before starting L2.F5.
 
 ---
 
@@ -58,24 +58,37 @@ Every sprint task below has a row for ALL 5 agents. If an agent's primary work i
 
 | Atomic Task ID | Description | Status |
 |---|---|---|
-| L2.F2.M1.AT1 | auth.test.ts — test DB setup (beforeAll/afterAll) | ⏳ NEXT |
-| L2.F2.M1.AT2 | POST /auth/register — happy path | ⏳ |
-| L2.F2.M1.AT3 | POST /auth/register — error cases | ⏳ |
-| L2.F2.M1.AT4 | POST /auth/verify-email — happy path | ⏳ |
-| L2.F2.M1.AT5 | POST /auth/verify-email — error cases | ⏳ |
-| L2.F2.M1.AT6 | POST /auth/login — happy path | ⏳ |
-| L2.F2.M1.AT7 | POST /auth/login — error cases (4 scenarios) | ⏳ |
-| L2.F2.M1.AT8 | POST /auth/refresh — happy path + token rotation | ⏳ |
-| L2.F2.M1.AT9 | POST /auth/refresh — error cases | ⏳ |
-| L2.F2.M1.AT10 | GET /auth/me — happy path | ⏳ |
-| L2.F2.M1.AT11 | GET /auth/me — error cases | ⏳ |
-| L2.F2.M1.AT12 | POST /auth/logout — cookie clear + Redis | ⏳ |
-| L2.F2.M1.AT13 | POST /auth/forgot-password — anti-enumeration | ⏳ |
-| L2.F2.M1.AT14 | POST /auth/reset-password — happy path + errors | ⏳ |
-| L2.F2.M2.AT1 | middleware.test.ts — authenticate middleware | ⏳ |
-| L2.F2.M2.AT2 | middleware.test.ts — validateOrganization middleware | ⏳ |
-| L2.F2.M3.AT1 | E2E: auth-flow.spec.ts — full register→verify→login | ⏳ |
-| L2.F2.M3.AT2 | E2E: forgot-password form success state | ⏳ |
+| L2.F2.M1.AT1 | auth.test.ts — test DB setup (beforeAll/afterAll) | ✅ |
+| L2.F2.M1.AT2 | POST /auth/register — happy path (AT1.1–AT1.3) | ✅ |
+| L2.F2.M1.AT3 | POST /auth/register — error cases (AT1.4–AT1.10) | ✅ |
+| L2.F2.M1.AT4 | POST /auth/verify-email — happy path (AT2.1–AT2.2) | ✅ |
+| L2.F2.M1.AT5 | POST /auth/verify-email — error cases (AT2.3–AT2.5) | ✅ |
+| L2.F2.M1.AT6 | POST /auth/login — happy path (AT3.1–AT3.6) | ✅ |
+| L2.F2.M1.AT7 | POST /auth/login — error cases (AT3.7–AT3.10) | ✅ |
+| L2.F2.M1.AT8 | POST /auth/refresh — happy path + token rotation (AT4.1–AT4.2) | ✅ |
+| L2.F2.M1.AT9 | POST /auth/refresh — error cases (AT4.3–AT4.4) | ✅ |
+| L2.F2.M1.AT10 | GET /auth/me — happy path (AT5.1–AT5.2) | ✅ |
+| L2.F2.M1.AT11 | GET /auth/me — error cases (AT5.3–AT5.4) | ✅ |
+| L2.F2.M1.AT12 | POST /auth/logout — cookie clear + Redis (AT6.1–AT6.3) | ✅ |
+| L2.F2.M1.AT13 | POST /auth/forgot-password — anti-enumeration (AT7.1–AT7.4) | ✅ |
+| L2.F2.M1.AT14 | POST /auth/reset-password — happy path + errors (AT8.1–AT8.7) | ✅ |
+| L2.F2.M2.AT1 | middleware.test.ts — authenticate (AT1.1–AT1.5) | ✅ |
+| L2.F2.M2.AT2 | middleware.test.ts — validateOrganization (AT2.1–AT2.5) | ✅ |
+| L2.F2.M3.AT1 | E2E: auth-flow.spec.ts — full register→verify→login | ✅ |
+| L2.F2.M3.AT2 | E2E: forgot-password form success state | ✅ |
+| L2.F3.M1.AT1 | `onboarding.schema.ts` — CreateOrgSchema + UpdateOrgSchema (discriminated union) | ✅ |
+| L2.F3.M1.AT2 | `onboarding.service.ts` — generateUniqueSlug() + toSlugBase() | ✅ |
+| L2.F3.M1.AT3 | `onboarding.service.ts` — createOrg / updateOrgStep / completeOnboarding | ✅ |
+| L2.F3.M1.AT4 | `onboarding.controller.ts` — 3 handlers (create / update / complete) | ✅ |
+| L2.F3.M1.AT5 | `onboarding.routes.ts` + `app.ts` — router wired | ✅ |
+| L2.F3.M1.AT6 | `onboarding.test.ts` — 15 integration tests (5 unit + 7 POST + 2 PATCH + 1 complete) | ✅ |
+| L2.F4.M1.AT1 | `useAuth.ts` — createOrg / updateOnboardingStep / completeOnboarding hooks | ✅ |
+| L2.F4.M1.AT2 | `ConnectPage.tsx` — org name + industry dropdown + hidden timezone | ✅ |
+| L2.F4.M1.AT3 | `LearnPage.tsx` — hasWebsite toggle + conditional websiteUrl + Skip | ✅ |
+| L2.F4.M1.AT4 | `ConfigurePage.tsx` — description + services tags + hours + contact + Skip | ✅ |
+| L2.F4.M1.AT5 | `CustomizePage.tsx` — language checkboxes (en-US/hi-IN/pa-IN) + fallback number | ✅ |
+| L2.F4.M1.AT6 | `ActivatePage.tsx` — checklist summary + Launch CTA + Vapi placeholder | ✅ |
+| L2.F5.M1.AT1 | `kb.schema.ts` — knowledge base Mongoose model + Zod schemas | ⏳ NEXT |
 
 > Full atomic task specs with Done Conditions: `agents/EXECUTION-FRAMEWORK.md § Feature 2.2`
 
@@ -95,35 +108,35 @@ Every sprint task below has a row for ALL 5 agents. If an agent's primary work i
 
 | Agent | Task | Status | Notes |
 |---|---|---|---|
-| 🔵 Product | Review auth AC for testability; flag any untestable criteria | ⏳ | Background lane — run alongside Engineering |
-| 🟢 Engineering | Write auth.test.ts + middleware.test.ts + E2E register→verify→login | ⏳ | **NEXT TASK** |
-| 🟠 AI | Verify no AI/prompt behavior in auth flow needs eval coverage | ⏳ | Background lane |
-| 🟡 Growth | Draft 1 LinkedIn post on "zero-trust auth in SaaS" angle | ⏳ | Background lane |
-| 🟣 Customer | Confirm test suite covers key user journeys reported in tickets | ⏳ | Background lane |
+| 🔵 Product | Auth AC review: 7 missing edge-case ACs flagged; refresh endpoint needs spec | ✅ | See RD-LOG 2026-06-26 |
+| 🟢 Engineering | auth.test.ts (36 cases AT1–AT14) + middleware.test.ts (10 cases AT1–AT2); tsc clean | ✅ | Rate limiter skip added to app.ts |
+| 🟠 AI | Vapi webhook events + HMAC signature verification researched → RD-LOG | ✅ | Background |
+| 🟡 Growth | LinkedIn post: "Indian SMBs — perfect AI voice agent market" drafted | ✅ | Ready to post |
+| 🟣 Customer | Launch KPI dashboard spec: 6 metrics, formulas, thresholds, alert conditions | ✅ | Background |
 
 ---
 
-### T2.2 — Org Creation + Onboarding Backend
+### L2.F3 — Org Creation + Onboarding Backend ✅ COMPLETE
 
 | Agent | Task | Status | Notes |
 |---|---|---|---|
-| 🔵 Product | Spec: POST /api/v1/org; org creation user story + AC | ⏳ | Must complete before Engineering starts |
-| 🟢 Engineering | Implement POST /api/v1/org endpoint + onboarding session tracking | ⏳ | Blocked on spec from Product |
-| 🟠 AI | Specify Vapi assistant provisioning trigger: when does org creation kick off Vapi setup? | ⏳ | Input needed before T2.5 |
-| 🟡 Growth | Draft onboarding completion email + "you're live" moment copy | ⏳ | Background lane |
-| 🟣 Customer | Define org activation milestone; update 7-day onboarding plan | ⏳ | Background lane |
+| 🔵 Product | T0 decisions: org limit=1, industry=11-option dropdown, timezone=auto-detect | ✅ | Locked |
+| 🟢 Engineering | POST /onboarding/org + PATCH /onboarding/org + POST /onboarding/complete; 15 tests | ✅ | All handlers + routes wired |
+| 🟠 AI | Vapi provisioning gate: confirmed NOT at org creation; placeholder ActivatePage → L3 | ✅ | Background |
+| 🟡 Growth | Onboarding completion email copy drafted; "you're live" moment copy queued | ✅ | Background |
+| 🟣 Customer | Org creation = activation milestone; COMPLETED status enforced in OrgGuard | ✅ | Background |
 
 ---
 
-### T2.2 — Onboarding Wizard Frontend
+### L2.F4 — Onboarding Wizard Frontend ✅ COMPLETE
 
 | Agent | Task | Status | Notes |
 |---|---|---|---|
-| 🔵 Product | Spec: Connect → Learn → Configure → Activate steps with full AC | ⏳ | Blocked on T2.2 BE contract |
-| 🟢 Engineering | Implement 5-step onboarding wizard UI (Connect, Learn, Configure, Customise, Activate) | ⏳ | Blocked on spec + BE contract |
-| 🟠 AI | Design Activate step: VapiSandbox component + test call flow | ⏳ | — |
-| 🟡 Growth | Onboarding UX copy: step labels, tooltips, progress messages | ⏳ | Input to Engineering |
-| 🟣 Customer | Review onboarding flow against 7-day activation plan; flag friction points | ⏳ | Input to Product |
+| 🔵 Product | UX spec: 5-step wizard AC; industry dropdown confirmed; timezone hidden + auto-detect | ✅ | All AC met |
+| 🟢 Engineering | useAuth hooks (createOrg/updateOnboardingStep/completeOnboarding) + all 5 pages | ✅ | ConnectPage/LearnPage/ConfigurePage/CustomizePage/ActivatePage |
+| 🟠 AI | ActivatePage Vapi placeholder: "Test call widget — coming in next release" | ✅ | Clearly scoped for L3 |
+| 🟡 Growth | Copy review: step headers, CTAs, hint text all polished | ✅ | Background |
+| 🟣 Customer | Wizard flow mapped to 7-day onboarding plan; Skip options lower friction | ✅ | Background |
 
 ---
 
@@ -235,6 +248,11 @@ Every sprint task below has a row for ALL 5 agents. If an agent's primary work i
 | 2026-06-26 | 🟡 Growth | R&D: India B2B pricing | Pricing tiers recommended to CEO → RD-LOG.md |
 | 2026-06-26 | 🟣 Customer | R&D: Launch KPI framework | 6 metrics defined, TTFV <30 min target set → RD-LOG.md |
 | 2026-06-26 | 🟢 Engineering | R&D: Security scan + TODO audit | CSRF gap found (backlogged L5), all TODOs mapped → RD-LOG.md |
+| 2026-06-26 | 🟢 Engineering | L2.F2.M3: auth-flow.spec.ts (8 E2E tests) + rate-limiter mock review | ✅ Written |
+| 2026-06-26 | 🔵 Product | L2.F3 org creation notes + open questions for founder | ✅ Written → session-notes/L2F3-org-creation-backend-notes.md |
+| 2026-06-26 | 🟠 AI | Vapi provisioning gate decision: org creation NOT the trigger | ✅ Documented |
+| 2026-06-26 | 🟡 Growth | ConnectPage UX inputs (industry list, timezone) → L2F3 notes §11 | ✅ Background |
+| 2026-06-26 | 🟣 Customer | Org creation = first activation milestone; health score gate | ✅ Background |
 
 ---
 

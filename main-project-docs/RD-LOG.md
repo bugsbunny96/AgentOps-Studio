@@ -166,6 +166,60 @@ Consequences:
 
 ---
 
+---
+
+## v1.2.0 — 2026-06-26 — Session: E2E Auth Tests + L2.F3 Planning
+
+---
+
+### 🟢 Engineering — E2E Testing
+
+**[2026-06-26] | 🟢 Engineering | Testing | Playwright route mocking pattern for frontend-only E2E**
+- Finding: Playwright config starts only the frontend dev server (no backend). All API calls must be intercepted with `page.route()`. The axios interceptor in `@/utils/api` retries any 401 by calling `POST /auth/refresh` before re-throwing. Tests in the "unauthenticated" state MUST mock `POST /auth/refresh → 401` or the interceptor hangs waiting for a backend that isn't running.
+- Pattern: Use a closure variable `sessionState` to make `GET /auth/me` return 401 or 200 dynamically within a single test (required for the register→login→onboarding flow where the guard state changes mid-test).
+- Files created: `e2e/tests/auth-flow.spec.ts` (8 test cases: AT1 full flow × 4 cases + AT2 forgot-password × 4 cases + AT1.7 GuestGuard redirect)
+
+**[2026-06-26] | 🟢 Engineering | Testing | GuestGuard + AuthGuard timing in Playwright**
+- Finding: GuestGuard calls `verifySession()` on mount → dispatches `setAuthLoading(true)` → GET /auth/me → sets `isLoading=false`. Must call `page.waitForSelector('#form-field', { state: 'visible' })` rather than asserting immediately after `page.goto()` to allow the guard's async resolution before the form renders.
+- Finding: After login, `setCredentials()` sets `isLoading=false` in Redux. When AuthGuard mounts at /onboarding, it calls `verifySession()` again (useEffect), causing a brief `isLoading=true` → spinner → then resolves to 200. Playwright `toBeVisible()` with default 5s timeout handles this transparently.
+
+### 🔵 Product — L2.F3 Org Creation
+
+**[2026-06-26] | 🔵 Product | Spec | OnboardingSession model already exists in organization.model.ts**
+- Finding: The `OnboardingSessionModel` is already implemented in `backend/src/modules/organization/organization.model.ts` alongside Org, Membership, and Invitation models. Contains: `userId, organizationId?, currentStep (Connect|Learn|Configure|Customize|Activate), stepStatus, draftPayload, resumeToken`. This means L2.F3 needs NO new model files — only service/controller/route files.
+- Finding: `onboardingStatus` on Organization uses enum: `REGISTRATION → ORG_CREATION → WEBSITE_CRAWL → BUSINESS_CONFIG → VOICE_SETUP → COMPLETED`. Default is `'ORG_CREATION'`, which correctly represents "org just created, onboarding incomplete" state that OrgGuard uses to keep users in /onboarding/*.
+
+**[2026-06-26] | 🔵 Product | AC | Open questions for founder (see L2F3 notes §13)**
+- Gap 1: Org limit per user — restrict to 1 during onboarding, or allow unlimited from start?
+- Gap 2: Industry field — predefined dropdown or free text?
+- Gap 3: Timezone — always default Asia/Kolkata or auto-detect from browser?
+- Action: Founder to review `main-project-docs/session-notes/L2F3-org-creation-backend-notes.md` §13 before L2.F3.M1 implementation begins.
+
+### 🟠 AI — Vapi Provisioning Gate
+
+**[2026-06-26] | 🟠 AI | Integration | Vapi provisioning is NOT triggered at org creation**
+- Finding: Vapi assistant provisioning (creating a Vapi assistant object linked to the org) should NOT happen at `POST /api/v1/onboarding/org`. It should be triggered at the Activate step (T2.5) when the user has completed Configure + Customize and has a full system prompt ready.
+- Rationale: Creating a Vapi assistant before the business config (Step 3) and voice customization (Step 4) are complete would require updating the assistant multiple times, wasting API calls and creating orphaned assistants if the user abandons onboarding.
+- Decision: `POST /api/v1/onboarding/org` creates Org + Membership + OnboardingSession ONLY. No Vapi call at this step.
+- Action: Vapi provisioning spec to be written in T2.5 planning.
+
+### 🟡 Growth — Onboarding UX
+
+**[2026-06-26] | 🟡 Growth | UX | ConnectPage industry dropdown — recommended list**
+- For Indian SMB ICP, recommended industry options: Technology, Healthcare, Real Estate, Logistics / Delivery, Finance & BFSI, Education & EdTech, Retail, Hospitality & Food, Legal, Manufacturing, Other.
+- Note: "Logistics / Delivery" and "Finance & BFSI" are high-intent for voice agents in India.
+- Action: Pass this list to Engineering for ConnectPage form (L2.F4).
+
+### 🟣 Customer — Org Creation Milestone
+
+**[2026-06-26] | 🟣 Customer | Analytics | Org creation = Activation Gate Milestone 1**
+- Definition: A user who successfully calls `POST /api/v1/onboarding/org` has crossed the first activation gate.
+- Health score trigger: Move user from "Registered" to "Activating" on first org creation.
+- TTFV implication: Org creation should take <2 minutes from login (ConnectPage is a simple 3-4 field form). If p50 org creation time exceeds 5 minutes, flag UX friction.
+- Action: Log `event: 'ORG_CREATED'` in analytics on successful POST /onboarding/org (to be implemented in L5 analytics module).
+
+---
+
 ## R&D Backlog (prioritized, not yet investigated)
 
 | Priority | Agent | Topic | Target Session |
@@ -180,3 +234,129 @@ Consequences:
 | 8 | 🟡 Growth | Cold outreach sequence for Indian SMBs | L5 GTM prep |
 | 9 | 🟢 Eng | Docker image size optimization | L3/L4 DevOps sprint |
 | 10 | 🔵 Product | Onboarding friction reduction study | L2.F4 planning |
+
+---
+
+## v1.1.0 — 2026-06-26 — Session: Auth Integration Tests
+
+---
+
+### 🟢 Engineering — Testing
+
+**[2026-06-26] | 🟢 Engineering | Testing | Rate limiter skip for test environment**
+- Finding: Auth endpoints have a 10 req/15min rate limiter using in-memory MemoryStore. Integration tests send 35+ requests to `/register` across the test suite. This would fail in CI without a skip.
+- Resolution: Added `skip: () => process.env.NODE_ENV === 'test'` to all three rate limiters in `app.ts`. Vitest sets `NODE_ENV=test` automatically. Production behavior unchanged.
+- Files changed: `backend/src/app.ts`
+
+**[2026-06-26] | 🟢 Engineering | Testing | Redis mocking pattern for auth tests**
+- Finding: `auth.service.ts` calls `redis.setex/get/del` in login, refreshTokens, logout, and resetPassword. Real Redis is not available in test environment. Pattern established: mock `@/config/redis` with an in-memory Map that mirrors Redis semantics. This enables full integration testing of token rotation and session invalidation logic without a real Redis instance.
+- Pattern: See `backend/src/__tests__/auth.test.ts` lines 14–30.
+
+**[2026-06-26] | 🟢 Engineering | Testing | Email mock + token capture pattern**
+- Finding: `sendVerificationEmail` and `sendPasswordResetEmail` are fire-and-forget with `.catch(() => {})`. Mocking them prevents Resend API calls in tests. The raw reset token (passed as arg[2] to `sendPasswordResetEmail`) can be captured from `mock.calls[0][2]` for use in reset-password test cases. This is the only way to access the raw token since only the sha256 hash is stored in MongoDB.
+
+### 🔵 Product — Auth AC Gaps
+
+**[2026-06-26] | 🔵 Product | Spec | 7 missing auth edge-case ACs identified**
+- Gap 1: Register duplicate email — no AC specifies 409 + EMAIL_TAKEN code
+- Gap 2: Login invalid credentials — no AC on response format (anti-enumeration implied but not stated)
+- Gap 3: Login unverified account — no AC specifying EMAIL_NOT_VERIFIED code
+- Gap 4: POST /auth/refresh — ENTIRELY MISSING from A-001 spec. No AC for token rotation or replay rejection.
+- Gap 5: Reset-password token reuse — no one-time-use AC
+- Gap 6: Forgot-password non-existent email — anti-enumeration not explicitly documented
+- Gap 7: Rate limiting behavior — no AC on brute-force protection
+- Action: Update Feature-Ticket-List.md A-001 to add these 7 ACs in next Product background lane session.
+
+### 🟠 AI — Vapi Webhook R&D
+
+**[2026-06-26] | 🟠 AI | Integration | Vapi webhook events + signature verification**
+- Key event types: `status-update`, `transcript`, `end-of-call-report`, `function-call`, `tool-calls`, `assistant-request`, `hang`
+- Payload envelope: `{ message: { type, call, timestamp, ...type-specific-fields } }`
+- Signature verification: Use HMAC-SHA256 (`X-Vapi-Signature` header). Verify against raw request body (not JSON.stringify). Store secret as `VAPI_WEBHOOK_SECRET`.
+- Key L3.F1 implementation note: `assistant-request` and `tool-calls` events require synchronous JSON response. All others can respond with 200 immediately.
+- Action: Design webhook handler as `POST /api/v1/webhooks/vapi` in L3.F1. Use raw body middleware for HMAC verification before JSON parsing.
+
+### 🟡 Growth — Content
+
+**[2026-06-26] | 🟡 Growth | Content | LinkedIn post: Indian SMBs + AI voice agents**
+- Angle: 63M Indian SMBs, all running on 1-3 people, losing ₹1,200–₹45,000/day in missed calls
+- CTA: "What's your biggest operational bottleneck?" (comment engagement hook)
+- Status: DRAFT READY. Founder to review and post when ready.
+
+### 🟣 Customer — KPIs
+
+**[2026-06-26] | 🟣 Customer | Analytics | Launch KPI dashboard — 6 metric definitions**
+- Activation Rate: % of users who create org + configure ≥1 agent. Target ≥40% W1. Alert <25%.
+- TTFV: Median minutes from registration to first completed call. Target <30 min. Alert >45 min.
+- Week-1 Retention: % of activated users with ≥1 action Days 2–7. Target ≥55%. Alert <40%.
+- Call Completion Rate: % of calls reaching `status:completed`. Target ≥85%. Alert <75% any 1h window.
+- MRR: Sum of active subscription amounts. Target $5k in 30 days post-launch.
+- Monthly Churn: % of paying orgs cancelling per month. Target <5%. Alert ≥2 churns in any 7-day window.
+- Action: Implement this as a live artifact dashboard when MCP + data tools are connected (L5).
+
+---
+
+## v1.3.0 — 2026-06-26 — Session: L2.F3 Backend + L2.F4 Wizard Pages
+
+---
+
+### 🔵 Product — T0 Decisions Locked
+
+**[2026-06-26] | 🔵 Product | Decision | Org limit per user = 1 during onboarding**
+- Decision: 1 org maximum per user enforced at service layer via `MembershipModel.findOne({ userId, role: 'Owner' })`. Throws `Conflict` with code `ORG_LIMIT_REACHED` on second attempt.
+- Rationale: Prevents test orgs polluting production data; single clear activation path; multiple orgs unlocked in Settings (T5.3).
+
+**[2026-06-26] | 🔵 Product | Decision | Industry field = predefined dropdown (11 options)**
+- Final list: Technology, Healthcare, Real Estate, Logistics & Delivery, Finance & BFSI, Education & EdTech, Retail, Hospitality & Food, Legal, Manufacturing, Other.
+- Synced in: `backend/src/modules/onboarding/onboarding.schema.ts` (Zod enum) AND `frontend/src/features/onboarding/ConnectPage.tsx` (select options). Change both or neither.
+
+**[2026-06-26] | 🔵 Product | Decision | Timezone = auto-detected from browser (never shown)**
+- Detection: `Intl.DateTimeFormat().resolvedOptions().timeZone` in `useEffect` on ConnectPage mount.
+- Fallback: `'Asia/Kolkata'` if Intl API unavailable.
+- Transport: Sent as hidden field in POST body. User never sees this field.
+
+### 🟢 Engineering — L2.F3 Implementation Notes
+
+**[2026-06-26] | 🟢 Engineering | Architecture | No validateOrganization middleware for onboarding endpoints**
+- Decision: Onboarding PATCH/complete endpoints resolve org via `MembershipModel.findOne({ userId, role: 'Owner' })` directly — NOT via `X-Organization-ID` header.
+- Rationale: During onboarding steps 2-4, the frontend may not yet have set up the org header. Service-layer lookup is simpler and correct for the single-org onboarding use case. Header-based lookup is used for all post-onboarding routes.
+
+**[2026-06-26] | 🟢 Engineering | Slug Generation | toSlugBase + generateUniqueSlug pattern**
+- `toSlugBase`: NFKD normalize → strip diacritics → remove non-alnum → collapse hyphens → trim edges.
+- `generateUniqueSlug`: Appends `-1`, `-2`, … up to 20 attempts. Fails with `DUPLICATE_SLUG` after 20.
+- Edge case: All-special-char name (e.g. "!!!!") → base is `''` → slug defaults to `'org'`.
+- Tested: 5 unit test cases for `toSlugBase()` + 2 integration cases for uniqueness collision handling.
+
+**[2026-06-26] | 🟢 Engineering | Testing | onboarding.test.ts pattern (15 tests)**
+- Same Redis mock pattern as auth.test.ts (in-memory Map).
+- `createUserAndToken(suffix)` creates user directly via `UserModel.create()` + `signAccessToken()` — no HTTP round-trip.
+- DB state verified in AT6.1 (org + membership + session) and AT6.14 (COMPLETED status + session stepStatus).
+
+### 🟢 Engineering — L2.F4 Implementation Notes
+
+**[2026-06-26] | 🟢 Engineering | Frontend | mapRawOrg() helper in useAuth.ts**
+- Backend returns `_id` (Mongoose default). Frontend `Organization` type uses `id`. `mapRawOrg()` handles this mapping and sets defaults for optional fields (timezone, supportedLanguages, businessHours).
+- All 3 new hooks (`createOrg`, `updateOnboardingStep`, `completeOnboarding`) call `mapRawOrg()` and update both `availableOrgs` and `currentOrg` in Redux to keep OrgGuard in sync.
+
+**[2026-06-26] | 🟢 Engineering | Frontend | ConfigurePage useFieldArray for services tags**
+- Services are entered as a tag/chip UI: type in input → press Enter or "Add" button → appends to RHF field array → displayed as dismissible chips. Max 20 services, 100 chars each.
+- RHF `useFieldArray` manages the array; the raw `newService` input state is separate (not registered in form).
+
+**[2026-06-26] | 🟢 Engineering | Frontend | CustomizePage checkbox pattern**
+- Language selection uses button-based toggle cards rather than native checkboxes. `setValue('supportedLanguages', next)` called manually. Hidden `<input type="hidden" {...register('supportedLanguages')} />` keeps RHF in sync.
+- Validation: Zod `.min(1)` enforced — at least one language required.
+
+### 🟠 AI — ActivatePage Scope
+
+**[2026-06-26] | 🟠 AI | Scope | Vapi sandbox widget deferred to L3**
+- ActivatePage (L2.F4) contains a placeholder card: "Live test calls via Vapi will be available in the next release."
+- When L3.F2 ships: replace placeholder with `<VapiSandboxWidget />` that calls `POST /api/v1/onboarding/voice-agent/test-call` and streams call status back.
+- Current "Launch" CTA calls `POST /api/v1/onboarding/complete` directly — no Vapi dependency.
+
+### 🟣 Customer — Onboarding Flow Friction Notes
+
+**[2026-06-26] | 🟣 Customer | UX | LearnPage + ConfigurePage have Skip options**
+- LearnPage: "Skip" sends `{ step: 'learn', hasWebsite: false }` — org proceeds without website crawl.
+- ConfigurePage: "Skip" sends `{ step: 'configure' }` with no body fields — all optional fields stay empty.
+- CustomizePage: No skip — language selection is required (min 1). Default selection is `en-US`.
+- Implication: A user can complete onboarding in <30 seconds by skipping Learn + Configure. TTFV metric starts from org creation completion (ConnectPage submit), not from the Activate CTA click.

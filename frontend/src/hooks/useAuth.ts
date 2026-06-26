@@ -4,7 +4,7 @@ import { useAppDispatch, useAppSelector } from '@/store';
 import { setCredentials, clearCredentials, setAuthLoading } from '@/store/slices/authSlice';
 import { setCurrentOrg, setAvailableOrgs, clearCurrentOrg } from '@/store/slices/orgSlice';
 import { api } from '@/utils/api';
-import type { Organization, UserRole } from '@/types';
+import type { Organization, OnboardingStatus, UserRole } from '@/types';
 
 // ─── Backend API response shapes ───────────────────────────────────────────
 interface AuthOrg {
@@ -33,6 +33,58 @@ interface LoginData {
     status: string;
   };
   organizations: AuthOrg[];
+}
+
+// ─── Onboarding API shapes ──────────────────────────────────────────────────
+
+/** Raw org object as returned by the backend (uses _id not id) */
+interface RawOrg {
+  _id: string;
+  name: string;
+  slug: string;
+  timezone: string;
+  industry: string;
+  onboardingStatus: string;
+  hasWebsite: boolean;
+  websiteUrl?: string;
+  supportedLanguages: string[];
+  businessHours: { start: string; end: string };
+  createdAt: string;
+}
+
+export interface CreateOrgInput {
+  name: string;
+  industry: string;
+  timezone: string;
+}
+
+export type UpdateOrgInput =
+  | { step: 'learn'; hasWebsite: boolean; websiteUrl?: string }
+  | {
+      step: 'configure';
+      businessDescription?: string;
+      services?: string[];
+      businessHours?: { start: string; end: string };
+      contactDetails?: { email?: string; phone?: string };
+      locations?: string[];
+    }
+  | { step: 'customize'; supportedLanguages: string[]; fallbackNumber?: string };
+
+// ─── Map raw backend org → frontend Organization type ─────────────────────
+function mapRawOrg(raw: RawOrg): Organization {
+  return {
+    id: raw._id,
+    name: raw.name,
+    slug: raw.slug,
+    timezone: raw.timezone ?? 'Asia/Kolkata',
+    industry: raw.industry,
+    onboardingStatus: raw.onboardingStatus as OnboardingStatus,
+    hasWebsite: raw.hasWebsite ?? false,
+    websiteUrl: raw.websiteUrl,
+    supportedLanguages: raw.supportedLanguages ?? ['en-US'],
+    businessHours: raw.businessHours ?? { start: '09:00', end: '17:00' },
+    createdAt: raw.createdAt,
+  };
 }
 
 // ─── Helper: map lean org + role from auth response → Redux state ──────────
@@ -128,6 +180,59 @@ export function useAuth() {
     }
   }, [dispatch, navigate]);
 
+  /**
+   * Step 1: Create the organization.
+   * Called from ConnectPage. On success, sets org in Redux and navigates to /onboarding/learn.
+   */
+  const createOrg = useCallback(
+    async (dto: CreateOrgInput) => {
+      const res = await api.post<{
+        success: boolean;
+        data: { organization: RawOrg; membership: { role: string } };
+      }>('/onboarding/org', dto);
+      const { organization, membership } = res.data.data;
+      const newOrg = mapRawOrg(organization);
+      dispatch(setAvailableOrgs([newOrg]));
+      dispatch(setCurrentOrg({ org: newOrg, role: membership.role as UserRole }));
+      navigate('/onboarding/learn');
+    },
+    [dispatch, navigate],
+  );
+
+  /**
+   * Steps 2-4: update org data for a given wizard step.
+   * Called from LearnPage, ConfigurePage, CustomizePage.
+   * Patches Redux currentOrg with the new onboardingStatus so guards stay in sync.
+   */
+  const updateOnboardingStep = useCallback(
+    async (dto: UpdateOrgInput, nextPath: string) => {
+      const res = await api.patch<{ success: boolean; data: { organization: RawOrg } }>(
+        '/onboarding/org',
+        dto,
+      );
+      const updatedOrg = mapRawOrg(res.data.data.organization);
+      dispatch(setAvailableOrgs([updatedOrg]));
+      dispatch(setCurrentOrg({ org: updatedOrg, role: currentRole ?? 'Owner' }));
+      navigate(nextPath);
+    },
+    [dispatch, currentRole, navigate],
+  );
+
+  /**
+   * Step 5: complete onboarding.
+   * Sets onboardingStatus = COMPLETED in DB and Redux, then navigates to /dashboard.
+   * OrgGuard will now allow access to the dashboard.
+   */
+  const completeOnboarding = useCallback(async () => {
+    const res = await api.post<{ success: boolean; data: { organization: RawOrg } }>(
+      '/onboarding/complete',
+    );
+    const completedOrg = mapRawOrg(res.data.data.organization);
+    dispatch(setAvailableOrgs([completedOrg]));
+    dispatch(setCurrentOrg({ org: completedOrg, role: currentRole ?? 'Owner' }));
+    navigate('/dashboard');
+  }, [dispatch, currentRole, navigate]);
+
   return {
     user,
     currentOrg,
@@ -137,5 +242,8 @@ export function useAuth() {
     verifySession,
     login,
     logout,
+    createOrg,
+    updateOnboardingStep,
+    completeOnboarding,
   };
 }

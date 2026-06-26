@@ -8,6 +8,7 @@ import { requestLogger } from './middleware/requestLogger';
 import { notFound } from './middleware/notFound';
 import { errorHandler } from './middleware/errorHandler';
 import { authRouter } from './modules/auth/auth.routes';
+import { onboardingRouter } from './modules/onboarding/onboarding.routes';
 
 const app = express();
 
@@ -38,10 +39,14 @@ app.use(cookieParser());
 app.use(requestLogger);
 
 // ─── Rate Limiting ───────────────────────────────────────────────────
+// Skip all rate limiting in test environment to allow integration tests to run freely.
+const skipInTest = () => process.env.NODE_ENV === 'test';
+
 // Standard: 100 requests per 15 min per IP
 app.use('/api/v1', rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 100,
+  skip: skipInTest,
   standardHeaders: true,
   legacyHeaders: false,
   message: { success: false, code: 'RATE_LIMITED', message: 'Too many requests. Try again shortly.' },
@@ -51,6 +56,7 @@ app.use('/api/v1', rateLimit({
 app.use(['/api/v1/auth/login', '/api/v1/auth/register', '/api/v1/auth/forgot-password', '/api/v1/auth/reset-password'], rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 10,
+  skip: skipInTest,
   standardHeaders: true,
   legacyHeaders: false,
   message: { success: false, code: 'RATE_LIMITED', message: 'Too many authentication attempts. Try again in 15 minutes.' },
@@ -60,6 +66,7 @@ app.use(['/api/v1/auth/login', '/api/v1/auth/register', '/api/v1/auth/forgot-pas
 app.use(['/api/v1/onboarding/website/crawl', '/api/v1/knowledge-base/re-sync'], rateLimit({
   windowMs: 60 * 60 * 1000,
   max: 3,
+  skip: skipInTest,
   standardHeaders: true,
   legacyHeaders: false,
   message: { success: false, code: 'RATE_LIMITED', message: 'Crawl limit reached. Wait 1 hour before re-crawling.' },
@@ -79,7 +86,7 @@ app.get('/health', (_req, res) => {
 // ─── API v1 Routes (registered as layers are built) ──────────────────
 // Layer 2 — Identity & Onboarding
 app.use('/api/v1/auth', authRouter);
-// app.use('/api/v1/onboarding', onboardingRouter);
+app.use('/api/v1/onboarding', onboardingRouter);
 // app.use('/api/v1/knowledge-base', knowledgeBaseRouter);
 // app.use('/api/v1/members', membersRouter);
 // app.use('/api/v1/navigation', navigationRouter);
