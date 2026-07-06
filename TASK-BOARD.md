@@ -36,6 +36,40 @@ Every sprint task below has a row for ALL 5 agents. If an agent's primary work i
 
 ---
 
+## 🏢 Company Status — 2026-07-04 (Session: Business Hours Routing)
+
+| Agent | Current Task | Status |
+|---|---|---|
+| 🔵 Product | R&D: Phone number setup UX — filed RFC-005 (move to Activate page) | ✅ |
+| 🟢 Engineering | Session 2 complete: assistant-request handler + linkPhoneNumber endpoint + SettingsPage — tsc clean | ✅ |
+| 🟠 AI | Business hours gate live: isWithinBusinessHours() + after-hours inline assistant | ✅ |
+| 🟡 Growth | R&D: competitors show phone setup in Go Live flow, not settings — RFC-005 queued | ✅ Background |
+| 🟣 Customer | Business hours default open on bad timezone = zero missed calls — logged | ✅ Background |
+
+**Active WBS Node**: `Week 1 Session 3` — Exotel SIP setup (founder manual) + end-to-end test call
+**Session 2 deliverables**:
+- `backend/src/utils/businessHours.ts` — timezone-aware hours check (Node built-in Intl)
+- `backend/src/modules/calls/webhook.service.ts` — `handleAssistantRequest()` with business hours gate + after-hours inline assistant
+- `backend/src/modules/calls/webhook.controller.ts` — dual-path: synchronous for `assistant-request`, fire-and-forget for everything else
+- `backend/src/modules/agents/agent.service.ts` — `linkPhoneNumber()` + `getPhoneNumber()`
+- `backend/src/modules/agents/agent.controller.ts` — `linkPhoneNumberHandler` + `getPhoneNumberHandler`
+- `backend/src/modules/agents/agent.routes.ts` — `GET/POST /api/v1/agents/phone-number`
+- `frontend/src/features/settings/SettingsPage.tsx` — Phone Number Setup live section with UUID validation + TanStack Query
+**Founder action required**: Session 3 — see below.
+
+### Session 3 Checklist (founder manual tasks)
+
+| Step | Task | Done? |
+|---|---|---|
+| 1 | Exotel dashboard → buy DID number → SIP trunk → point SIP endpoint to `sip.vapi.ai` | ⬜ |
+| 2 | Vapi dashboard → Phone Numbers → import Exotel DID | ⬜ |
+| 3 | Vapi phone number settings → Server URL = `https://<your-api>/api/v1/webhooks/vapi` | ⬜ |
+| 4 | Vapi phone number settings → Secret = value from `VAPI_WEBHOOK_SECRET` in backend `.env` | ⬜ |
+| 5 | Copy phone number UUID from Vapi → paste into Settings → Phone Number Setup → Save | ⬜ |
+| 6 | Call the DID number → verify business hours routing → confirm call appears in Calls page | ⬜ |
+
+---
+
 ## 🏢 Company Status — 2026-06-26 (Session 4)
 
 | Agent | Current Task | Status |

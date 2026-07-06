@@ -38,21 +38,44 @@ export const CreateOrgSchema = z.object({
 export type CreateOrgDto = z.infer<typeof CreateOrgSchema>;
 
 // ─── Step 2: Learn — website + knowledge base ──────────────────────────────
+//
+// Three paths (locked — Session 4 product review):
+//   Path A: hasWebsite=true, crawlEnabled=true, websiteUrl=https://...  → queue crawl
+//   Path B: hasWebsite=true, crawlEnabled=false                         → manual KB entry
+//   Path C: hasWebsite=false, crawlEnabled=false                        → describe in Configure
+//
+// URL validation:
+//   • HTTPS-only (http:// crawls fail silently on most hosts)
+//   • Required only when crawlEnabled=true (enforced via superRefine on the union)
+//
+// NOTE: superRefine is NOT applied here — z.discriminatedUnion requires plain ZodObject
+// members (no ZodEffects wrapper). Cross-field validation is done on the union below.
 const LearnStepSchema = z.object({
   step: z.literal('learn'),
   hasWebsite: z.boolean(),
+  crawlEnabled: z.boolean().default(false),
   websiteUrl: z
-    .string()
-    .url('Enter a valid URL (e.g. https://example.com)')
+    .union([
+      z
+        .string()
+        .url('Enter a valid HTTPS URL (e.g. https://yourcompany.com)')
+        .refine(
+          (url) => url.startsWith('https://'),
+          { message: 'Website URL must use HTTPS (e.g. https://yourcompany.com)' },
+        ),
+      z.literal(''),
+    ])
     .optional()
-    .or(z.literal(''))
-    .transform((v) => v || undefined),
+    .transform((v) => (v === '' ? undefined : v)),
 });
 
 // ─── Step 3: Configure — business details ──────────────────────────────────
 const ConfigureStepSchema = z.object({
   step: z.literal('configure'),
-  businessDescription: z.string().max(500, 'Max 500 characters').optional(),
+  // Agent identity
+  agentName: z.string().max(50, 'Agent name must be at most 50 characters').optional(),
+  // Business context — no character limit; user controls length
+  businessDescription: z.string().optional(),
   services: z.array(z.string().max(100)).max(20).optional().default([]),
   businessHours: z
     .object({
@@ -72,6 +95,17 @@ const ConfigureStepSchema = z.object({
     })
     .optional(),
   locations: z.array(z.string().max(200)).max(10).optional().default([]),
+  // FAQs — voice-friendly Q&A pairs the AI will use to answer caller questions
+  faqs: z
+    .array(
+      z.object({
+        question: z.string().max(200, 'Question max 200 chars'),
+        answer: z.string().max(300, 'Answer max 300 chars'),
+      }),
+    )
+    .max(10, 'Max 10 FAQs')
+    .optional()
+    .default([]),
 });
 
 // ─── Step 4: Customize — voice and language ────────────────────────────────
@@ -84,10 +118,23 @@ const CustomizeStepSchema = z.object({
 });
 
 // ─── Union ─────────────────────────────────────────────────────────────────
-export const UpdateOrgSchema = z.discriminatedUnion('step', [
-  LearnStepSchema,
-  ConfigureStepSchema,
-  CustomizeStepSchema,
-]);
+// superRefine on the discriminated union — cross-field validation for the learn step.
+// (Cannot apply superRefine directly on LearnStepSchema because ZodEffects breaks
+//  discriminatedUnion's discriminator-key introspection in Zod v3.)
+export const UpdateOrgSchema = z
+  .discriminatedUnion('step', [
+    LearnStepSchema,
+    ConfigureStepSchema,
+    CustomizeStepSchema,
+  ])
+  .superRefine((data, ctx) => {
+    if (data.step === 'learn' && data.crawlEnabled && !data.websiteUrl) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['websiteUrl'],
+        message: 'A website URL is required when crawling is enabled',
+      });
+    }
+  });
 
 export type UpdateOrgDto = z.infer<typeof UpdateOrgSchema>;

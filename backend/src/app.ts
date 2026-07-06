@@ -2,6 +2,7 @@ import express from 'express';
 import helmet from 'helmet';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
+import mongoose from 'mongoose';
 import { rateLimit } from 'express-rate-limit';
 import { env } from './config/env';
 import { requestLogger } from './middleware/requestLogger';
@@ -9,6 +10,10 @@ import { notFound } from './middleware/notFound';
 import { errorHandler } from './middleware/errorHandler';
 import { authRouter } from './modules/auth/auth.routes';
 import { onboardingRouter } from './modules/onboarding/onboarding.routes';
+import { agentsRouter } from './modules/agents/agent.routes';
+import { callsRouter } from './modules/calls/call.routes';
+import { vapiWebhookRouter } from './modules/calls/webhook.routes';
+import { analyticsRouter } from './modules/analytics/analytics.routes';
 
 const app = express();
 
@@ -74,11 +79,17 @@ app.use(['/api/v1/onboarding/website/crawl', '/api/v1/knowledge-base/re-sync'], 
 
 // ─── Health Check ────────────────────────────────────────────────────
 app.get('/health', (_req, res) => {
+  const mongoState = mongoose.connection.readyState;
+  // 0=disconnected 1=connected 2=connecting 3=disconnecting
+  const mongoStatus = ['disconnected', 'connected', 'connecting', 'disconnecting'][mongoState] ?? 'unknown';
+
   res.status(200).json({
     status: 'ok',
     service: 'agentops-studio-backend',
     version: process.env.npm_package_version ?? '0.1.0',
     environment: env.NODE_ENV,
+    mongo: mongoStatus,
+    uptime: Math.floor(process.uptime()),
     timestamp: new Date().toISOString(),
   });
 });
@@ -93,14 +104,14 @@ app.use('/api/v1/onboarding', onboardingRouter);
 // app.use('/api/v1/feature-flags', featureFlagsRouter);
 
 // Layer 3 — Voice AI
-// app.use('/api/v1/agents', agentsRouter);
-// app.use('/api/v1/webhooks/vapi', vapiWebhookRouter);
+app.use('/api/v1/agents', agentsRouter);
+app.use('/api/v1/webhooks/vapi', vapiWebhookRouter);
 
 // Layer 4 — Intelligence
-// app.use('/api/v1/calls', callsRouter);
+app.use('/api/v1/calls', callsRouter);
 
 // Layer 5 — Observability
-// app.use('/api/v1/analytics', analyticsRouter);
+app.use('/api/v1/analytics', analyticsRouter);
 // app.use('/api/v1/audit', auditRouter);
 
 // ─── 404 Catch-all ───────────────────────────────────────────────────

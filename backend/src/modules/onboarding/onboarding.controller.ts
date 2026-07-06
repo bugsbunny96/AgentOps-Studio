@@ -1,6 +1,12 @@
 import { Request, Response, NextFunction } from 'express';
 import { CreateOrgSchema, UpdateOrgSchema } from './onboarding.schema';
-import { createOrg, updateOrgStep, completeOnboarding } from './onboarding.service';
+import {
+  createOrg,
+  updateOrgStep,
+  completeOnboarding,
+  getOrgForOnboarding,
+  getCrawlStatus,
+} from './onboarding.service';
 
 // POST /api/v1/onboarding/org
 export async function createOrgHandler(
@@ -26,6 +32,34 @@ export async function updateOrgHandler(
   try {
     const dto = UpdateOrgSchema.parse(req.body);
     const data = await updateOrgStep(req.userId!, dto);
+    res.status(200).json({ success: true, data });
+  } catch (err) {
+    next(err);
+  }
+}
+
+// GET /api/v1/onboarding/org — fetch full org for form pre-population on page refresh
+export async function getOrgHandler(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
+  try {
+    const data = await getOrgForOnboarding(req.userId!);
+    res.status(200).json({ success: true, data });
+  } catch (err) {
+    next(err);
+  }
+}
+
+// GET /api/v1/onboarding/crawl-status
+export async function getCrawlStatusHandler(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
+  try {
+    const data = await getCrawlStatus(req.userId!);
     res.status(200).json({ success: true, data });
   } catch (err) {
     next(err);

@@ -12,11 +12,14 @@
     "clean": "rm -rf dist",
     "test": "vitest run",
     "test:watch": "vitest",
-    "test:coverage": "vitest run --coverage"
+    "test:coverage": "vitest run --coverage",
+    "preflight": "tsx scripts/preflight.ts",
+    "simulate": "tsx scripts/simulate-webhook.ts"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",
     "bullmq": "^5.52.0",
+    "cheerio": "^1.2.0",
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.5",
     "dotenv": "^16.5.0",

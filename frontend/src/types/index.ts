@@ -10,6 +10,8 @@ export type OnboardingStatus =
   | 'VOICE_SETUP'
   | 'COMPLETED';
 
+export type CrawlStatus = 'idle' | 'pending' | 'processing' | 'completed' | 'failed';
+
 export interface User {
   id: string;
   name: string;
@@ -26,10 +28,25 @@ export interface Organization {
   timezone: string;
   industry: string;
   onboardingStatus: OnboardingStatus;
+  // Step 2 — Learn
   hasWebsite: boolean;
+  crawlEnabled: boolean;
   websiteUrl?: string;
-  supportedLanguages: string[];
+  crawlStatus: CrawlStatus;
+  crawlError?: string;
+  // Step 3 — Configure
+  agentName?: string;
+  businessDescription?: string;
+  services: string[];
+  faqs: Array<{ question: string; answer: string }>;
   businessHours: { start: string; end: string };
+  contactDetails?: { email?: string; phone?: string };
+  locations: string[];
+  // Step 4 — Customize
+  supportedLanguages: string[];
+  fallbackNumber?: string;
+  // Step 5 — Activate (Vapi provisioning)
+  vapiAssistantId?: string;
   createdAt: string;
 }
 
@@ -46,17 +63,11 @@ export interface VoiceAgent {
   organizationId: string;
   name: string;
   systemPrompt: string;
-  voiceModel: string;
+  vapiAssistantId: string;
+  voiceProvider: 'openai' | 'elevenlabs' | 'cartesia' | 'azure';
+  voiceId: string;
   primaryLanguage: string;
   supportedLanguages: string[];
-  voiceSettings: {
-    provider: 'elevenlabs' | 'cartesia';
-    voiceId: string;
-    speed: number;
-    pitch: number;
-  };
-  vapiAssistantId?: string;
-  exotelPhoneNumber?: string;
   status: 'Active' | 'Inactive';
   createdAt: string;
   updatedAt: string;

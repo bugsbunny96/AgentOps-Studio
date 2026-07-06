@@ -4,7 +4,7 @@
  * On submit → PATCH /api/v1/onboarding/org { step: 'customize' } → /onboarding/activate
  */
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -33,7 +33,7 @@ type CustomizeFormValues = z.infer<typeof CustomizeSchema>;
 
 // ─── Component ───────────────────────────────────────────────────────────────
 export default function CustomizePage() {
-  const { updateOnboardingStep } = useAuth();
+  const { updateOnboardingStep, currentOrg } = useAuth();
   const [serverError, setServerError] = useState<string | null>(null);
 
   const {
@@ -41,14 +41,25 @@ export default function CustomizePage() {
     handleSubmit,
     watch,
     setValue,
+    reset,
     formState: { errors, isSubmitting },
   } = useForm<CustomizeFormValues>({
     resolver: zodResolver(CustomizeSchema),
     defaultValues: {
-      supportedLanguages: ['en-US'],
-      fallbackNumber: '',
+      supportedLanguages: (currentOrg?.supportedLanguages as LanguageCode[]) ?? ['en-US'],
+      fallbackNumber: currentOrg?.fallbackNumber ?? '',
     },
   });
+
+  // Re-populate when currentOrg hydrates from the async fetchCurrentOrg() call
+  useEffect(() => {
+    if (!currentOrg) return;
+    reset({
+      supportedLanguages: (currentOrg.supportedLanguages as LanguageCode[]) ?? ['en-US'],
+      fallbackNumber: currentOrg.fallbackNumber ?? '',
+    });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentOrg?.id]);
 
   const selectedLanguages = watch('supportedLanguages') ?? [];
 

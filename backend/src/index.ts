@@ -3,6 +3,7 @@ import { env } from './config/env';
 import { connectDatabase, disconnectDatabase } from './config/database';
 import { redis } from './config/redis';
 import { logger } from './utils/logger';
+import { startCrawlWorker } from './jobs/crawl.worker';
 import http from 'http';
 
 let server: http.Server;
@@ -18,7 +19,10 @@ async function bootstrap(): Promise<void> {
   await redis.ping();
   logger.info('✅  Redis ping OK');
 
-  // 3. Start HTTP server
+  // 3. Start background workers
+  startCrawlWorker();
+
+  // 4. Start HTTP server
   server = app.listen(env.PORT, () => {
     logger.info(`✅  HTTP server listening on port ${env.PORT}`);
     logger.info(`   Health: http://localhost:${env.PORT}/health`);

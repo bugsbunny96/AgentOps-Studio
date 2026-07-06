@@ -7,6 +7,7 @@ import { GuestGuard } from './guards/GuestGuard';
 import { AuthLayout } from '@/layouts/AuthLayout';
 import { DashboardLayout } from '@/layouts/DashboardLayout';
 import { OnboardingLayout } from '@/layouts/OnboardingLayout';
+import { PublicLayout } from '@/layouts/PublicLayout';
 
 // ── Lazy imports (code-split by route) ──────────────────────────────
 import { lazy, Suspense } from 'react';
@@ -26,38 +27,25 @@ const lazy_page = (factory: () => Promise<{ default: React.ComponentType }>) => 
   );
 };
 
-// Auth pages
-const LoginPage = lazy(() => import('@/features/auth/LoginPage'));
-const RegisterPage = lazy(() => import('@/features/auth/RegisterPage'));
-const ForgotPasswordPage = lazy(() => import('@/features/auth/ForgotPasswordPage'));
-const AcceptInvitePage = lazy(() => import('@/features/auth/AcceptInvitePage'));
-
-// Onboarding pages
-const OnboardingConnectPage = lazy(() => import('@/features/onboarding/ConnectPage'));
-const OnboardingLearnPage = lazy(() => import('@/features/onboarding/LearnPage'));
-const OnboardingConfigurePage = lazy(() => import('@/features/onboarding/ConfigurePage'));
-const OnboardingCustomizePage = lazy(() => import('@/features/onboarding/CustomizePage'));
-const OnboardingActivatePage = lazy(() => import('@/features/onboarding/ActivatePage'));
-
-// Dashboard pages
-const DashboardPage = lazy(() => import('@/features/dashboard/DashboardPage'));
-const AgentsPage = lazy(() => import('@/features/agents/AgentsPage'));
-const AgentNewPage = lazy(() => import('@/features/agents/AgentNewPage'));
-const AgentDetailPage = lazy(() => import('@/features/agents/AgentDetailPage'));
-const CallsPage = lazy(() => import('@/features/calls/CallsPage'));
-const CallDetailPage = lazy(() => import('@/features/calls/CallDetailPage'));
-const KnowledgeBasePage = lazy(() => import('@/features/knowledge-base/KnowledgeBasePage'));
-const TeamPage = lazy(() => import('@/features/team/TeamPage'));
-const SettingsPage = lazy(() => import('@/features/settings/SettingsPage'));
+// (All page components are lazy-loaded inline via lazy_page() at route definition time)
 
 export const router = createBrowserRouter([
-  // ── Root redirect ──────────────────────────────────────────────────
+  // ── Public marketing site (no auth required) ───────────────────────
+  // PublicLayout renders sticky nav + footer; pages render via <Outlet />
   {
-    path: '/',
-    element: <Navigate to="/dashboard" replace />,
+    element: <PublicLayout />,
+    children: [
+      { path: '/', element: lazy_page(() => import('@/features/public/HomePage')) },
+      { path: '/services', element: lazy_page(() => import('@/features/public/ServicesPage')) },
+      { path: '/industries', element: lazy_page(() => import('@/features/public/IndustriesPage')) },
+      { path: '/why-us', element: lazy_page(() => import('@/features/public/WhyUsPage')) },
+      { path: '/pricing', element: lazy_page(() => import('@/features/public/PricingPage')) },
+      { path: '/blog', element: lazy_page(() => import('@/features/public/BlogPage')) },
+      { path: '/contact', element: lazy_page(() => import('@/features/public/ContactPage')) },
+    ],
   },
 
-  // ── Public / Guest routes ──────────────────────────────────────────
+  // ── Auth / Guest routes ────────────────────────────────────────────
   {
     element: <GuestGuard><AuthLayout /></GuestGuard>,
     children: [
@@ -78,6 +66,7 @@ export const router = createBrowserRouter([
       { path: '/onboarding', element: <Navigate to="/onboarding/connect" replace /> },
       { path: '/onboarding/connect', element: lazy_page(() => import('@/features/onboarding/ConnectPage')) },
       { path: '/onboarding/learn', element: lazy_page(() => import('@/features/onboarding/LearnPage')) },
+      { path: '/onboarding/crawling', element: lazy_page(() => import('@/features/onboarding/CrawlLoadingPage')) },
       { path: '/onboarding/configure', element: lazy_page(() => import('@/features/onboarding/ConfigurePage')) },
       { path: '/onboarding/customize', element: lazy_page(() => import('@/features/onboarding/CustomizePage')) },
       { path: '/onboarding/activate', element: lazy_page(() => import('@/features/onboarding/ActivatePage')) },

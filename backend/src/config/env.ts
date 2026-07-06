@@ -34,6 +34,7 @@ const envSchema = z.object({
 
   // ── Vapi ─────────────────────────────────────────────────────────────
   VAPI_API_KEY: z.string().optional(),
+  VAPI_PUBLIC_KEY: z.string().optional(),   // from Vapi dashboard → Account → API Keys → Public
   VAPI_WEBHOOK_SECRET: z.string().optional(),
 
   // ── Exotel ───────────────────────────────────────────────────────────

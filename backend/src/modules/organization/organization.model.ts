@@ -1,6 +1,8 @@
 import mongoose, { Schema, Document } from 'mongoose';
 
 // ─── Organization ──────────────────────────────────────────────────────────
+export type CrawlStatus = 'idle' | 'pending' | 'processing' | 'completed' | 'failed';
+
 export interface IOrganization extends Document {
   _id: mongoose.Types.ObjectId;
   name: string;
@@ -9,7 +11,10 @@ export interface IOrganization extends Document {
   timezone: string;
   industry: string;
   hasWebsite: boolean;
+  crawlEnabled: boolean;
   websiteUrl?: string;
+  crawlStatus: CrawlStatus;
+  crawlError?: string;
   onboardingStatus:
     | 'REGISTRATION'
     | 'ORG_CREATION'
@@ -17,6 +22,7 @@ export interface IOrganization extends Document {
     | 'BUSINESS_CONFIG'
     | 'VOICE_SETUP'
     | 'COMPLETED';
+  agentName?: string;
   businessDescription?: string;
   services: string[];
   faqs: Array<{ question: string; answer: string }>;
@@ -25,6 +31,8 @@ export interface IOrganization extends Document {
   locations: string[];
   supportedLanguages: string[];
   businessHours: { start: string; end: string };
+  vapiAssistantId?: string;
+  vapiPhoneNumberId?: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -44,12 +52,20 @@ const OrganizationSchema = new Schema<IOrganization>(
     timezone: { type: String, default: 'Asia/Kolkata' },
     industry: { type: String, required: true, default: 'General' },
     hasWebsite: { type: Boolean, default: false },
+    crawlEnabled: { type: Boolean, default: false },
     websiteUrl: { type: String, trim: true },
+    crawlStatus: {
+      type: String,
+      enum: ['idle', 'pending', 'processing', 'completed', 'failed'],
+      default: 'idle',
+    },
+    crawlError: { type: String },
     onboardingStatus: {
       type: String,
       enum: ['REGISTRATION', 'ORG_CREATION', 'WEBSITE_CRAWL', 'BUSINESS_CONFIG', 'VOICE_SETUP', 'COMPLETED'],
       default: 'ORG_CREATION',
     },
+    agentName: { type: String, trim: true },
     businessDescription: { type: String },
     services: [{ type: String }],
     faqs: [
@@ -69,6 +85,14 @@ const OrganizationSchema = new Schema<IOrganization>(
       start: { type: String, default: '09:00' },
       end: { type: String, default: '17:00' },
     },
+    vapiAssistantId: { type: String, index: true },
+    /**
+     * Vapi phone number ID (UUID from Vapi dashboard → Phone Numbers).
+     * Used to route inbound calls: Vapi sends assistant-request with this ID
+     * and we look up the org to check business hours / return assistant config.
+     * Set by founder via Settings → Phone Number Setup.
+     */
+    vapiPhoneNumberId: { type: String, index: true, sparse: true },
   },
   { timestamps: true }
 );

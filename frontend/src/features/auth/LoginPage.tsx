@@ -35,14 +35,22 @@ export default function LoginPage() {
       await login(values.email, values.password);
     } catch (err) {
       const axiosErr = err as AxiosError<{ message?: string; code?: string }>;
-      const code = axiosErr.response?.data?.code;
+      // Network error — server unreachable (ERR_CONNECTION_REFUSED, timeout, etc.)
+      if (!axiosErr.response) {
+        setServerError('Unable to connect to the server. Please try again in a moment.');
+        return;
+      }
+
+      const code = axiosErr.response.data?.code;
 
       if (code === 'EMAIL_NOT_VERIFIED') {
         setServerError('Please verify your email before signing in. Check your inbox.');
       } else if (code === 'ACCOUNT_SUSPENDED') {
         setServerError('Your account has been suspended. Contact support.');
+      } else if (axiosErr.response.status === 401) {
+        setServerError('Invalid email or password.');
       } else {
-        setServerError(axiosErr.response?.data?.message ?? 'Invalid email or password.');
+        setServerError(axiosErr.response.data?.message ?? 'Something went wrong. Please try again.');
       }
     }
   }

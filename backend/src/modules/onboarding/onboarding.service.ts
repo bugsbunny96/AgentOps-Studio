@@ -7,6 +7,8 @@ import {
 } from '../organization/organization.model';
 import { Conflict, NotFound } from '../../middleware/errorHandler';
 import type { CreateOrgDto, UpdateOrgDto } from './onboarding.schema';
+import { crawlQueue } from '../../jobs/crawl.queue';
+import type { CrawlJobName } from '../../jobs/crawl.queue';
 
 // ─── Slug generation ───────────────────────────────────────────────────────
 
@@ -137,16 +139,20 @@ export async function updateOrgStep(userId: string, dto: UpdateOrgDto) {
 
   if (dto.step === 'learn') {
     updates.hasWebsite = dto.hasWebsite;
+    updates.crawlEnabled = dto.crawlEnabled ?? false;
     if (dto.websiteUrl) updates.websiteUrl = dto.websiteUrl;
+    // Reset crawl state on each learn-step save
+    updates.crawlStatus = dto.crawlEnabled ? 'pending' : 'idle';
+    updates.crawlError = undefined;
     updates.onboardingStatus = 'WEBSITE_CRAWL';
   } else if (dto.step === 'configure') {
-    if (dto.businessDescription !== undefined) {
-      updates.businessDescription = dto.businessDescription;
-    }
-    if (dto.services !== undefined) updates.services = dto.services;
-    if (dto.businessHours !== undefined) updates.businessHours = dto.businessHours;
-    if (dto.contactDetails !== undefined) updates.contactDetails = dto.contactDetails;
-    if (dto.locations !== undefined) updates.locations = dto.locations;
+    if (dto.agentName !== undefined)           updates.agentName = dto.agentName || undefined;
+    if (dto.businessDescription !== undefined) updates.businessDescription = dto.businessDescription;
+    if (dto.services !== undefined)            updates.services = dto.services;
+    if (dto.businessHours !== undefined)       updates.businessHours = dto.businessHours;
+    if (dto.contactDetails !== undefined)      updates.contactDetails = dto.contactDetails;
+    if (dto.locations !== undefined)           updates.locations = dto.locations;
+    if (dto.faqs !== undefined)                updates.faqs = dto.faqs;
     updates.onboardingStatus = 'BUSINESS_CONFIG';
   } else if (dto.step === 'customize') {
     updates.supportedLanguages = dto.supportedLanguages;
@@ -160,7 +166,60 @@ export async function updateOrgStep(userId: string, dto: UpdateOrgDto) {
     { new: true },
   );
 
+  // Enqueue crawl job AFTER persisting the URL — fire and forget
+  if (dto.step === 'learn' && dto.crawlEnabled && dto.websiteUrl) {
+    const jobName: CrawlJobName = 'crawl';
+    await crawlQueue.add(
+      jobName,
+      { orgId: orgId.toString(), websiteUrl: dto.websiteUrl },
+      { jobId: `crawl-${orgId.toString()}` },   // dedup: one active job per org
+    );
+  }
+
   return { organization: updated!.toJSON() };
+}
+
+// ─── Get Crawl Status ─────────────────────────────────────────────────────────
+
+/**
+ * Returns crawlStatus + full organization document.
+ * Polled by the frontend CrawlLoadingPage every 2 seconds.
+ */
+export async function getCrawlStatus(userId: string) {
+  const membership = await MembershipModel.findOne({ userId, role: 'Owner' }).populate<{
+    organizationId: IOrganization;
+  }>('organizationId');
+
+  if (!membership) {
+    throw NotFound('Organization');
+  }
+
+  const org = membership.organizationId as IOrganization;
+  return {
+    crawlStatus: org.crawlStatus ?? 'idle',
+    crawlError: org.crawlError,
+    organization: org.toJSON(),
+  };
+}
+
+// ─── Get Full Org for Onboarding (data hydration on refresh) ─────────────
+
+/**
+ * Returns the full Organization document for the authenticated Owner.
+ * Called by OnboardingLayout on mount so form fields can be pre-populated
+ * even after a page refresh (when Redux only has the lean /auth/me shape).
+ */
+export async function getOrgForOnboarding(userId: string) {
+  const membership = await MembershipModel.findOne({ userId, role: 'Owner' }).populate<{
+    organizationId: IOrganization;
+  }>('organizationId');
+
+  if (!membership) {
+    throw NotFound('Organization');
+  }
+
+  const org = membership.organizationId as IOrganization;
+  return { organization: org.toJSON() };
 }
 
 // ─── Complete Onboarding (Step 5) ─────────────────────────────────────────

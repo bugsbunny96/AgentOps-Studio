@@ -4,7 +4,7 @@ import { useAppDispatch, useAppSelector } from '@/store';
 import { setCredentials, clearCredentials, setAuthLoading } from '@/store/slices/authSlice';
 import { setCurrentOrg, setAvailableOrgs, clearCurrentOrg } from '@/store/slices/orgSlice';
 import { api } from '@/utils/api';
-import type { Organization, OnboardingStatus, UserRole } from '@/types';
+import type { Organization, OnboardingStatus, UserRole, CrawlStatus } from '@/types';
 
 // ─── Backend API response shapes ───────────────────────────────────────────
 interface AuthOrg {
@@ -45,10 +45,25 @@ interface RawOrg {
   timezone: string;
   industry: string;
   onboardingStatus: string;
+  // Step 2
   hasWebsite: boolean;
+  crawlEnabled: boolean;
   websiteUrl?: string;
-  supportedLanguages: string[];
+  crawlStatus?: CrawlStatus;
+  crawlError?: string;
+  // Step 3
+  agentName?: string;
+  businessDescription?: string;
+  services?: string[];
+  faqs?: Array<{ question: string; answer: string }>;
   businessHours: { start: string; end: string };
+  contactDetails?: { email?: string; phone?: string };
+  locations?: string[];
+  // Step 4
+  supportedLanguages: string[];
+  fallbackNumber?: string;
+  // Step 5
+  vapiAssistantId?: string;
   createdAt: string;
 }
 
@@ -59,14 +74,16 @@ export interface CreateOrgInput {
 }
 
 export type UpdateOrgInput =
-  | { step: 'learn'; hasWebsite: boolean; websiteUrl?: string }
+  | { step: 'learn'; hasWebsite: boolean; crawlEnabled: boolean; websiteUrl?: string }
   | {
       step: 'configure';
+      agentName?: string;
       businessDescription?: string;
       services?: string[];
       businessHours?: { start: string; end: string };
       contactDetails?: { email?: string; phone?: string };
       locations?: string[];
+      faqs?: Array<{ question: string; answer: string }>;
     }
   | { step: 'customize'; supportedLanguages: string[]; fallbackNumber?: string };
 
@@ -79,10 +96,25 @@ function mapRawOrg(raw: RawOrg): Organization {
     timezone: raw.timezone ?? 'Asia/Kolkata',
     industry: raw.industry,
     onboardingStatus: raw.onboardingStatus as OnboardingStatus,
+    // Step 2
     hasWebsite: raw.hasWebsite ?? false,
+    crawlEnabled: raw.crawlEnabled ?? false,
     websiteUrl: raw.websiteUrl,
-    supportedLanguages: raw.supportedLanguages ?? ['en-US'],
+    crawlStatus: raw.crawlStatus ?? 'idle',
+    crawlError: raw.crawlError,
+    // Step 3
+    agentName: raw.agentName,
+    businessDescription: raw.businessDescription,
+    services: raw.services ?? [],
+    faqs: raw.faqs ?? [],
     businessHours: raw.businessHours ?? { start: '09:00', end: '17:00' },
+    contactDetails: raw.contactDetails,
+    locations: raw.locations ?? [],
+    // Step 4
+    supportedLanguages: raw.supportedLanguages ?? ['en-US'],
+    fallbackNumber: raw.fallbackNumber,
+    // Step 5
+    vapiAssistantId: raw.vapiAssistantId,
     createdAt: raw.createdAt,
   };
 }
@@ -219,6 +251,75 @@ export function useAuth() {
   );
 
   /**
+   * Fetch full org data from GET /onboarding/org and hydrate Redux.
+   * Called by OnboardingLayout on mount so form fields can be pre-populated
+   * even after a page refresh (auth/me only returns lean org shape).
+   * Safe to call even if org doesn't exist yet (returns null on 404).
+   */
+  const fetchCurrentOrg = useCallback(async () => {
+    try {
+      const res = await api.get<{ success: boolean; data: { organization: RawOrg } }>(
+        '/onboarding/org',
+      );
+      const fullOrg = mapRawOrg(res.data.data.organization);
+      dispatch(setAvailableOrgs([fullOrg]));
+      dispatch(setCurrentOrg({ org: fullOrg, role: currentRole ?? 'Owner' }));
+      return fullOrg;
+    } catch {
+      // No org yet (new user on Step 1) — silently ignore
+      return null;
+    }
+  }, [dispatch, currentRole]);
+
+  /**
+   * Poll crawl progress from GET /onboarding/crawl-status.
+   * Called every 2 seconds by CrawlLoadingPage. Returns the raw response data.
+   * Also refreshes Redux currentOrg so ConfigurePage gets populated data on completion.
+   */
+  const getCrawlStatus = useCallback(async () => {
+    const res = await api.get<{
+      success: boolean;
+      data: { crawlStatus: CrawlStatus; crawlError?: string; organization: RawOrg };
+    }>('/onboarding/crawl-status');
+
+    const { crawlStatus, crawlError, organization } = res.data.data;
+
+    // Keep Redux org hydrated so ConfigurePage auto-populates when crawl completes
+    const updatedOrg = mapRawOrg(organization);
+    dispatch(setAvailableOrgs([updatedOrg]));
+    dispatch(setCurrentOrg({ org: updatedOrg, role: currentRole ?? 'Owner' }));
+
+    return { crawlStatus, crawlError };
+  }, [dispatch, currentRole]);
+
+  /**
+   * Provision (or return cached) Vapi assistant for the current org.
+   * Called from ActivatePage on mount — idempotent.
+   * Returns { vapiPublicKey, vapiAssistantId, agent }.
+   */
+  const provisionAgent = useCallback(async () => {
+    const res = await api.post<{
+      success: boolean;
+      data: {
+        agent: { id: string; name: string; systemPrompt: string; vapiAssistantId: string };
+        vapiAssistantId: string;
+        vapiPublicKey: string | null;
+      };
+    }>('/agents/provision');
+
+    const { vapiAssistantId } = res.data.data;
+
+    // Patch Redux org with vapiAssistantId so it survives React re-renders
+    if (currentOrg) {
+      const updated = { ...currentOrg, vapiAssistantId };
+      dispatch(setAvailableOrgs([updated]));
+      dispatch(setCurrentOrg({ org: updated, role: currentRole ?? 'Owner' }));
+    }
+
+    return res.data.data;
+  }, [dispatch, currentOrg, currentRole]);
+
+  /**
    * Step 5: complete onboarding.
    * Sets onboardingStatus = COMPLETED in DB and Redux, then navigates to /dashboard.
    * OrgGuard will now allow access to the dashboard.
@@ -243,7 +344,10 @@ export function useAuth() {
     login,
     logout,
     createOrg,
+    fetchCurrentOrg,
     updateOnboardingStep,
+    getCrawlStatus,
+    provisionAgent,
     completeOnboarding,
   };
 }

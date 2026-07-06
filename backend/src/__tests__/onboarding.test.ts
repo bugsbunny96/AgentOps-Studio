@@ -234,37 +234,88 @@ describe('PATCH /api/v1/onboarding/org', () => {
     return { cookie, user, orgId: res.body.data.organization._id };
   }
 
-  it('AT6.8 — 200: learn step saves hasWebsite + websiteUrl, advances to WEBSITE_CRAWL', async () => {
+  it('AT6.8 — 200: Path A (crawlEnabled=true) saves hasWebsite + crawlEnabled + websiteUrl', async () => {
     const { cookie, orgId } = await createOrgViaApi();
 
     const res = await request(app)
       .patch('/api/v1/onboarding/org')
       .set('Cookie', cookie)
-      .send({ step: 'learn', hasWebsite: true, websiteUrl: 'https://acme.com' });
+      .send({ step: 'learn', hasWebsite: true, crawlEnabled: true, websiteUrl: 'https://acme.com' });
 
     expect(res.status).toBe(200);
-    expect(res.body.data.organization.hasWebsite).toBe(true);
-    expect(res.body.data.organization.websiteUrl).toBe('https://acme.com');
-    expect(res.body.data.organization.onboardingStatus).toBe('WEBSITE_CRAWL');
+    const org = res.body.data.organization;
+    expect(org.hasWebsite).toBe(true);
+    expect(org.crawlEnabled).toBe(true);
+    expect(org.websiteUrl).toBe('https://acme.com');
+    expect(org.onboardingStatus).toBe('WEBSITE_CRAWL');
 
     // Verify DB
     const dbOrg = await OrganizationModel.findById(orgId);
     expect(dbOrg!.hasWebsite).toBe(true);
+    expect(dbOrg!.crawlEnabled).toBe(true);
     expect(dbOrg!.websiteUrl).toBe('https://acme.com');
     expect(dbOrg!.onboardingStatus).toBe('WEBSITE_CRAWL');
   });
 
-  it('AT6.9 — 200: learn step with hasWebsite=false skips URL', async () => {
+  it('AT6.8b — 200: Path B (hasWebsite=true, crawlEnabled=false) saves without URL', async () => {
+    const { cookie, orgId } = await createOrgViaApi();
+
+    const res = await request(app)
+      .patch('/api/v1/onboarding/org')
+      .set('Cookie', cookie)
+      .send({ step: 'learn', hasWebsite: true, crawlEnabled: false });
+
+    expect(res.status).toBe(200);
+    const org = res.body.data.organization;
+    expect(org.hasWebsite).toBe(true);
+    expect(org.crawlEnabled).toBe(false);
+    expect(org.onboardingStatus).toBe('WEBSITE_CRAWL');
+
+    const dbOrg = await OrganizationModel.findById(orgId);
+    expect(dbOrg!.crawlEnabled).toBe(false);
+  });
+
+  it('AT6.8c — 400: crawlEnabled=true without websiteUrl → VALIDATION_ERROR', async () => {
     const { cookie } = await createOrgViaApi();
 
     const res = await request(app)
       .patch('/api/v1/onboarding/org')
       .set('Cookie', cookie)
-      .send({ step: 'learn', hasWebsite: false });
+      .send({ step: 'learn', hasWebsite: true, crawlEnabled: true });
+
+    expect(res.status).toBe(400);
+    expect(res.body.code).toBe('VALIDATION_ERROR');
+  });
+
+  it('AT6.8d — 400: http:// URL rejected (HTTPS required) → VALIDATION_ERROR', async () => {
+    const { cookie } = await createOrgViaApi();
+
+    const res = await request(app)
+      .patch('/api/v1/onboarding/org')
+      .set('Cookie', cookie)
+      .send({ step: 'learn', hasWebsite: true, crawlEnabled: true, websiteUrl: 'http://acme.com' });
+
+    expect(res.status).toBe(400);
+    expect(res.body.code).toBe('VALIDATION_ERROR');
+  });
+
+  it('AT6.9 — 200: Path C (hasWebsite=false) saves without URL or crawl', async () => {
+    const { cookie, orgId } = await createOrgViaApi();
+
+    const res = await request(app)
+      .patch('/api/v1/onboarding/org')
+      .set('Cookie', cookie)
+      .send({ step: 'learn', hasWebsite: false, crawlEnabled: false });
 
     expect(res.status).toBe(200);
-    expect(res.body.data.organization.hasWebsite).toBe(false);
-    expect(res.body.data.organization.onboardingStatus).toBe('WEBSITE_CRAWL');
+    const org = res.body.data.organization;
+    expect(org.hasWebsite).toBe(false);
+    expect(org.crawlEnabled).toBe(false);
+    expect(org.onboardingStatus).toBe('WEBSITE_CRAWL');
+
+    const dbOrg = await OrganizationModel.findById(orgId);
+    expect(dbOrg!.hasWebsite).toBe(false);
+    expect(dbOrg!.crawlEnabled).toBe(false);
   });
 
   it('AT6.10 — 200: configure step saves business config, advances to BUSINESS_CONFIG', async () => {

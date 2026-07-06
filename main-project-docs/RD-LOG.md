@@ -6,6 +6,43 @@
 
 ---
 
+## v1.3.0 — 2026-07-04 — Session: Business Hours Routing Webhook (Session 2)
+
+### 🟢 Engineering — Webhook Architecture
+
+**[2026-07-04 | Engineering R&D | Architecture Note]**
+Type: Research Note
+Trigger: post-task-review
+Finding: Vapi's `assistant-request` event requires a synchronous response within ~5 s. All other Vapi webhook events (call-started, end-of-call-report) can be processed fire-and-forget. Our webhook controller now implements a two-path pattern: peek at `body.message.type` before sending HTTP 200 — if `assistant-request`, await response synchronously; otherwise, send 200 immediately and process async.
+Opportunity: This pattern should be documented as the standard for any future synchronous webhook integrations (e.g., payment callbacks, Exotel DTMF routing).
+Proposed artifact: ADR-003 (Draft) — Vapi Webhook Two-Response Pattern
+Affects: webhook.controller.ts, webhook.service.ts
+Founder decision needed: No (implementation complete, logged)
+
+### 🟠 AI R&D — Business Hours Gate
+
+**[2026-07-04 | AI R&D | Routing Design]**
+Type: Research Note
+Trigger: post-task-review
+Finding: When an org has no vapiPhoneNumberId linked yet, the assistant-request handler returns a generic error message rather than a valid assistant config. This means test calls from Vapi dashboard (which use assistantId mode, not phoneNumberId mode) bypass the business-hours gate entirely. This is correct behavior for test calls but must be documented clearly.
+Opportunity: Add a "Test Call" mode flag to the Vapi payload metadata so we can distinguish test vs. live calls in analytics.
+Proposed artifact: BL-012 — Test Call Mode Detection
+Affects: webhook.service.ts, agent.service.ts
+Founder decision needed: No (backlog candidate logged)
+
+### 🟡 Growth R&D — Phone Number Setup UX
+
+**[2026-07-04 | Growth R&D | UX / Activation]**
+Type: Research Note
+Trigger: post-task-review
+Finding: "Phone Number Setup" is now in Settings — a low-traffic page. Most founders will miss it during onboarding. Competitor review: Bland.ai and Retell show phone number linking as a prominent step in their "Go Live" flow, not buried in settings.
+Opportunity: Add Phone Number linking as an explicit step in the onboarding wizard's Activate page, alongside the test call widget. This increases the chance the founder completes the end-to-end setup in a single flow.
+Proposed artifact: RFC-005 (Draft) — Move Phone Number Setup to Activate Page
+Affects: Roadmap, ActivatePage.tsx
+Founder decision needed: Yes — promote to sprint (T1) if approved
+
+---
+
 ## v1.0.0 — 2026-06-26 — Session: Framework Setup
 
 ---
@@ -293,6 +330,92 @@ Consequences:
 - MRR: Sum of active subscription amounts. Target $5k in 30 days post-launch.
 - Monthly Churn: % of paying orgs cancelling per month. Target <5%. Alert ≥2 churns in any 7-day window.
 - Action: Implement this as a live artifact dashboard when MCP + data tools are connected (L5).
+
+---
+
+## v1.3.0 — 2026-06-26 — Session: Onboarding Design Review (Steps 1 + 2)
+
+---
+
+### 🔵 Product — Step 1 (Connect) Design Decisions [LOCKED]
+
+**[2026-06-26] | 🔵 Product | Design | Timezone must be visible and editable (not hidden)**
+- Finding: Hiding timezone silently breaks business hours for VPN users and travelers. Auto-detect is correct as default, but user must be able to confirm and change it.
+- Resolution: Timezone shown as collapsed confirm chip with `ChevronDown` toggle → expands to curated 25-timezone IANA select.
+- Files changed: `ConnectPage.tsx`
+
+**[2026-06-26] | 🔵 Product | Design | Heading frames the agent, not the org**
+- Decision: Heading changed from "Connect your business" → "Let's set up your AI receptionist." Sub-heading: "First, tell us about your business."
+- Rationale: Users are here to get an AI agent, not to "connect" an abstract business entity. Framing around the agent creates purpose and motivation.
+- Files changed: `ConnectPage.tsx`
+
+**[2026-06-26] | 🔵 Product | Design | Wizard personalization from Step 2**
+- Decision: Layout sub-header shows "Setting up your AI agent for [Business Name]" from Step 2 onward (once the org exists in Redux). Step 1 shows no personalization.
+- Files changed: `OnboardingLayout.tsx`
+
+**[2026-06-26] | 🔵 Product | Design | Industry hint text reduces drop-off**
+- Decision: Added hint below industry dropdown: "This helps your AI use the right language and terminology for your sector."
+- Rationale: Unexplained required fields cause abandonment. The hint explains the value, making the choice feel purposeful.
+
+**[2026-06-26] | 🔵 Product | Design | CTA changed to "Create my workspace →"**
+- Previous: "Continue →" — generic, no weight.
+- New: "Create my workspace →" — confirms the action being taken.
+
+### 🔵 Product — Step 2 (Learn) Design Decisions [LOCKED]
+
+**[2026-06-26] | 🔵 Product | Design | Yes/No toggle replaced with 3-path card selector**
+- Finding: Original binary toggle collapsed Path B (has website, doesn't want to crawl) into Path C (no website), losing information and sending Path B users to Configure with a blank slate and no context.
+- Decision: Three explicit cards: "Yes, scan my website" (Path A) / "I'll add content manually" (Path B) / "No website yet" (Path C).
+- Impact: Path B users get clear Configure prompts; Path C users get contextual "describe your business" prompts; no ambiguity.
+- Files changed: `LearnPage.tsx`, `onboarding.schema.ts`, `organization.model.ts`, `onboarding.service.ts`, `useAuth.ts`, `types/index.ts`
+
+**[2026-06-26] | 🔵 Product | Design | HTTPS-only URL validation**
+- Decision: Website URL must start with `https://`. `http://` URLs are rejected with error "Website URL must use HTTPS".
+- Rationale: Firecrawl and most crawlers fail silently on http:// URLs (redirects, mixed-content blocks, server restrictions). Enforcing HTTPS upfront prevents users from submitting a URL and getting an empty KB with no error.
+- Implementation: Zod `.refine(url => url.startsWith('https://'))` in `LearnStepSchema`; `superRefine` cross-validates `crawlEnabled=true` requires `websiteUrl`.
+
+**[2026-06-26] | 🔵 Product | Design | "Skip" button removed; Path C is the explicit skip**
+- Previous: "Skip" button sent `{ hasWebsite: false }` silently.
+- New: Path C card "No website yet" achieves the same outcome but makes it an intentional, visible choice. Users understand what they're skipping and why.
+
+**[2026-06-26] | 🔵 Product | Design | Crawl queued at Step 2 submit, not at Activate**
+- Decision: BullMQ crawl job fires immediately when user submits Path A. `KnowledgeBase` record created with `status: 'crawling'`.
+- Rationale: Crawl takes 30–120s. If queued at Activate, users sit watching a spinner during the most important moment. Queuing at Step 2 means the crawl is likely complete before they reach Step 5.
+- Status: L2.F5 scope (KB module). Placeholder noted in ActivatePage and Step 3 Configure.
+
+### 🟢 Engineering — Schema Changes
+
+**[2026-06-26] | 🟢 Engineering | Schema | Organization.crawlEnabled added**
+- New field: `crawlEnabled: Boolean, default: false` on `OrganizationModel` and `IOrganization` interface.
+- Frontend: Added to `Organization` interface in `types/index.ts`; `RawOrg` in `useAuth.ts`; `mapRawOrg()` default = false.
+- Backend: `onboarding.schema.ts` LearnStepSchema; `onboarding.service.ts` learn branch.
+
+**[2026-06-26] | 🟢 Engineering | Testing | New test cases AT6.8b, AT6.8c, AT6.8d added**
+- AT6.8: Updated to Path A (crawlEnabled=true + URL) — verifies `crawlEnabled: true` in DB
+- AT6.8b: Path B (hasWebsite=true, crawlEnabled=false) — verifies no crawl, no URL required
+- AT6.8c: crawlEnabled=true + no URL → 400 VALIDATION_ERROR (superRefine)
+- AT6.8d: http:// URL → 400 VALIDATION_ERROR (HTTPS refine)
+- AT6.9: Updated to Path C (hasWebsite=false, crawlEnabled=false) — explicit
+
+### 🟠 AI — Crawl Integration Notes
+
+**[2026-06-26] | 🟠 AI | Architecture | Crawl-to-Configure auto-population pipeline (L2.F5 scope)**
+- After Path A crawl completes, pipeline extracts:
+  - `businessDescription` ← About/Home page first 2 paragraphs
+  - `services[]` ← service/product headings
+  - `contactDetails.email` ← mailto links
+  - `contactDetails.phone` ← tel links
+  - `businessHours` ← `schema.org/OpeningHoursSpecification` structured data if present
+- These become editable pre-populated suggestions in Step 3 (Configure).
+- Also: run GPT-4o industry classification on crawl text; surface soft prompt if it differs from Step 1 selection.
+- Action: Design KB pipeline and Configure pre-population API in L2.F5.
+
+### 🟣 Customer — Path Distribution Hypothesis
+
+**[2026-06-26] | 🟣 Customer | Analytics | Expected path distribution for Indian SMB ICP**
+- Hypothesis: Path A ~60%, Path B ~15%, Path C ~25%.
+- India has high mobile-first usage; many SMBs have a website but it may be low-quality or inaccessible. Path B uptake may be higher than expected.
+- Action: Track `Organization.crawlEnabled` as a segment split in analytics from Day 1. If Path A < 50%, investigate crawl failure rate and URL validation UX.
 
 ---
 
