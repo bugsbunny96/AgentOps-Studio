@@ -1,0 +1,72 @@
+version: '3.9'
+
+# Local development stack
+# Usage: docker compose up -d
+
+services:
+  # ── MongoDB ────────────────────────────────────────────────────────
+  mongo:
+    image: mongo:7.0
+    container_name: agentops_mongo
+    restart: unless-stopped
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD: secret
+      MONGO_INITDB_DATABASE: agentops_studio
+    ports:
+      - '27017:27017'
+    volumes:
+      - mongo_data:/data/db
+    healthcheck:
+      test: ['CMD', 'mongosh', '--quiet', '--eval', 'db.runCommand("ping").ok']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+  # ── Redis ──────────────────────────────────────────────────────────
+  redis:
+    image: redis:7.2-alpine
+    container_name: agentops_redis
+    restart: unless-stopped
+    command: redis-server --requirepass secret --maxmemory 256mb --maxmemory-policy allkeys-lru
+    ports:
+      - '6379:6379'
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ['CMD', 'redis-cli', '-a', 'secret', 'ping']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ── Backend API ────────────────────────────────────────────────────
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+      target: builder           # dev: use builder stage (has tsx, ts-node)
+    container_name: agentops_backend
+    restart: unless-stopped
+    working_dir: /app
+    # In dev, run with hot reload via tsx watch
+    command: npx tsx watch src/index.ts
+    volumes:
+      - ./backend/src:/app/src:ro   # mount source for hot reload
+    env_file:
+      - ./backend/.env
+    environment:
+      NODE_ENV: development
+      MONGODB_URI: mongodb://root:secret@mongo:27017/agentops_studio?authSource=admin
+      REDIS_URL: redis://:secret@redis:6379
+    ports:
+      - '3001:3001'
+    depends_on:
+      mongo:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+volumes:
+  mongo_data:
+  redis_data:

@@ -29,6 +29,18 @@ Access permissions are enforced at the organization level. A user can belong to 
 2.  **Admin**: The operation supervisor. Can configure agents, prompts, and team memberships, but cannot modify corporate billing or delete the tenant instance.
 3.  **Member**: Read-only team participant. Allowed to review dashboards, view recordings/transcripts, and check logs. Cannot mutate configuration parameters.
 
+### Sidebar Access Principles
+*   Sidebar visibility is derived from the intersection of role permissions, organization status, subscription entitlements, and enabled feature flags.
+*   Menu groups may remain visible while individual items are hidden when a user lacks access.
+*   If a feature is disabled at the organization level, the related menu item must not render even if the role normally allows access.
+*   Support and documentation routes remain broadly available, but support-ticket submission and billing actions still enforce role checks.
+
+### Onboarding Access Principles
+*   Users must complete email verification before accessing any onboarding route.
+*   Onboarding routes must only be available within the active tenant context that owns the in-progress session.
+*   Save/resume endpoints must verify ownership of the onboarding session and reject cross-user access.
+*   Activation endpoints must enforce step completion order and block partially completed state from going live.
+
 ### Permissions Matrix
 
 | Feature Module | Endpoint / Action | Owner | Admin | Member |
@@ -64,6 +76,12 @@ Every HTTP request targeting organization resources must contain the tenant cont
 3.  **Onboarding State Guardrail**:
     *   If the active organization has an `onboardingStatus` other than `COMPLETED`, the middleware blocks access to standard operational pages (e.g. Call Logs, Team Invitations, Analytics) with an `HTTP 403 Forbidden` response.
     *   Only endpoints under `/api/v1/onboarding/*` are accessible until onboarding is completed.
+4.  **Navigation Configuration Guardrail**:
+    *   Sidebar payload requests validate the active organization and return only the menu tree allowed for the user's role and enabled feature flags.
+    *   Attempts to request another organization's navigation config are denied with `HTTP 403 Forbidden`.
+5.  **Onboarding Session Guardrail**:
+    *   Save-progress and resume requests validate the authenticated user, active organization, and matching onboarding session record.
+    *   Activation cannot proceed unless the backend confirms the session belongs to the current user and organization.
 
 ### Database Isolation Guardrail
 To ensure developers never execute queries without tenant restrictions, the database layer wraps Mongoose models. Every query is programmatically appended with the `organizationId` filter.
@@ -139,3 +157,5 @@ The system triggers audit logging for the following operations:
 7.  `WEBSITE_CRAWL_TRIGGERED` (capturing crawled URL details)
 8.  `KNOWLEDGE_BASE_DOCUMENT_MUTATED` (capturing Markdown changes)
 9.  `ONBOARDING_COMPLETED` (signals organization activation)
+10. `NAVIGATION_VIEWED` / `NAVIGATION_ITEM_SELECTED` / `SIDEBAR_COLLAPSED`
+11. `ONBOARDING_STEP_SAVED` / `ONBOARDING_STEP_RESUMED` / `ONBOARDING_COMPLETED`

@@ -9,7 +9,7 @@ The AgentOps Studio MVP is structured as a 5-week execution strategy, grouping f
 ```text
 Phase 1: Foundation     Phase 2: Onboarding     Phase 3: Voice AI       Phase 4: Intelligence   Phase 5: Observability
    [ Week 1 ]              [ Week 2 ]              [ Week 3 ]              [ Week 4 ]              [ Week 5 ]
-  Repository setup        Authentication          LiveKit setup           Transcripts             Dashboard charts
+  Repository setup        Authentication          Vapi+Exotel setup       Transcripts             Dashboard charts
   DB configurations       Onboarding wizard       Voice configurations    AI summarizations       Audit logs
   Tailwind design system  Crawler & KB editor     Webhook integrations    BullMQ workflows        Production deployment
 ```
@@ -21,27 +21,32 @@ Phase 1: Foundation     Phase 2: Onboarding     Phase 3: Voice AI       Phase 4:
     *   Establish database connection configurations (MongoDB Atlas, Redis connection wrappers).
     *   Configure CI/CD pipelines (GitHub Actions building Docker containers and pushing to Vercel/AWS).
     *   Implement frontend design system tokens using TailwindCSS 4 and shadcn/ui.
+    *   Define the sidebar navigation model, route metadata, and menu access policy contract.
 *   **Deliverable**: Working SaaS Skeleton (authenticated routers and database status checks active).
 
 ### Phase 2 — Identity & Onboarding (Week 2)
-*   **Focus**: User authentication, multi-step organization onboarding wizard, website crawling, knowledge base generation, dynamic configs, and LiveKit audio sandbox testing.
+*   **Focus**: User authentication, multi-step organization onboarding wizard, website crawling, knowledge base generation, dynamic configs, and Vapi test call sandbox.
 *   **Tasks**:
     *   Implement Registration & Email Verification endpoints (FR-001, FR-004) redirecting users to `/onboarding`.
+    *   Build the guided onboarding state machine with save/resume and completion gates (A-022).
     *   Develop the 5-step Onboarding Wizard UI (stepper, forms, and step controllers).
     *   Build the website crawler and OpenAI GPT-4o HTML-to-Markdown parser (A-017).
     *   Build the Knowledge Base editor, document viewer, and manual uploader dashboard interface (A-018).
+    *   Implement the sidebar shell and responsive navigation experience (A-021).
     *   Implement dynamic business configuration forms adapting inputs to the user's selected industry (A-019).
-    *   Integrate the LiveKit WebRTC client sandbox for immediate voice agent audio testing (A-020).
+    *   Integrate the Vapi test call sandbox for immediate voice agent testing via Exotel SIP trunk (A-020).
     *   Build multi-tenant auth middleware (`validateOrganization()`) and onboarding state guards.
 *   **Deliverable**: Onboarding-Complete SaaS Core (users register, generate structured knowledge bases from websites, test their auto-provisioned voice agent, and activate their dashboard).
 
 ### Phase 3 — Voice Infrastructure (Week 3)
-*   **Focus**: Integrate real-time audio streams, voice configuration tables, and LiveKit SDK runtime hooks.
+*   **Focus**: Integrate Exotel SIP trunk, Vapi AI platform, voice configuration tables, and webhook event listeners.
 *   **Tasks**:
     *   Implement Voice Agent configuration endpoints (FR-030 - FR-035).
-    *   Integrate LiveKit Rooms API and token generation services.
-    *   Configure LiveKit Agents SDK to run conversational loops (STT Deepgram -> LLM OpenAI Realtime -> TTS ElevenLabs).
-    *   Setup LiveKit webhook authentication and event listeners (`call.started`, `call.completed`).
+    *   Configure Exotel SIP trunk to route Indian virtual/toll-free numbers to Vapi.
+    *   Integrate Vapi Server SDK to provision assistants, manage call sessions, and update configurations.
+    *   Configure Vapi conversational loop: STT Deepgram → LLM OpenAI GPT-4o → TTS ElevenLabs/Cartesia.
+    *   Implement multi-lingual support: English primary, with Vapi language detection mid-call for Hindi and Punjabi.
+    *   Setup Vapi webhook authentication and event listeners (`call.started`, `call.completed`, `transcript.completed`).
 *   **Deliverable**: Operational Voice Agent Pipeline (agents connect to incoming lines and execute system prompts).
 
 ### Phase 4 — Calls & Intelligence (Week 4)
@@ -59,7 +64,8 @@ Phase 1: Foundation     Phase 2: Onboarding     Phase 3: Voice AI       Phase 4:
 *   **Tasks**:
     *   Build dashboard analytics card metrics and aggregate trends charts using Recharts (FR-050 - FR-054).
     *   Implement immutable Security Audit Logging hooks (FR-060) across backend controllers.
-    *   Create workspace settings modules to update falling backup routes and active business hours (FR-014).
+    *   Add navigation telemetry and sidebar access logging.
+    *   Create workspace settings modules to update fallback routes and active business hours (FR-014).
     *   Perform performance checks, load audits, and launch production instances.
 *   **Deliverable**: MVP Complete (fully functional, secure, multi-tenant AI Voice Operations Platform).
 
@@ -83,12 +89,13 @@ Phase 1: Foundation     Phase 2: Onboarding     Phase 3: Voice AI       Phase 4:
 | **Multi-Tenant Data Leaks** | A tenant views transcripts or configs belonging to another organization. | Enforce `organizationId` matching in backend validation middleware and add automated database schema level query guards. |
 | **AI Operational Costs** | OpenAI Realtime API usage spikes billing budgets quickly. | Enforce maximum duration limits (e.g., auto-disconnect calls at 15 minutes) and optimize system prompts to reduce token counts. |
 | **Webhook Packet Drops** | Latency spikes cause Express webhooks to timeout, missing call logging records. | Ensure webhook receivers return a fast `HTTP 200 OK` response immediately, deferring processing to Redis/BullMQ queues. |
-| **LiveKit Room Failures** | Audio routing fails due to third-party outages. | Implement direct SIP redirect headers routing calls to secondary mobile numbers in case of platform disconnects. |
+| **Vapi Platform Failures** | Audio routing fails due to Vapi outages. | Implement Exotel fallback routing rules to redirect calls to secondary mobile numbers if Vapi SIP endpoint becomes unreachable. |
+| **Exotel SIP Configuration** | SIP trunk misconfiguration causes call drops or routing failures. | Test SIP trunk connectivity and codec negotiation in staging with Exotel support before production go-live. |
 
 ---
 
 ## 4. Dependencies
 
-*   **Vapi vs LiveKit SDK**: The project moves from Vapi (used in Missional Agents) to the LiveKit Agent SDK. Development is dependent on setting up LiveKit Cloud API access keys early in Week 3.
+*   **Vapi + Exotel Stack**: The project uses Vapi as the AI voice agent runtime and Exotel as the Indian telephony provider (SIP trunk). Exotel business verification and SIP trunk provisioning must be completed before Week 3. Vapi API keys and assistant configuration must be validated in staging before production go-live.
 *   **Resend Domain Verification**: Sending emails requires domain DNS configurations to prevent emails landing in spam folders (must be verified by the end of Week 1).
 *   **OpenAI Rate Limits**: The production system uses GPT-4o and Realtime APIs. OpenAI accounts must be pre-funded to avoid rate limiting blocks during early testing.

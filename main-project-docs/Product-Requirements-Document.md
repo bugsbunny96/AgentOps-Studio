@@ -20,6 +20,7 @@ Moving beyond basic analytics dashboards, AgentOps Studio operates as a comprehe
 *   **G3 (Call Management)**: Real-time call logging, search, filtering, transcript storage, and summary extraction.
 *   **G4 (Team Collaboration)**: Granular Role-Based Access Control (RBAC) to allow secure team collaboration.
 *   **G5 (Analytics & Insights)**: Dashboard metrics displaying call volumes, durations, agent utilization, and outcomes.
+*   **G6 (Sidebar Navigation System)**: Deliver a role-aware, tenant-aware sidebar that organizes the platform into clear functional groups and keeps primary workflows discoverable across desktop and mobile.
 
 ---
 
@@ -88,7 +89,7 @@ Step 4: Business Configuration
    → [Business Configuration Page] Collect business description, services, FAQs, business hours, contact details, locations, supported languages, and industry-specific information.
    → Form displays dynamic fields based on selected industry.
 
-Step 5: AI Voice Agent Setup & Testing (using LiveKit)
+Step 5: AI Voice Agent Setup & Testing (using Vapi + Exotel)
    → Backend generates initial voice agent configuration and links knowledge base.
    → System prompt, language settings, and voice settings are configured.
    │     → [Test Agent Widget] User starts test conversation via WebRTC.
@@ -98,6 +99,34 @@ Step 6: Dashboard Activation
    → User clicks [Complete Onboarding]
    → Backend creates organization record, assigns Owner role, creates default workspace, creates default voice agent, and attaches generated knowledge base.
    → Redirect user to [Dashboard].
+```
+
+### Flow 1A: Guided Onboarding Progression
+```text
+1. Connect
+   → Register account
+   → Verify email
+   → Create organization
+   → Initialize account and onboarding session
+
+2. Learn
+   → Scan website or upload sources
+   → Select business niche
+   → Generate knowledge base documents
+   → Capture industry-specific business details
+
+3. Configure
+   → Set language, business hours, routing rules, and base prompt
+   → Create draft agent configuration
+
+4. Customize
+   → Update branding, voice, personality, and custom instructions
+   → Review and edit knowledge base content
+
+5. Activate
+   → Run test voice call
+   → Validate readiness checks
+   → Mark organization live
 ```
 
 ### Flow 2: Team Member Invitation
@@ -120,7 +149,7 @@ Step 6: Dashboard Activation
    → Input System Prompt (defining behavioral guardrails and identity)
    → Click [Save Configuration]
    → Backend creates database representation
-   → Clicking "Activate" registers or wires the LiveKit pipeline mapping the inbound line
+   → Clicking "Activate" provisions the Vapi assistant and wires the Exotel SIP trunk mapping to the inbound Indian number
 ```
 
 ### Flow 4: Call Review & Intelligence Inspection
@@ -133,6 +162,33 @@ Step 6: Dashboard Activation
        ├── Complete line-by-line Transcript Viewer
        ├── AI-Generated Call Summary
        └── Extracted Intent Badges (e.g., Emergency, Benevolence, Donation)
+```
+
+### Flow 5: Sidebar Navigation Workflow
+```text
+[Authenticated App Shell]
+   → Sidebar renders organization-scoped navigation based on role, subscription tier, feature flags, and onboarding state
+   → User selects a section:
+       ├── Command Center
+       │     ├── Dashboard
+       │     ├── Communications
+       │     └── Analytics & Reports
+       ├── AI Management
+       │     ├── My Agents
+       │     │     ├── Live Agents
+       │     │     ├── Create Agent
+       │     │     └── Agent Templates
+       │     └── Knowledge Engine
+       ├── Administration
+       │     ├── User Management
+       │     ├── Billing & Usage
+       │     └── Advanced Settings
+       └── Support & Training
+             ├── Documentation
+             ├── Tutorials
+             └── Support Center
+   → Active route receives persistent highlight, breadcrumbs, and context-aware page title
+   → Mobile view collapses to drawer; desktop view supports icon-collapse and keyboard navigation
 ```
 
 ---
@@ -166,7 +222,7 @@ Step 6: Dashboard Activation
 *   **FR-035 (Voice Configuration)**: Voice provider selection (ElevenLabs, Cartesia) and speech parameters (speed, pitch).
 
 ### 5.5 Calls (FR-040 - FR-046)
-*   **FR-040 (Inbound Calls)**: Handle incoming WebRTC/PSTN sessions routing to the active LiveKit agent.
+*   **FR-040 (Inbound Calls)**: Handle incoming PSTN/SIP sessions routed from Exotel Indian virtual numbers through SIP trunk to the active Vapi AI agent.
 *   **FR-041 (Outbound Calls)**: Ability to trigger agent-initiated dial-out loops via backend API.
 *   **FR-042 (Recording Metadata)**: Capture start time, end time, duration, cost, termination reasons, and audio files.
 *   **FR-043 (Transcript Storage)**: Parse and store conversational turn-by-turn text blocks.
@@ -194,9 +250,78 @@ Step 6: Dashboard Activation
     *   **Document Editor**: Standard text editor to directly modify Markdown document contents.
 *   **FR-074 (KB Re-sync & Document Upload)**: Users can trigger website re-crawling ("Re-sync Website") or manually upload additional documents (.pdf, .txt, .md) to expand the knowledge base.
 *   **FR-075 (Dynamic Business Configuration)**: During onboarding, the system collects Business Description, Services, FAQs, Business Hours, Contact Details, Locations, Supported Languages, and Industry-Specific Information, rendering form inputs dynamically based on the selected Industry/Business Type.
-*   **FR-076 (LiveKit Agent Auto-Provisioning)**: The system auto-generates the initial LiveKit Voice Agent configuration (name, pre-configured system prompt based on business configuration/KB, language settings, and voice settings).
-*   **FR-077 (LiveKit WebRTC Agent Sandbox)**: Users can test the provisioned AI agent using browser WebRTC directly in the onboarding wizard, checking real-time response quality and adjusting system settings.
+*   **FR-076 (Vapi Agent Auto-Provisioning)**: The system auto-generates the initial Vapi assistant configuration (name, pre-configured system prompt based on business configuration/KB, language settings, voice settings, and multi-lingual support for English, Hindi, and Punjabi). The assistant is provisioned via the Vapi API and linked to the organization's Exotel Indian number via SIP trunk.
+*   **FR-077 (Vapi Test Call Sandbox)**: Users can initiate a Vapi test call directly from the onboarding wizard. The test call is placed to the user's registered phone number via the Exotel SIP trunk, replicating the full production call path. The sandbox displays a real-time transcript, active language indicator (English / Hindi / Punjabi), and configuration controls to adjust agent settings.
+*   **FR-077A (Multi-lingual Agent Support)**: The AI voice agent must support three languages: English (default/primary), Hindi (auto-detected when customer speaks Hindi), and Punjabi (auto-detected when customer speaks Punjabi). Language detection and switching must happen mid-conversation without call interruption.
 *   **FR-078 (Onboarding Activation)**: Completing onboarding registers the organization record, links the Owner role to the registering user, establishes the default workspace, sets up the default voice agent with the attached knowledge base, and redirects the user to the active Dashboard.
+*   **FR-079 (Onboarding Session Persistence)**: The system must persist onboarding step progress, draft payloads, and retry state so users can save and resume onboarding without losing work.
+
+### 5.8A Onboarding Lifecycle Requirements
+*   **Connect**: Registration, verification, organization creation, and initial account setup must complete before operational routes are available.
+*   **Learn**: Website analysis and knowledge base generation must produce editable documents and clear crawl failure states.
+*   **Configure**: Voice agent, AI settings, language, business hours, routing rules, and prompt configuration must be editable before activation.
+*   **Customize**: Branding, voice selection, agent personality, and custom instructions must be saved as draft changes.
+*   **Activate**: A final readiness gate must ensure validation, test success, and reviewer confirmation before go-live.
+
+### 5.9 Sidebar Navigation System (FR-080 - FR-089)
+*   **FR-080 (Navigation Shell)**: The authenticated app shell must render a persistent sidebar for all organization-scoped routes.
+*   **FR-081 (Sidebar Hierarchy)**: Sidebar groups must match the Command Center, AI Management, Administration, and Support & Training structure.
+*   **FR-082 (Role-Aware Visibility)**: Menu items must be hidden or disabled according to Owner, Admin, and Team Member permissions.
+*   **FR-083 (Organization-Aware Visibility)**: Sidebar items must reflect organization state, subscription plan, onboarding status, and enabled feature flags.
+*   **FR-084 (Expand/Collapse)**: Desktop sidebar must support expanded and collapsed states without losing route context.
+*   **FR-085 (Mobile Drawer)**: Mobile navigation must use an overlay drawer with the same route tree and active state indicators.
+*   **FR-086 (Active State)**: The current route must be visually highlighted and persist through refresh and route transitions.
+*   **FR-087 (Navigation Telemetry)**: Sidebar interactions must be tracked for product analytics and UX optimization.
+*   **FR-088 (Accessibility)**: Sidebar navigation must support keyboard navigation, ARIA labels, focus management, and screen reader announcements.
+*   **FR-089 (Configuration Source)**: Sidebar structure must be driven by backend navigation configuration and feature-flag evaluation rather than hardcoded route lists.
+
+## 7. Sidebar Module Requirements
+
+### 7.1 Sidebar Structure
+The sidebar is the primary in-app navigation control for authenticated users and must use the following structure:
+
+*   **Command Center**
+    *   Dashboard
+    *   Communications
+    *   Analytics & Reports
+*   **AI Management**
+    *   My Agents
+        *   Live Agents
+        *   Create Agent
+        *   Agent Templates
+    *   Knowledge Engine
+*   **Administration**
+    *   User Management
+    *   Billing & Usage
+    *   Advanced Settings
+*   **Support & Training**
+    *   Documentation
+    *   Tutorials
+    *   Support Center
+
+### 7.2 Functional Workflow
+*   Sidebar defaults to expanded on desktop and compact on tablet if viewport width is constrained.
+*   Sidebar collapses to a drawer on mobile and closes after route selection.
+*   Nested items expand only within the current category unless the user explicitly pins the sidebar.
+*   Active route state is shown at both parent and child levels.
+*   Role checks determine whether items are shown, disabled, or hidden.
+*   Organization-level settings can override route availability for billing, knowledge base, or support features.
+
+### 7.3 User Flow
+*   **Owner**: lands on Dashboard, can move to Communications, add agents, manage users, open billing, and adjust advanced settings.
+*   **Admin**: focuses on operations, agent management, knowledge engine, user management, and support content; billing is hidden or read-only based on plan.
+*   **Team Member**: sees command center pages, knowledge engine access if granted, and support content; administration and billing remain hidden.
+*   **Agent Manager**: navigates from Dashboard to My Agents, then to Live Agents, Create Agent, or Agent Templates for lifecycle tasks.
+*   **Knowledge Base Owner**: uses Knowledge Engine to inspect documents, resync content, and maintain organization knowledge assets.
+*   **Billing User**: moves directly to Billing & Usage and subscription controls where permitted.
+*   **Settings User**: accesses Advanced Settings for organization configuration, operational policies, and integrations.
+
+### 7.4 Acceptance Criteria
+*   Navigation structure matches the approved sidebar hierarchy across all authenticated routes.
+*   Current route is correctly highlighted after reload, deep-link access, and back-forward navigation.
+*   Unauthorized or unavailable items are hidden consistently across server-rendered data and client state.
+*   Sidebar remains usable at 320px mobile width, tablet collapse mode, and widescreen desktop.
+*   Keyboard-only navigation can open, move through, and activate every visible route.
 
 ---
 
