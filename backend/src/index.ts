@@ -3,7 +3,9 @@ import { env } from './config/env';
 import { connectDatabase, disconnectDatabase } from './config/database';
 import { redis } from './config/redis';
 import { logger } from './utils/logger';
-import { startCrawlWorker } from './jobs/crawl.worker';
+import { startCrawlWorker }      from './jobs/crawl.worker';
+import { startKbWorker }         from './jobs/kb.worker';
+import { startCallReportWorker } from './jobs/callReport.worker';
 import http from 'http';
 
 let server: http.Server;
@@ -21,6 +23,8 @@ async function bootstrap(): Promise<void> {
 
   // 3. Start background workers
   startCrawlWorker();
+  startKbWorker();
+  startCallReportWorker();
 
   // 4. Start HTTP server
   server = app.listen(env.PORT, () => {

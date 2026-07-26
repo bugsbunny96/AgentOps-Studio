@@ -41,6 +41,12 @@ const envSchema = z.object({
   EXOTEL_API_KEY: z.string().optional(),
   EXOTEL_API_TOKEN: z.string().optional(),
   EXOTEL_SID: z.string().optional(),
+
+  // ── Stripe ───────────────────────────────────────────────────────────
+  STRIPE_SECRET_KEY:      z.string().optional(), // sk_live_... or sk_test_...
+  STRIPE_WEBHOOK_SECRET:  z.string().optional(), // whsec_...
+  STRIPE_STARTER_PRICE_ID: z.string().optional(), // price_... for Starter plan
+  STRIPE_GROWTH_PRICE_ID:  z.string().optional(), // price_... for Growth plan
 });
 
 const parsed = envSchema.safeParse(process.env);

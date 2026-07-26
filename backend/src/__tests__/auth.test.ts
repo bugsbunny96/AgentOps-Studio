@@ -32,8 +32,12 @@ vi.mock('@/config/redis', () => ({
 }));
 
 // ── Email mocks (capture raw tokens for reset-password tests) ─────────────────
-const mockSendVerificationEmail = vi.fn().mockResolvedValue(undefined);
-const mockSendPasswordResetEmail = vi.fn().mockResolvedValue(undefined);
+// vi.mock is hoisted above all const declarations — use vi.hoisted() so these
+// variables are safe to reference inside the factory.
+const { mockSendVerificationEmail, mockSendPasswordResetEmail } = vi.hoisted(() => ({
+  mockSendVerificationEmail: vi.fn().mockResolvedValue(undefined),
+  mockSendPasswordResetEmail: vi.fn().mockResolvedValue(undefined),
+}));
 
 vi.mock('@/utils/email', () => ({
   sendVerificationEmail: mockSendVerificationEmail,

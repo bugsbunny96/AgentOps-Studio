@@ -1,6 +1,13 @@
 import { Router } from 'express';
 import { authenticate } from '../../middleware/authenticate';
-import { listCallsHandler, getCallByIdHandler } from './call.controller';
+import {
+  listCallsHandler,
+  getCallByIdHandler,
+  exportCallsHandler,
+  initiateCallHandler,
+  getCallStatsHandler,
+  getCallsByDayHandler,
+} from './call.controller';
 
 export const callsRouter = Router();
 
@@ -13,6 +20,35 @@ callsRouter.use(authenticate);
  * Query: page, limit, status, direction, dateFrom, dateTo
  */
 callsRouter.get('/', listCallsHandler);
+
+/**
+ * GET /api/v1/calls/export
+ * CSV export — same filter params as list but no pagination.
+ * MUST be registered before /:id so "export" isn't treated as an ID param.
+ */
+callsRouter.get('/export', exportCallsHandler);
+
+/**
+ * POST /api/v1/calls/initiate
+ * Initiate an outbound call to a target phone number.
+ * Body: { phoneNumber: string (E.164), agentId: string }
+ * MUST be registered before /:id.
+ */
+callsRouter.post('/initiate', initiateCallHandler);
+
+/**
+ * GET /api/v1/calls/stats
+ * Aggregate KPIs: total, today, avgDuration, completionRate.
+ * MUST be registered before /:id to avoid param shadowing.
+ */
+callsRouter.get('/stats', getCallStatsHandler);
+
+/**
+ * GET /api/v1/calls/stats/by-day
+ * Last 14 days of call counts (oldest-first, zero-filled gaps).
+ * MUST be registered before /:id.
+ */
+callsRouter.get('/stats/by-day', getCallsByDayHandler);
 
 /**
  * GET /api/v1/calls/:id

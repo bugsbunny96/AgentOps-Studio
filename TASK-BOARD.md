@@ -36,6 +36,29 @@ Every sprint task below has a row for ALL 5 agents. If an agent's primary work i
 
 ---
 
+## 🏢 Company Status — 2026-07-09 (Week 2 Session 3: Calls Page Polish)
+
+| Agent | Current Task | Status |
+|---|---|---|
+| 🔵 Product | Reviewed call detail UX — endedReason chip + live state indicator locked into spec | ✅ |
+| 🟢 Engineering | Task #26: fixed `getOrgId` role filter; Task #27: polished CallDetailPage (timestamps, copy, endedReason, live indicator); Task #28: `tsc --noEmit` clean both sides | ✅ |
+| 🟠 AI | Background: active call polling wired (5s refetchInterval while `status === 'active'`) | ✅ Background |
+| 🟡 Growth | Background: ICP doc / content queue | 🔁 |
+| 🟣 Customer | Background: KPI snapshot + health score review | 🔁 |
+
+**Session 3 deliverables**:
+- `frontend/src/types/index.ts` — added `endedReason?: string` and `updatedAt: string` to `Call` interface
+- `frontend/src/features/calls/CallDetailPage.tsx` — enhanced:
+  - `endedReason` chip in HeroCard (humanized label, shown for completed/failed only)
+  - `formatTurnOffset()` helper — "m:ss" offset from first turn timestamp shown on each bubble
+  - "Copy transcript" button with clipboard API + 2s "Copied" confirmation flash
+  - `TranscriptLiveState` component — pulsing emerald indicator when `call.status === 'active'` and no transcript yet
+  - Summary card also shows "will be generated when the call ends" message for active calls
+  - `refetchInterval: 5000` when call is active (auto-polls until transcript arrives)
+- Both sides `tsc --noEmit` clean (zero errors)
+
+---
+
 ## 🏢 Company Status — 2026-07-04 (Session: Business Hours Routing)
 
 | Agent | Current Task | Status |

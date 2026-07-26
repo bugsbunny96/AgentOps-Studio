@@ -13,8 +13,13 @@ import { PublicLayout } from '@/layouts/PublicLayout';
 import { lazy, Suspense } from 'react';
 
 const PageLoader = () => (
-  <div className="flex h-screen items-center justify-center">
-    <div className="h-8 w-8 animate-spin rounded-full border-4 border-brand-600 border-t-transparent" />
+  <div style={{ display: 'flex', height: '100%', minHeight: '240px', alignItems: 'center', justifyContent: 'center' }}>
+    <div style={{
+      width: 28, height: 28, borderRadius: '50%',
+      border: '3px solid rgba(59,130,246,0.2)',
+      borderTopColor: '#3b82f6',
+      animation: 'spin 0.7s linear infinite',
+    }} />
   </div>
 );
 
@@ -54,6 +59,18 @@ export const router = createBrowserRouter([
       { path: '/forgot-password', element: lazy_page(() => import('@/features/auth/ForgotPasswordPage')) },
     ],
   },
+  // /reset-password is intentionally outside GuestGuard — a logged-in user
+  // clicking the email link must not be redirected away before resetting.
+  {
+    element: <AuthLayout />,
+    children: [
+      { path: '/reset-password', element: lazy_page(() => import('@/features/auth/ResetPasswordPage')) },
+    ],
+  },
+  {
+    path: '/verify-email',
+    element: lazy_page(() => import('@/features/auth/VerifyEmailPage')),
+  },
   {
     path: '/accept-invite/:token',
     element: lazy_page(() => import('@/features/auth/AcceptInvitePage')),
@@ -86,6 +103,7 @@ export const router = createBrowserRouter([
       { path: '/knowledge-base', element: lazy_page(() => import('@/features/knowledge-base/KnowledgeBasePage')) },
       { path: '/team', element: lazy_page(() => import('@/features/team/TeamPage')) },
       { path: '/settings', element: lazy_page(() => import('@/features/settings/SettingsPage')) },
+      { path: '/billing', element: lazy_page(() => import('@/features/billing/BillingPage')) },
     ],
   },
 

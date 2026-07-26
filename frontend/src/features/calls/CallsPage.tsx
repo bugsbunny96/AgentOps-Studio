@@ -5,19 +5,22 @@
  *          direction (all / Inbound / Outbound)
  *          date range (dateFrom, dateTo)
  *
- * Clicking a row navigates to /calls/:id for the full detail view.
+ * Each row has an eye-icon action button that opens CallDetailModal
+ * with tabs: Audio & Recording | Transcript | Result (AI Action).
  */
 
 import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import {
   PhoneCall, PhoneIncoming, PhoneOutgoing,
   Clock, CheckCircle2, XCircle, Loader2,
-  ChevronLeft, ChevronRight, AlertCircle,
+  ChevronLeft, ChevronRight, AlertCircle, Eye,
+  Download,
 } from 'lucide-react';
 import api from '@/utils/api';
 import type { Call } from '@/types';
+import CallDetailModal from './CallDetailModal';
 
 // ─── API ─────────────────────────────────────────────────────────────────────
 
@@ -46,6 +49,32 @@ async function fetchCalls(page: number, filters: Filters): Promise<ListCallsResp
 
   const { data } = await api.get<ListCallsResponse>('/calls', { params });
   return data;
+}
+
+/**
+ * Fetches the CSV export (with cookies via axios) and triggers a browser download.
+ * Uses axios + Blob so the auth cookie is included on every environment.
+ */
+async function downloadExportCsv(filters: Filters): Promise<void> {
+  const params: Record<string, string> = {};
+  if (filters.status)    params['status']    = filters.status;
+  if (filters.direction) params['direction'] = filters.direction;
+  if (filters.dateFrom)  params['dateFrom']  = filters.dateFrom;
+  if (filters.dateTo)    params['dateTo']    = filters.dateTo;
+
+  const response = await api.get('/calls/export', {
+    params,
+    responseType: 'blob',
+  });
+
+  const url = URL.createObjectURL(response.data as Blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `calls-export-${new Date().toISOString().slice(0, 10)}.csv`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
 }
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -115,14 +144,26 @@ function DirectionChip({ direction }: { direction: Call['direction'] }) {
 const DEFAULT_FILTERS: Filters = { status: '', direction: '', dateFrom: '', dateTo: '' };
 
 export default function CallsPage() {
-  const navigate = useNavigate();
-  const [page, setPage]       = useState(1);
-  const [filters, setFilters] = useState<Filters>(DEFAULT_FILTERS);
+  const [page, setPage]               = useState(1);
+  const [filters, setFilters]         = useState<Filters>(DEFAULT_FILTERS);
+  const [selectedCallId, setSelectedCallId] = useState<string | null>(null);
+  const [exporting, setExporting]     = useState(false);
 
   const { data, isLoading, isError, error } = useQuery({
     queryKey: ['calls', page, filters],
     queryFn:  () => fetchCalls(page, filters),
   });
+
+  async function handleExport() {
+    setExporting(true);
+    try {
+      await downloadExportCsv(filters);
+    } catch {
+      // non-critical — browser will surface network errors
+    } finally {
+      setExporting(false);
+    }
+  }
 
   function applyFilter<K extends keyof Filters>(key: K, value: Filters[K]) {
     setPage(1);
@@ -140,225 +181,258 @@ export default function CallsPage() {
 
   // ── Render ──────────────────────────────────────────────────────────────────
   return (
-    <div className="space-y-6">
+    <>
+      <div className="space-y-6">
 
-      {/* Header */}
-      <div className="flex items-start justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Calls</h1>
-          <p className="mt-1 text-sm text-slate-500">
-            Every conversation your agent has had — searchable and filterable.
-          </p>
-        </div>
-      </div>
+        {/* Header */}
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Calls</h1>
+            <p className="mt-1 text-sm text-slate-500">
+              Every conversation your agent has had — searchable and filterable.
+            </p>
+          </div>
 
-      {/* Filter bar */}
-      <div className="flex flex-wrap items-center gap-3">
-        {/* Status */}
-        <select
-          value={filters.status}
-          onChange={(e) => applyFilter('status', e.target.value as Filters['status'])}
-          className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-brand-600"
-        >
-          <option value="">All statuses</option>
-          <option value="active">Live</option>
-          <option value="completed">Completed</option>
-          <option value="failed">Failed</option>
-        </select>
-
-        {/* Direction */}
-        <select
-          value={filters.direction}
-          onChange={(e) => applyFilter('direction', e.target.value as Filters['direction'])}
-          className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-brand-600"
-        >
-          <option value="">All directions</option>
-          <option value="Inbound">Inbound</option>
-          <option value="Outbound">Outbound</option>
-        </select>
-
-        {/* Date from */}
-        <input
-          type="date"
-          value={filters.dateFrom}
-          onChange={(e) => applyFilter('dateFrom', e.target.value)}
-          className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-brand-600"
-          placeholder="From"
-        />
-
-        {/* Date to */}
-        <input
-          type="date"
-          value={filters.dateTo}
-          onChange={(e) => applyFilter('dateTo', e.target.value)}
-          className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-brand-600"
-          placeholder="To"
-        />
-
-        {hasActiveFilters && (
+          {/* Export CSV */}
           <button
-            onClick={clearFilters}
-            className="text-sm text-slate-500 underline-offset-2 hover:text-slate-700 hover:underline transition-colors"
+            onClick={handleExport}
+            disabled={exporting}
+            className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 shadow-sm transition-all hover:border-brand-300 hover:bg-brand-50 hover:text-brand-700 disabled:cursor-not-allowed disabled:opacity-50 flex-shrink-0"
+            title={hasActiveFilters ? 'Export filtered calls to CSV' : 'Export all calls to CSV'}
           >
-            Clear filters
+            {exporting
+              ? <Loader2 size={14} className="animate-spin" />
+              : <Download size={14} />}
+            {exporting ? 'Exporting…' : 'Export CSV'}
           </button>
+        </div>
+
+        {/* Filter bar */}
+        <div className="flex flex-wrap items-center gap-3">
+          {/* Status */}
+          <select
+            value={filters.status}
+            onChange={(e) => applyFilter('status', e.target.value as Filters['status'])}
+            className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-brand-600"
+          >
+            <option value="">All statuses</option>
+            <option value="active">Live</option>
+            <option value="completed">Completed</option>
+            <option value="failed">Failed</option>
+          </select>
+
+          {/* Direction */}
+          <select
+            value={filters.direction}
+            onChange={(e) => applyFilter('direction', e.target.value as Filters['direction'])}
+            className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-brand-600"
+          >
+            <option value="">All directions</option>
+            <option value="Inbound">Inbound</option>
+            <option value="Outbound">Outbound</option>
+          </select>
+
+          {/* Date from */}
+          <input
+            type="date"
+            value={filters.dateFrom}
+            onChange={(e) => applyFilter('dateFrom', e.target.value)}
+            className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-brand-600"
+          />
+
+          {/* Date to */}
+          <input
+            type="date"
+            value={filters.dateTo}
+            onChange={(e) => applyFilter('dateTo', e.target.value)}
+            className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-brand-600"
+          />
+
+          {hasActiveFilters && (
+            <button
+              onClick={clearFilters}
+              className="text-sm text-slate-500 underline-offset-2 hover:text-slate-700 hover:underline transition-colors"
+            >
+              Clear filters
+            </button>
+          )}
+        </div>
+
+        {/* Content area */}
+        {isLoading && (
+          <div className="flex items-center justify-center py-20">
+            <Loader2 size={24} className="animate-spin text-brand-600" />
+          </div>
+        )}
+
+        {isError && (
+          <div className="flex items-center gap-3 rounded-xl border border-red-100 bg-red-50 px-5 py-4">
+            <AlertCircle size={16} className="text-red-500 flex-shrink-0" />
+            <p className="text-sm text-red-700">
+              {(error as Error)?.message ?? 'Failed to load calls. Please refresh and try again.'}
+            </p>
+          </div>
+        )}
+
+        {!isLoading && !isError && data && (
+          <>
+            {data.calls.length === 0 ? (
+              /* Empty state */
+              <div
+                className="relative overflow-hidden rounded-2xl border border-slate-200 bg-white"
+                style={{ minHeight: 300 }}
+              >
+                <div
+                  className="pointer-events-none absolute inset-0 opacity-40"
+                  style={{ background: 'radial-gradient(ellipse 70% 60% at 50% 0%, rgba(99,102,241,.08) 0%, transparent 100%)' }}
+                />
+                <div className="relative flex flex-col items-center justify-center px-8 py-16 text-center">
+                  <div
+                    className="mb-5 flex h-14 w-14 items-center justify-center rounded-2xl"
+                    style={{
+                      background: 'linear-gradient(135deg, rgba(99,102,241,.12), rgba(139,92,246,.12))',
+                      border: '1px solid rgba(99,102,241,.2)',
+                    }}
+                  >
+                    <PhoneCall size={24} className="text-brand-600" strokeWidth={1.8} />
+                  </div>
+                  <h2 className="mb-1.5 text-base font-semibold text-slate-800">
+                    {hasActiveFilters ? 'No calls match your filters' : 'No calls yet'}
+                  </h2>
+                  <p className="mb-5 max-w-sm text-sm text-slate-500 leading-relaxed">
+                    {hasActiveFilters
+                      ? 'Try adjusting or clearing your filters.'
+                      : 'Once your AI agent takes calls, every conversation will appear here.'}
+                  </p>
+                  {hasActiveFilters ? (
+                    <button
+                      onClick={clearFilters}
+                      className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors"
+                    >
+                      Clear filters
+                    </button>
+                  ) : (
+                    <Link
+                      to="/agents"
+                      className="inline-flex items-center gap-2 rounded-xl px-5 py-2.5 text-sm font-semibold text-white transition-opacity hover:opacity-90"
+                      style={{ background: 'linear-gradient(135deg, #4f46e5, #7c3aed)' }}
+                    >
+                      <PhoneCall size={14} />
+                      View your agent
+                    </Link>
+                  )}
+                </div>
+              </div>
+            ) : (
+              /* Call table */
+              <>
+                {/* Summary line */}
+                <p className="text-xs text-slate-500">
+                  {data.total.toLocaleString()} call{data.total !== 1 ? 's' : ''}
+                  {hasActiveFilters && ' matching filters'}
+                </p>
+
+                <div className="overflow-hidden rounded-xl border border-slate-200 bg-white">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-b border-slate-100 bg-slate-50">
+                        <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-400">Caller</th>
+                        <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-400">Direction</th>
+                        <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-400">Status</th>
+                        <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-400">Duration</th>
+                        <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-400">Date</th>
+                        <th className="px-5 py-3 text-right text-xs font-semibold uppercase tracking-wide text-slate-400">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100">
+                      {data.calls.map((call) => (
+                        <tr
+                          key={call.id}
+                          className="group transition-colors hover:bg-slate-50/70"
+                        >
+                          <td className="px-5 py-3.5">
+                            <div className="flex items-center gap-2.5">
+                              <div
+                                className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full"
+                                style={{ background: 'rgba(99,102,241,.08)' }}
+                              >
+                                <PhoneCall size={13} className="text-brand-600" strokeWidth={1.8} />
+                              </div>
+                              <span className="font-medium text-slate-800 font-mono text-xs">
+                                {call.callerNumber}
+                              </span>
+                            </div>
+                          </td>
+                          <td className="px-5 py-3.5">
+                            <DirectionChip direction={call.direction} />
+                          </td>
+                          <td className="px-5 py-3.5">
+                            <StatusBadge status={call.status} />
+                          </td>
+                          <td className="px-5 py-3.5">
+                            <div className="flex items-center gap-1 text-slate-600">
+                              <Clock size={12} className="text-slate-400" />
+                              {formatDuration(call.duration)}
+                            </div>
+                          </td>
+                          <td className="px-5 py-3.5 text-slate-500 text-xs">
+                            {formatDate(call.createdAt)}
+                          </td>
+
+                          {/* Actions */}
+                          <td className="px-5 py-3.5 text-right">
+                            <button
+                              onClick={() => setSelectedCallId(call.id)}
+                              className="inline-flex items-center justify-center h-8 w-8 rounded-lg border border-slate-200 text-slate-400 opacity-0 group-hover:opacity-100 transition-all hover:border-brand-300 hover:bg-brand-50 hover:text-brand-600 focus:opacity-100"
+                              title="View call details"
+                              aria-label={`View details for call from ${call.callerNumber}`}
+                            >
+                              <Eye size={14} strokeWidth={1.8} />
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+
+                {/* Pagination */}
+                {data.totalPages > 1 && (
+                  <div className="flex items-center justify-between">
+                    <p className="text-xs text-slate-500">
+                      Page {data.page} of {data.totalPages}
+                    </p>
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => setPage((p) => Math.max(1, p - 1))}
+                        disabled={page <= 1}
+                        className="flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40 transition-colors"
+                      >
+                        <ChevronLeft size={14} />
+                      </button>
+                      <button
+                        onClick={() => setPage((p) => Math.min(data.totalPages, p + 1))}
+                        disabled={page >= data.totalPages}
+                        className="flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40 transition-colors"
+                      >
+                        <ChevronRight size={14} />
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </>
+            )}
+          </>
         )}
       </div>
 
-      {/* Content area */}
-      {isLoading && (
-        <div className="flex items-center justify-center py-20">
-          <Loader2 size={24} className="animate-spin text-brand-600" />
-        </div>
+      {/* Call detail modal */}
+      {selectedCallId && (
+        <CallDetailModal
+          callId={selectedCallId}
+          onClose={() => setSelectedCallId(null)}
+        />
       )}
-
-      {isError && (
-        <div className="flex items-center gap-3 rounded-xl border border-red-100 bg-red-50 px-5 py-4">
-          <AlertCircle size={16} className="text-red-500 flex-shrink-0" />
-          <p className="text-sm text-red-700">
-            {(error as Error)?.message ?? 'Failed to load calls. Please refresh and try again.'}
-          </p>
-        </div>
-      )}
-
-      {!isLoading && !isError && data && (
-        <>
-          {data.calls.length === 0 ? (
-            // Empty state
-            <div
-              className="relative overflow-hidden rounded-2xl border border-slate-200 bg-white"
-              style={{ minHeight: 300 }}
-            >
-              <div
-                className="pointer-events-none absolute inset-0 opacity-40"
-                style={{ background: 'radial-gradient(ellipse 70% 60% at 50% 0%, rgba(99,102,241,.08) 0%, transparent 100%)' }}
-              />
-              <div className="relative flex flex-col items-center justify-center px-8 py-16 text-center">
-                <div
-                  className="mb-5 flex h-14 w-14 items-center justify-center rounded-2xl"
-                  style={{
-                    background: 'linear-gradient(135deg, rgba(99,102,241,.12), rgba(139,92,246,.12))',
-                    border: '1px solid rgba(99,102,241,.2)',
-                  }}
-                >
-                  <PhoneCall size={24} className="text-brand-600" strokeWidth={1.8} />
-                </div>
-                <h2 className="mb-1.5 text-base font-semibold text-slate-800">
-                  {hasActiveFilters ? 'No calls match your filters' : 'No calls yet'}
-                </h2>
-                <p className="mb-5 max-w-sm text-sm text-slate-500 leading-relaxed">
-                  {hasActiveFilters
-                    ? 'Try adjusting or clearing your filters.'
-                    : 'Once your AI agent takes calls, every conversation will appear here.'}
-                </p>
-                {hasActiveFilters ? (
-                  <button
-                    onClick={clearFilters}
-                    className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors"
-                  >
-                    Clear filters
-                  </button>
-                ) : (
-                  <Link
-                    to="/agents"
-                    className="inline-flex items-center gap-2 rounded-xl px-5 py-2.5 text-sm font-semibold text-white transition-opacity hover:opacity-90"
-                    style={{ background: 'linear-gradient(135deg, #4f46e5, #7c3aed)' }}
-                  >
-                    <PhoneCall size={14} />
-                    View your agent
-                  </Link>
-                )}
-              </div>
-            </div>
-          ) : (
-            // Call table
-            <>
-              {/* Summary line */}
-              <p className="text-xs text-slate-500">
-                {data.total.toLocaleString()} call{data.total !== 1 ? 's' : ''}
-                {hasActiveFilters && ' matching filters'}
-              </p>
-
-              <div className="overflow-hidden rounded-xl border border-slate-200 bg-white">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="border-b border-slate-100 bg-slate-50">
-                      <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-400">Caller</th>
-                      <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-400">Direction</th>
-                      <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-400">Status</th>
-                      <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-400">Duration</th>
-                      <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-400">Date</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100">
-                    {data.calls.map((call) => (
-                      <tr
-                        key={call.id}
-                        onClick={() => navigate(`/calls/${call.id}`)}
-                        className="cursor-pointer hover:bg-slate-50 transition-colors"
-                      >
-                        <td className="px-5 py-3.5">
-                          <div className="flex items-center gap-2.5">
-                            <div
-                              className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full"
-                              style={{ background: 'rgba(99,102,241,.08)' }}
-                            >
-                              <PhoneCall size={13} className="text-brand-600" strokeWidth={1.8} />
-                            </div>
-                            <span className="font-medium text-slate-800 font-mono text-xs">
-                              {call.callerNumber}
-                            </span>
-                          </div>
-                        </td>
-                        <td className="px-5 py-3.5">
-                          <DirectionChip direction={call.direction} />
-                        </td>
-                        <td className="px-5 py-3.5">
-                          <StatusBadge status={call.status} />
-                        </td>
-                        <td className="px-5 py-3.5">
-                          <div className="flex items-center gap-1 text-slate-600">
-                            <Clock size={12} className="text-slate-400" />
-                            {formatDuration(call.duration)}
-                          </div>
-                        </td>
-                        <td className="px-5 py-3.5 text-slate-500 text-xs">
-                          {formatDate(call.createdAt)}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-
-              {/* Pagination */}
-              {data.totalPages > 1 && (
-                <div className="flex items-center justify-between">
-                  <p className="text-xs text-slate-500">
-                    Page {data.page} of {data.totalPages}
-                  </p>
-                  <div className="flex items-center gap-2">
-                    <button
-                      onClick={() => setPage((p) => Math.max(1, p - 1))}
-                      disabled={page <= 1}
-                      className="flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40 transition-colors"
-                    >
-                      <ChevronLeft size={14} />
-                    </button>
-                    <button
-                      onClick={() => setPage((p) => Math.min(data.totalPages, p + 1))}
-                      disabled={page >= data.totalPages}
-                      className="flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40 transition-colors"
-                    >
-                      <ChevronRight size={14} />
-                    </button>
-                  </div>
-                </div>
-              )}
-            </>
-          )}
-        </>
-      )}
-    </div>
+    </>
   );
 }

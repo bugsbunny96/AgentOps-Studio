@@ -31,10 +31,17 @@ import {
   Calendar,
   Activity,
   FileText,
+  Pencil,
+  X,
+  Check,
 } from 'lucide-react';
 import Vapi from '@vapi-ai/web';
 import { api } from '@/utils/api';
 import type { VoiceAgent } from '@/types';
+import VoiceSelector, { type VoiceSelectorValue } from './VoiceSelector';
+import { getVoiceById, type VoiceProviderId, type LanguageCode } from './voice-catalog';
+import { useCanWrite } from '@/hooks/usePermission';
+import { useAuth } from '@/hooks/useAuth';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -307,7 +314,9 @@ function Section({
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function AgentDetailPage() {
-  const { id } = useParams<{ id: string }>();
+  const { id }       = useParams<{ id: string }>();
+  const canWrite     = useCanWrite('agents');
+  const { currentOrg } = useAuth();
 
   const [agent, setAgent]               = useState<VoiceAgent | null>(null);
   const [vapiPublicKey, setVapiPublicKey] = useState<string | null>(null);
@@ -315,20 +324,130 @@ export default function AgentDetailPage() {
   const [loading, setLoading]           = useState(true);
   const [error, setError]               = useState<string | null>(null);
 
+  // Business description local cache — not in VoiceAgent, lives on Org
+  const [businessDescription, setBusinessDescription] = useState<string>('');
+
+  // Voice edit mode
+  const [editingVoice, setEditingVoice]   = useState(false);
+  const [voiceSettings, setVoiceSettings] = useState<VoiceSelectorValue>({
+    voiceProvider: 'openai',
+    voiceId: 'nova',
+    supportedLanguages: ['en-US'],
+  });
+  const [savingVoice, setSavingVoice]   = useState(false);
+  const [voiceSaveError, setVoiceSaveError] = useState<string | null>(null);
+
+  // Identity edit mode (name + businessDescription → regenerates system prompt)
+  const [editingIdentity, setEditingIdentity]     = useState(false);
+  const [identityName, setIdentityName]           = useState('');
+  const [identityDesc, setIdentityDesc]           = useState('');
+  const [savingIdentity, setSavingIdentity]       = useState(false);
+  const [identitySaveError, setIdentitySaveError] = useState<string | null>(null);
+
+  // Seed businessDescription from Redux when currentOrg arrives
+  useEffect(() => {
+    setBusinessDescription(currentOrg?.businessDescription ?? '');
+  }, [currentOrg?.businessDescription]);
+
   useEffect(() => {
     if (!id) return;
     Promise.all([
-      api.get<{ success: boolean; data: VoiceAgent }>(`/agents/${id}`),
+      api.get<{ success: boolean; data: AgentConfigResponse }>(`/agents/${id}`),
       api.get<{ success: boolean; data: AgentConfigResponse }>('/agents/config'),
     ])
       .then(([agentRes, configRes]) => {
-        setAgent(agentRes.data.data);
-        setVapiPublicKey(configRes.data.data.vapiPublicKey);
-        setVapiAssistantId(configRes.data.data.vapiAssistantId);
+        // GET /agents/:id returns { agent, vapiPublicKey, vapiAssistantId } under data
+        const agentData = agentRes.data.data;
+        setAgent(agentData.agent);
+        // Prefer the :id response's keys; fall back to /config
+        setVapiPublicKey(agentData.vapiPublicKey ?? configRes.data.data.vapiPublicKey);
+        setVapiAssistantId(agentData.vapiAssistantId ?? configRes.data.data.vapiAssistantId);
+        // Seed voice settings from agent
+        if (agentData.agent) {
+          setVoiceSettings({
+            voiceProvider: (agentData.agent.voiceProvider ?? 'openai') as VoiceProviderId,
+            voiceId: agentData.agent.voiceId ?? 'nova',
+            supportedLanguages: (agentData.agent.supportedLanguages ?? ['en-US']) as LanguageCode[],
+          });
+        }
       })
       .catch(() => setError('Could not load agent. Check that the ID is valid.'))
       .finally(() => setLoading(false));
   }, [id]);
+
+  async function saveVoice() {
+    if (!id || !agent) return;
+    setSavingVoice(true);
+    setVoiceSaveError(null);
+    try {
+      const res = await api.patch<{ success: boolean; data: AgentConfigResponse }>(
+        `/agents/${id}`,
+        {
+          voiceProvider: voiceSettings.voiceProvider,
+          voiceId: voiceSettings.voiceId,
+          supportedLanguages: voiceSettings.supportedLanguages,
+        },
+      );
+      setAgent(res.data.data.agent);
+      setEditingVoice(false);
+    } catch {
+      setVoiceSaveError('Failed to save voice settings. Please try again.');
+    } finally {
+      setSavingVoice(false);
+    }
+  }
+
+  function cancelVoiceEdit() {
+    if (!agent) return;
+    setVoiceSettings({
+      voiceProvider: (agent.voiceProvider ?? 'openai') as VoiceProviderId,
+      voiceId: agent.voiceId ?? 'nova',
+      supportedLanguages: (agent.supportedLanguages ?? ['en-US']) as LanguageCode[],
+    });
+    setVoiceSaveError(null);
+    setEditingVoice(false);
+  }
+
+  function startIdentityEdit() {
+    setIdentityName(agent?.name ?? '');
+    setIdentityDesc(businessDescription);
+    setIdentitySaveError(null);
+    setEditingIdentity(true);
+  }
+
+  function cancelIdentityEdit() {
+    setIdentitySaveError(null);
+    setEditingIdentity(false);
+  }
+
+  async function saveIdentity() {
+    if (!id || !agent) return;
+    const trimmedName = identityName.trim();
+    const nameChanged = trimmedName !== agent.name;
+    const descChanged = identityDesc !== businessDescription;
+    if (!nameChanged && !descChanged) {
+      setEditingIdentity(false);
+      return;
+    }
+    setSavingIdentity(true);
+    setIdentitySaveError(null);
+    try {
+      const dto: { name?: string; businessDescription?: string } = {};
+      if (nameChanged) dto.name = trimmedName;
+      if (descChanged) dto.businessDescription = identityDesc;
+      const res = await api.patch<{
+        success: boolean;
+        data: { agent: VoiceAgent | null; vapiAssistantId: string | null };
+      }>(`/agents/${id}/config`, dto);
+      if (res.data.data.agent) setAgent(res.data.data.agent);
+      if (descChanged) setBusinessDescription(identityDesc);
+      setEditingIdentity(false);
+    } catch {
+      setIdentitySaveError('Failed to save. Please try again.');
+    } finally {
+      setSavingIdentity(false);
+    }
+  }
 
   if (loading) {
     return (
@@ -366,9 +485,11 @@ export default function AgentDetailPage() {
     );
   }
 
-  const vapiId = vapiAssistantId ?? agent.vapiAssistantId;
-  const vapiIdShort = `${vapiId.slice(0, 8)}…${vapiId.slice(-4)}`;
-  const langs = agent.supportedLanguages.map((l) => LANG_LABELS[l] ?? l);
+  const vapiId = vapiAssistantId ?? agent.vapiAssistantId ?? '';
+  const vapiIdShort = vapiId.length > 12
+    ? `${vapiId.slice(0, 8)}…${vapiId.slice(-4)}`
+    : vapiId || '—';
+  const langs = (agent.supportedLanguages ?? []).map((l) => LANG_LABELS[l] ?? l);
   const createdAt = new Date(agent.createdAt).toLocaleDateString('en-IN', {
     year: 'numeric', month: 'long', day: 'numeric',
   });
@@ -462,22 +583,207 @@ export default function AgentDetailPage() {
         {/* Left column (3/5) */}
         <div className="lg:col-span-3 space-y-6">
 
-          {/* Voice Configuration */}
-          <Section icon={Volume2} title="Voice Configuration">
-            <div className="grid grid-cols-2 gap-4">
-              {[
-                { label: 'Voice Provider', value: VOICE_LABELS[agent.voiceProvider] ?? agent.voiceProvider },
-                { label: 'Voice ID',       value: agent.voiceId },
-                { label: 'Primary Language', value: LANG_LABELS[agent.primaryLanguage] ?? agent.primaryLanguage },
-                { label: 'Languages',     value: langs.join(', ') },
-              ].map(({ label, value }) => (
-                <div key={label} className="rounded-xl border border-slate-100 bg-slate-50 px-4 py-3">
-                  <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 mb-1">{label}</p>
-                  <p className="text-sm font-semibold text-slate-800">{value}</p>
+          {/* Agent Identity */}
+          <div className="rounded-2xl border border-slate-200 bg-white overflow-hidden shadow-sm">
+            <div className="flex items-center justify-between gap-2 px-6 py-4 border-b border-slate-100">
+              <div className="flex items-center gap-2">
+                <Bot size={15} className="text-brand-500" />
+                <h3 className="text-sm font-semibold text-slate-800">Agent Identity</h3>
+              </div>
+              {!editingIdentity ? (
+                canWrite && (
+                  <button
+                    onClick={startIdentityEdit}
+                    className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200
+                      bg-white px-2.5 py-1 text-xs font-medium text-slate-500
+                      hover:bg-slate-50 hover:text-slate-800 transition-colors"
+                  >
+                    <Pencil size={11} /> Edit identity
+                  </button>
+                )
+              ) : (
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={cancelIdentityEdit}
+                    disabled={savingIdentity}
+                    className="inline-flex items-center gap-1 rounded-lg border border-slate-200
+                      bg-white px-2.5 py-1 text-xs font-medium text-slate-500
+                      hover:bg-slate-50 transition-colors disabled:opacity-50"
+                  >
+                    <X size={11} /> Cancel
+                  </button>
+                  <button
+                    onClick={() => void saveIdentity()}
+                    disabled={savingIdentity}
+                    className="inline-flex items-center gap-1 rounded-lg bg-brand-600
+                      px-2.5 py-1 text-xs font-semibold text-white
+                      hover:bg-brand-700 transition-colors disabled:opacity-50"
+                  >
+                    {savingIdentity
+                      ? <><Loader2 size={11} className="animate-spin" /> Saving…</>
+                      : <><Check size={11} /> Save</>
+                    }
+                  </button>
                 </div>
-              ))}
+              )}
             </div>
-          </Section>
+
+            <div className="px-6 py-5 space-y-4">
+              {identitySaveError && (
+                <p className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-600">
+                  {identitySaveError}
+                </p>
+              )}
+
+              {editingIdentity ? (
+                <div className="space-y-4">
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">
+                      Agent Name
+                    </label>
+                    <input
+                      type="text"
+                      value={identityName}
+                      onChange={(e) => setIdentityName(e.target.value)}
+                      maxLength={100}
+                      autoFocus
+                      className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5
+                        text-sm font-medium text-slate-800 placeholder:text-slate-400
+                        focus:outline-none focus:ring-2 focus:ring-brand-500/30 focus:border-brand-400"
+                      placeholder="e.g. Aria, Max, Reya…"
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">
+                      Business Description
+                    </label>
+                    <p className="text-[11px] text-slate-400">
+                      Updating this regenerates the system prompt and syncs it to Vapi.
+                    </p>
+                    <textarea
+                      value={identityDesc}
+                      onChange={(e) => setIdentityDesc(e.target.value)}
+                      rows={4}
+                      maxLength={5000}
+                      className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5
+                        text-sm text-slate-800 placeholder:text-slate-400 resize-y
+                        focus:outline-none focus:ring-2 focus:ring-brand-500/30 focus:border-brand-400"
+                      placeholder="Describe what your business does…"
+                    />
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  <div className="rounded-xl border border-slate-100 bg-slate-50 px-4 py-3">
+                    <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 mb-1">
+                      Agent Name
+                    </p>
+                    <p className="text-sm font-semibold text-slate-800">{agent.name}</p>
+                  </div>
+                  <div className="rounded-xl border border-slate-100 bg-slate-50 px-4 py-3">
+                    <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 mb-1">
+                      Business Description
+                    </p>
+                    <p className="text-sm text-slate-600 leading-relaxed">
+                      {businessDescription || (
+                        <span className="text-slate-400 italic">No description set</span>
+                      )}
+                    </p>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Voice Configuration */}
+          <div className="rounded-2xl border border-slate-200 bg-white overflow-hidden shadow-sm">
+            <div className="flex items-center justify-between gap-2 px-6 py-4 border-b border-slate-100">
+              <div className="flex items-center gap-2">
+                <Volume2 size={15} className="text-brand-500" />
+                <h3 className="text-sm font-semibold text-slate-800">Voice Configuration</h3>
+              </div>
+              {!editingVoice ? (
+                canWrite && (
+                  <button
+                    onClick={() => setEditingVoice(true)}
+                    className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200
+                      bg-white px-2.5 py-1 text-xs font-medium text-slate-500
+                      hover:bg-slate-50 hover:text-slate-800 transition-colors"
+                  >
+                    <Pencil size={11} /> Edit voice
+                  </button>
+                )
+              ) : (
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={cancelVoiceEdit}
+                    disabled={savingVoice}
+                    className="inline-flex items-center gap-1 rounded-lg border border-slate-200
+                      bg-white px-2.5 py-1 text-xs font-medium text-slate-500
+                      hover:bg-slate-50 transition-colors disabled:opacity-50"
+                  >
+                    <X size={11} /> Cancel
+                  </button>
+                  <button
+                    onClick={() => void saveVoice()}
+                    disabled={savingVoice}
+                    className="inline-flex items-center gap-1 rounded-lg bg-brand-600
+                      px-2.5 py-1 text-xs font-semibold text-white
+                      hover:bg-brand-700 transition-colors disabled:opacity-50"
+                  >
+                    {savingVoice
+                      ? <><Loader2 size={11} className="animate-spin" /> Saving…</>
+                      : <><Check size={11} /> Save</>
+                    }
+                  </button>
+                </div>
+              )}
+            </div>
+
+            <div className="px-6 py-5">
+              {voiceSaveError && (
+                <p className="mb-4 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-600">
+                  {voiceSaveError}
+                </p>
+              )}
+
+              {editingVoice ? (
+                <VoiceSelector
+                  value={voiceSettings}
+                  onChange={setVoiceSettings}
+                  disabled={savingVoice}
+                />
+              ) : (
+                <div className="grid grid-cols-2 gap-4">
+                  {[
+                    {
+                      label: 'Voice Provider',
+                      value: VOICE_LABELS[agent.voiceProvider] ?? agent.voiceProvider,
+                    },
+                    {
+                      label: 'Voice',
+                      value: getVoiceById(agent.voiceProvider, agent.voiceId)?.name ?? agent.voiceId,
+                    },
+                    {
+                      label: 'Primary Language',
+                      value: LANG_LABELS[agent.primaryLanguage] ?? agent.primaryLanguage,
+                    },
+                    {
+                      label: 'Languages',
+                      value: langs.join(', '),
+                    },
+                  ].map(({ label, value }) => (
+                    <div key={label} className="rounded-xl border border-slate-100 bg-slate-50 px-4 py-3">
+                      <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 mb-1">
+                        {label}
+                      </p>
+                      <p className="text-sm font-semibold text-slate-800">{value}</p>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
 
           {/* System Prompt */}
           <Section icon={FileText} title="System Prompt">

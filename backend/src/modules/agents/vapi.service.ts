@@ -30,9 +30,11 @@ export interface VapiTranscriber {
 }
 
 export interface VapiVoice {
-  provider: 'openai' | '11labs' | 'azure' | 'cartesia';
+  provider: 'openai' | '11labs' | 'azure' | 'cartesia' | 'deepgram' | 'playht';
   voiceId: string;
   speed?: number;
+  /** Provider-specific TTS model. Required for ElevenLabs multilingual: 'eleven_multilingual_v2' */
+  model?: string;
 }
 
 export interface VapiCreateAssistantPayload {
@@ -63,6 +65,25 @@ export interface VapiWebCall {
   webCallUrl: string;
   status: string;
   assistantId: string;
+}
+
+export interface VapiOutboundCallPayload {
+  /** Vapi assistant ID to use for the call */
+  assistantId: string;
+  /** Vapi phone number ID that will appear as caller ID */
+  phoneNumberId: string;
+  /** Destination number in E.164 format */
+  customer: { number: string };
+}
+
+export interface VapiOutboundCall {
+  id: string;
+  type: 'outboundPhoneCall';
+  status: string;
+  assistantId: string;
+  phoneNumberId: string;
+  customer: { number: string };
+  createdAt?: string;
 }
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -147,4 +168,23 @@ export async function vapiCreateWebCall(assistantId: string): Promise<VapiWebCal
     type: 'webCall',
     assistantId,
   });
+}
+
+/**
+ * Initiate an outbound phone call via Vapi.
+ * Vapi dials the customer number using the specified Vapi phone number as caller ID.
+ *
+ * Docs: POST https://api.vapi.ai/call/phone
+ */
+export async function vapiInitiateOutboundCall(
+  payload: VapiOutboundCallPayload,
+): Promise<VapiOutboundCall> {
+  logger.info('Initiating Vapi outbound call', {
+    assistantId:  payload.assistantId,
+    phoneNumberId: payload.phoneNumberId,
+    to:           payload.customer.number,
+  });
+  const call = await vapiRequest<VapiOutboundCall>('POST', '/call/phone', payload);
+  logger.info('Vapi outbound call initiated', { vapiCallId: call.id });
+  return call;
 }

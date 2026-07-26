@@ -11,121 +11,58 @@ import {
   MembershipModel,
   type IOrganization,
 } from '../organization/organization.model';
-import { VoiceAgentModel } from './agent.model';
+import { VoiceAgentModel, type IVoiceAgent } from './agent.model';
 import {
   vapiCreateAssistant,
+  vapiUpdateAssistant,
   type VapiCreateAssistantPayload,
+  type VapiVoice,
 } from './vapi.service';
+import { generateSystemPrompt, buildFirstMessage, buildEndCallMessage } from './prompt.utils';
+import { getKbContext } from '../knowledge-base/kb.service';
 import { env } from '../../config/env';
 import { NotFound } from '../../middleware/errorHandler';
 import { logger } from '../../utils/logger';
+import type { UpdateAgentConfigDto } from './agent.validation';
 
-// ─── System Prompt Generator ───────────────────────────────────────────────────
+// Re-export generateSystemPrompt so existing importers (kb.service.ts → prompt.utils.ts) are unaffected.
+// kb.service.ts already imports directly from prompt.utils now — this export is for any other callers.
+export { generateSystemPrompt };
 
-/**
- * Produces a comprehensive system prompt from the org's onboarding data.
- * Used as the Vapi assistant's system-level instruction that governs all calls.
- */
-export function generateSystemPrompt(org: IOrganization): string {
-  const agentName = org.agentName || 'your AI receptionist';
-  const bizName   = org.name;
+// ─── Vapi Provider Mapping ─────────────────────────────────────────────────────
+// DB stores 'elevenlabs' (matches VoiceAgent schema); Vapi REST API expects '11labs'.
 
-  const parts: string[] = [
-    `You are ${agentName}, the AI voice receptionist for ${bizName}. ` +
-    `You handle inbound phone enquiries professionally, warmly, and concisely. ` +
-    `Remember: this is a phone call. Keep every response under 40 words unless the caller needs a detailed answer.`,
-  ];
-
-  // Business description
-  if (org.businessDescription) {
-    parts.push(`\n## About ${bizName}\n${org.businessDescription}`);
-  }
-
-  // Services
-  if (org.services?.length) {
-    parts.push(
-      `\n## Services\nWe offer the following:\n` +
-      org.services.map((s) => `- ${s}`).join('\n'),
-    );
-  }
-
-  // Business hours
-  if (org.businessHours?.start && org.businessHours?.end) {
-    parts.push(
-      `\n## Business Hours\nWe are open from ${org.businessHours.start} to ${org.businessHours.end}.` +
-      ` Outside these hours, offer to take a message.`,
-    );
-  }
-
-  // Locations
-  if (org.locations?.length) {
-    parts.push(
-      `\n## Location(s)\n` +
-      org.locations.map((l) => `- ${l}`).join('\n'),
-    );
-  }
-
-  // Contact
-  const contact: string[] = [];
-  if (org.contactDetails?.phone) contact.push(`Phone: ${org.contactDetails.phone}`);
-  if (org.contactDetails?.email) contact.push(`Email: ${org.contactDetails.email}`);
-  if (contact.length) {
-    parts.push(`\n## Contact Information\n${contact.join('\n')}`);
-  }
-
-  // FAQs
-  if (org.faqs?.length) {
-    const faqBlock = org.faqs
-      .map((f) => `Q: ${f.question}\nA: ${f.answer}`)
-      .join('\n\n');
-    parts.push(`\n## Frequently Asked Questions\n${faqBlock}`);
-  }
-
-  // Fallback / transfer
-  if (org.fallbackNumber) {
-    parts.push(
-      `\n## Transfer Policy\nIf the caller requests to speak with a human, or if you cannot ` +
-      `answer their question, politely say you'll transfer them and use the transfer function ` +
-      `to connect them to: ${org.fallbackNumber}.`,
-    );
-  }
-
-  // Language policy
-  const langs = org.supportedLanguages ?? ['en-US'];
-  if (langs.length > 1) {
-    const labelMap: Record<string, string> = {
-      'en-US': 'English',
-      'hi-IN': 'Hindi',
-      'pa-IN': 'Punjabi',
-    };
-    const langNames = langs.map((l) => labelMap[l] ?? l).join(', ');
-    parts.push(
-      `\n## Language\nDetect the caller's preferred language and respond in it. ` +
-      `Supported languages: ${langNames}.`,
-    );
-  }
-
-  // Core behaviour rules
-  parts.push(`
-## Behaviour Rules
-1. Always greet the caller by mentioning the business name ("Thank you for calling ${bizName}!").
-2. Be warm, professional, and efficient.
-3. Never make up information not provided above.
-4. If asked something you cannot answer, offer to take their name and callback number.
-5. Do not discuss pricing unless it is listed in the services above.
-6. End every call with a friendly sign-off (e.g., "Have a great day!").`);
-
-  return parts.join('\n');
-}
-
-// ─── Vapi Payload Builder ──────────────────────────────────────────────────────
+const VAPI_PROVIDER_MAP: Record<string, VapiVoice['provider']> = {
+  openai:     'openai',
+  elevenlabs: '11labs',
+  deepgram:   'deepgram',
+  cartesia:   'cartesia',
+  playht:     'playht',
+  azure:      'azure',
+};
 
 function buildVapiPayload(
   org: IOrganization,
   systemPrompt: string,
 ): VapiCreateAssistantPayload {
   const agentName = org.agentName || org.name;
-  const greeting  = `Hello! Thank you for calling ${org.name}. I'm ${org.agentName || 'your assistant'}. How can I help you today?`;
+  const isMultilingual = (org.supportedLanguages?.length ?? 0) > 1;
+  const hasNonEnglish  = org.supportedLanguages?.some((l) => l !== 'en-US') ?? false;
+
+  // Resolve voice from onboarding choice; fall back to openai/nova if not set
+  const rawProvider   = org.preferredVoiceProvider ?? 'openai';
+  const vapiProvider  = VAPI_PROVIDER_MAP[rawProvider] ?? 'openai';
+  const voiceId       = org.preferredVoiceId ?? 'nova';
+
+  // ElevenLabs requires 'eleven_multilingual_v2' to speak Hindi/Punjabi correctly.
+  // Other providers (OpenAI, Azure) handle multilingual natively without a model override.
+  const voice: VapiVoice = {
+    provider: vapiProvider,
+    voiceId,
+    ...(vapiProvider === '11labs' && hasNonEnglish
+      ? { model: 'eleven_multilingual_v2' }
+      : {}),
+  };
 
   return {
     name: `${agentName} — AgentOps Studio`,
@@ -138,17 +75,17 @@ function buildVapiPayload(
     },
     transcriber: {
       provider: 'deepgram',
-      language: (org.supportedLanguages?.length ?? 0) > 1 ? 'multi' : 'en-US',
-      model: 'nova-2',
+      // 'multi' tells Deepgram to auto-detect language on every utterance.
+      // nova-3 has significantly better multilingual accuracy (especially short Hindi/Punjabi
+      // utterances) vs nova-2. Fall back to nova-2 for English-only to avoid any cost delta.
+      language: isMultilingual ? 'multi' : (org.supportedLanguages?.[0] ?? 'en-US'),
+      model: isMultilingual ? 'nova-3' : 'nova-2',
     },
-    voice: {
-      provider: 'openai',
-      voiceId: 'nova',   // Clear, natural female voice — no ElevenLabs creds required
-    },
-    firstMessage: greeting,
+    voice,
+    firstMessage: buildFirstMessage(org),
     firstMessageMode: 'assistant-speaks-first',
-    endCallMessage: `Thank you for calling ${org.name}. Have a wonderful day!`,
-    endCallPhrases: ['goodbye', 'bye', "that's all", 'thank you, bye', 'end call'],
+    endCallMessage: buildEndCallMessage(org),
+    endCallPhrases: ['goodbye', 'bye', "that's all", 'thank you, bye', 'end call', 'धन्यवाद', 'ਧੰਨਵਾਦ'],
     maxDurationSeconds: 1800,  // 30 min hard cap
     backgroundSound: 'off',
     metadata: {
@@ -171,7 +108,7 @@ function buildVapiPayload(
  * Safe to call on every ActivatePage mount.
  */
 export async function provisionAgent(userId: string) {
-  const membership = await MembershipModel.findOne({ userId, role: 'Owner' }).populate<{
+  const membership = await MembershipModel.findOne({ userId }).populate<{
     organizationId: IOrganization;
   }>('organizationId');
 
@@ -199,7 +136,9 @@ export async function provisionAgent(userId: string) {
   // ── Provision: generate prompt + create Vapi assistant ─────────────
   logger.info('Provisioning new Vapi assistant', { orgId: orgId.toString() });
 
-  const systemPrompt  = generateSystemPrompt(org);
+  // Inject any existing KB docs so the initial Vapi prompt is fully populated.
+  const kbContext     = await getKbContext(orgId);
+  const systemPrompt  = generateSystemPrompt(org, kbContext);
   const vapiPayload   = buildVapiPayload(org, systemPrompt);
   const vapiAssistant = await vapiCreateAssistant(vapiPayload);
 
@@ -218,9 +157,9 @@ export async function provisionAgent(userId: string) {
         name: org.agentName || org.name,
         systemPrompt,
         vapiAssistantId: vapiAssistant.id,
-        voiceProvider: 'openai',
-        voiceId: 'nova',
-        primaryLanguage: 'en-US',
+        voiceProvider: (org.preferredVoiceProvider as IVoiceAgent['voiceProvider']) ?? 'openai',
+        voiceId: org.preferredVoiceId ?? 'nova',
+        primaryLanguage: org.supportedLanguages?.[0] ?? 'en-US',
         supportedLanguages: org.supportedLanguages ?? ['en-US'],
         status: 'Active',
       },
@@ -248,7 +187,7 @@ export async function provisionAgent(userId: string) {
  * Used by ActivatePage on mount to skip the provision step if already done.
  */
 export async function getAgentConfig(userId: string) {
-  const membership = await MembershipModel.findOne({ userId, role: 'Owner' }).populate<{
+  const membership = await MembershipModel.findOne({ userId }).populate<{
     organizationId: IOrganization;
   }>('organizationId');
 
@@ -271,7 +210,7 @@ export async function getAgentConfig(userId: string) {
  * Currently 1-per-org during onboarding, but the list pattern is future-proof.
  */
 export async function listAgents(userId: string) {
-  const membership = await MembershipModel.findOne({ userId, role: 'Owner' }).populate<{
+  const membership = await MembershipModel.findOne({ userId }).populate<{
     organizationId: IOrganization;
   }>('organizationId');
 
@@ -297,7 +236,7 @@ export async function listAgents(userId: string) {
  * Called from Settings → Phone Number Setup (founder manual step).
  */
 export async function linkPhoneNumber(userId: string, vapiPhoneNumberId: string) {
-  const membership = await MembershipModel.findOne({ userId, role: 'Owner' }).populate<{
+  const membership = await MembershipModel.findOne({ userId }).populate<{
     organizationId: IOrganization;
   }>('organizationId');
 
@@ -328,7 +267,7 @@ export async function linkPhoneNumber(userId: string, vapiPhoneNumberId: string)
  * Returns the currently linked phone number for the org.
  */
 export async function getPhoneNumber(userId: string) {
-  const membership = await MembershipModel.findOne({ userId, role: 'Owner' }).populate<{
+  const membership = await MembershipModel.findOne({ userId }).populate<{
     organizationId: IOrganization;
   }>('organizationId');
 
@@ -344,12 +283,225 @@ export async function getPhoneNumber(userId: string) {
 
 // ─── getAgentById ─────────────────────────────────────────────────────────────
 
+// ─── updateAgentVoice ─────────────────────────────────────────────────────────
+
+/**
+ * Update the voice provider + voiceId (and optionally languages) on a VoiceAgent.
+ * Syncs the change to Vapi immediately.
+ *
+ * DTO fields:
+ *   voiceProvider      — one of 'openai' | 'elevenlabs' | 'deepgram' | 'cartesia' | 'playht' | 'azure'
+ *   voiceId            — provider-specific voice ID (e.g. 'nova', 'asteria')
+ *   supportedLanguages — optional; triggers: Deepgram language mode update + system prompt regeneration
+ *
+ * When supportedLanguages changes the Vapi assistant is patched with:
+ *   • transcriber.language = 'multi' (2+ languages) or specific code (1 language)
+ *   • model.messages[0].content = regenerated system prompt with correct language rules
+ *   • firstMessage / endCallMessage = multilingual-aware greeting
+ */
+export async function updateAgentVoice(
+  userId: string,
+  agentId: string,
+  dto: {
+    voiceProvider: string;
+    voiceId: string;
+    supportedLanguages?: string[];
+  },
+) {
+  const membership = await MembershipModel.findOne({ userId }).populate<{
+    organizationId: IOrganization;
+  }>('organizationId');
+
+  if (!membership) throw NotFound('Organization');
+
+  const org   = membership.organizationId as IOrganization;
+  const agent = await VoiceAgentModel.findOne({ _id: agentId, organizationId: org._id });
+  if (!agent) throw NotFound('Agent');
+
+  const vapiProvider   = VAPI_PROVIDER_MAP[dto.voiceProvider] ?? 'openai';
+  const hasNonEnglish  = (dto.supportedLanguages ?? org.supportedLanguages ?? []).some((l) => l !== 'en-US');
+  const isMultilingual = (dto.supportedLanguages ?? org.supportedLanguages ?? []).length > 1;
+
+  // Build local VoiceAgent update
+  const localUpdates: Partial<{
+    voiceProvider: IVoiceAgent['voiceProvider'];
+    voiceId: string;
+    supportedLanguages: string[];
+    systemPrompt: string;
+  }> = {
+    voiceProvider: dto.voiceProvider as IVoiceAgent['voiceProvider'],
+    voiceId: dto.voiceId,
+  };
+  if (dto.supportedLanguages) localUpdates.supportedLanguages = dto.supportedLanguages;
+
+  // When languages change, regenerate system prompt with updated language rules.
+  // Also re-inject current KB context so it is not wiped from the Vapi prompt
+  // (DRIFT-4 fix: language update previously dropped KB content).
+  let newSystemPrompt: string | undefined;
+  if (dto.supportedLanguages) {
+    const orgWithNewLangs = {
+      ...org.toObject(),
+      supportedLanguages: dto.supportedLanguages,
+    } as IOrganization;
+    const kbContext     = await getKbContext(org._id);
+    newSystemPrompt     = generateSystemPrompt(orgWithNewLangs, kbContext);
+    localUpdates.systemPrompt = newSystemPrompt;
+  }
+
+  const updated = await VoiceAgentModel.findByIdAndUpdate(
+    agentId,
+    { $set: localUpdates },
+    { new: true },
+  );
+
+  // Sync to Vapi if org has an assistant ID
+  if (org.vapiAssistantId) {
+    // ElevenLabs needs eleven_multilingual_v2 to speak Hindi/Punjabi correctly
+    const voice: VapiVoice = {
+      provider: vapiProvider,
+      voiceId: dto.voiceId,
+      ...(vapiProvider === '11labs' && hasNonEnglish ? { model: 'eleven_multilingual_v2' } : {}),
+    };
+
+    const vapiPatch: Partial<VapiCreateAssistantPayload> = { voice };
+
+    if (dto.supportedLanguages) {
+      // Rebuild transcriber with correct language mode.
+      // nova-3 for multilingual (better short-utterance accuracy in Hindi/Punjabi).
+      vapiPatch.transcriber = {
+        provider: 'deepgram',
+        language: isMultilingual ? 'multi' : (dto.supportedLanguages[0] ?? 'en-US'),
+        model: isMultilingual ? 'nova-3' : 'nova-2',
+      };
+
+      // Push regenerated system prompt and updated greetings
+      const orgForGreeting = {
+        ...org.toObject(),
+        supportedLanguages: dto.supportedLanguages,
+      } as IOrganization;
+      vapiPatch.model = {
+        provider: 'openai',
+        model: 'gpt-4o',
+        messages: [{ role: 'system', content: newSystemPrompt! }],
+        temperature: 0.65,
+        maxTokens: 300,
+      };
+      vapiPatch.firstMessage    = buildFirstMessage(orgForGreeting);
+      vapiPatch.endCallMessage  = buildEndCallMessage(orgForGreeting);
+    }
+
+    await vapiUpdateAssistant(org.vapiAssistantId, vapiPatch);
+    logger.info('Vapi voice + language updated', {
+      agentId,
+      provider: vapiProvider,
+      voiceId: dto.voiceId,
+      languages: dto.supportedLanguages ?? 'unchanged',
+      multilingual: isMultilingual,
+    });
+  }
+
+  return {
+    agent:           updated!.toJSON(),
+    vapiPublicKey:   env.VAPI_PUBLIC_KEY ?? null,
+    vapiAssistantId: org.vapiAssistantId ?? null,
+  };
+}
+
+// ─── updateAgentConfig ────────────────────────────────────────────────────────
+
+/**
+ * Update agent name and/or business description, then regenerate the system
+ * prompt and push the updated prompt (and optional name) to Vapi.
+ *
+ * - `name`               → updates VoiceAgent.name + Organization.agentName
+ * - `businessDescription`→ updates Organization.businessDescription
+ * - Always regenerates systemPrompt using latest org data + KB context
+ * - Always pushes updated model.messages to Vapi assistant
+ */
+export async function updateAgentConfig(
+  userId: string,
+  agentId: string,
+  dto: UpdateAgentConfigDto,
+) {
+  const membership = await MembershipModel.findOne({ userId }).populate<{
+    organizationId: IOrganization;
+  }>('organizationId');
+  if (!membership) throw NotFound('Organization');
+
+  const org   = membership.organizationId as IOrganization;
+  const agent = await VoiceAgentModel.findOne({ _id: agentId, organizationId: org._id });
+  if (!agent) throw NotFound('Agent');
+
+  // ── Persist org-level changes ──────────────────────────────────────────────
+  const orgUpdates: Record<string, string> = {};
+  if (dto.name !== undefined)                orgUpdates['agentName']            = dto.name;
+  if (dto.businessDescription !== undefined) orgUpdates['businessDescription']  = dto.businessDescription;
+
+  if (Object.keys(orgUpdates).length > 0) {
+    await OrganizationModel.findByIdAndUpdate(org._id, { $set: orgUpdates });
+  }
+
+  // ── Build org override for prompt generation (avoids a second DB fetch) ────
+  const orgForPrompt = {
+    ...org.toObject(),
+    ...orgUpdates,
+  } as IOrganization;
+
+  // ── Regenerate system prompt ───────────────────────────────────────────────
+  const kbContext       = await getKbContext(org._id);
+  const newSystemPrompt = generateSystemPrompt(orgForPrompt, kbContext);
+
+  // ── Update VoiceAgent record ───────────────────────────────────────────────
+  const agentUpdates: Partial<{ name: string; systemPrompt: string }> = {
+    systemPrompt: newSystemPrompt,
+  };
+  if (dto.name !== undefined) agentUpdates.name = dto.name;
+
+  const updated = await VoiceAgentModel.findByIdAndUpdate(
+    agentId,
+    { $set: agentUpdates },
+    { new: true },
+  );
+
+  // ── Push to Vapi ───────────────────────────────────────────────────────────
+  if (org.vapiAssistantId) {
+    const vapiPatch: Partial<VapiCreateAssistantPayload> = {
+      model: {
+        provider: 'openai',
+        model: 'gpt-4o',
+        messages: [{ role: 'system', content: newSystemPrompt }],
+        temperature: 0.65,
+        maxTokens: 300,
+      },
+    };
+    // Vapi assistant name mirrors the agent name when it changes
+    if (dto.name !== undefined) {
+      vapiPatch.name = `${dto.name} — AgentOps Studio`;
+    }
+    await vapiUpdateAssistant(org.vapiAssistantId, vapiPatch);
+  }
+
+  logger.info('Agent config updated', {
+    agentId,
+    nameChanged:                dto.name !== undefined,
+    businessDescriptionChanged: dto.businessDescription !== undefined,
+    orgId: org._id.toString(),
+  });
+
+  return {
+    agent:           updated!.toJSON(),
+    vapiAssistantId: org.vapiAssistantId ?? null,
+  };
+}
+
+// ─── getAgentById ─────────────────────────────────────────────────────────────
+
 /**
  * Returns a single VoiceAgent by its MongoDB _id.
  * Validates that it belongs to the authenticated owner's org.
  */
 export async function getAgentById(userId: string, agentId: string) {
-  const membership = await MembershipModel.findOne({ userId, role: 'Owner' }).populate<{
+  const membership = await MembershipModel.findOne({ userId }).populate<{
     organizationId: IOrganization;
   }>('organizationId');
 

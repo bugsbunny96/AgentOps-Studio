@@ -157,6 +157,8 @@ export async function updateOrgStep(userId: string, dto: UpdateOrgDto) {
   } else if (dto.step === 'customize') {
     updates.supportedLanguages = dto.supportedLanguages;
     if (dto.fallbackNumber) updates.fallbackNumber = dto.fallbackNumber;
+    if (dto.voiceProvider)  updates.preferredVoiceProvider = dto.voiceProvider;
+    if (dto.voiceId)        updates.preferredVoiceId = dto.voiceId;
     updates.onboardingStatus = 'VOICE_SETUP';
   }
 

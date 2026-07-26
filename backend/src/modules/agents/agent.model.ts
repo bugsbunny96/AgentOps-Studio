@@ -6,7 +6,7 @@ export interface IVoiceAgent extends Document {
   name: string;
   systemPrompt: string;
   vapiAssistantId: string;
-  voiceProvider: 'openai' | 'elevenlabs' | 'cartesia' | 'azure';
+  voiceProvider: 'openai' | 'elevenlabs' | 'deepgram' | 'cartesia' | 'playht' | 'azure';
   voiceId: string;
   primaryLanguage: string;
   supportedLanguages: string[];
@@ -29,7 +29,7 @@ const VoiceAgentSchema = new Schema<IVoiceAgent>(
     vapiAssistantId: { type: String, required: true, index: true },
     voiceProvider: {
       type: String,
-      enum: ['openai', 'elevenlabs', 'cartesia', 'azure'],
+      enum: ['openai', 'elevenlabs', 'deepgram', 'cartesia', 'playht', 'azure'],
       default: 'openai',
     },
     voiceId: { type: String, default: 'nova' },

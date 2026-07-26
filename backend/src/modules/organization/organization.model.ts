@@ -2,6 +2,7 @@ import mongoose, { Schema, Document } from 'mongoose';
 
 // ─── Organization ──────────────────────────────────────────────────────────
 export type CrawlStatus = 'idle' | 'pending' | 'processing' | 'completed' | 'failed';
+export type Plan = 'free' | 'starter' | 'growth' | 'enterprise';
 
 export interface IOrganization extends Document {
   _id: mongoose.Types.ObjectId;
@@ -33,6 +34,16 @@ export interface IOrganization extends Document {
   businessHours: { start: string; end: string };
   vapiAssistantId?: string;
   vapiPhoneNumberId?: string;
+  preferredVoiceProvider?: string;
+  preferredVoiceId?: string;
+  // ── Crawl tracking ───────────────────────────────────────────────────
+  /** Timestamp of the last successfully completed crawl — enforces 30-day re-sync cooldown. */
+  lastCrawledAt?: Date;
+  // ── Billing ──────────────────────────────────────────────────────────
+  plan: Plan;
+  stripeCustomerId?: string;
+  stripeSubscriptionId?: string;
+  stripePriceId?: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -87,12 +98,30 @@ const OrganizationSchema = new Schema<IOrganization>(
     },
     vapiAssistantId: { type: String, index: true },
     /**
+     * Voice provider + voice ID chosen during onboarding Customize step.
+     * Consumed by provisionAgent() so the Vapi assistant is created with the
+     * user's preferred voice, not the hardcoded default.
+     */
+    preferredVoiceProvider: { type: String },
+    preferredVoiceId: { type: String },
+    /**
      * Vapi phone number ID (UUID from Vapi dashboard → Phone Numbers).
      * Used to route inbound calls: Vapi sends assistant-request with this ID
      * and we look up the org to check business hours / return assistant config.
      * Set by founder via Settings → Phone Number Setup.
      */
     vapiPhoneNumberId: { type: String, index: true, sparse: true },
+    // ── Crawl tracking ─────────────────────────────────────────────────
+    lastCrawledAt: { type: Date },
+    // ── Billing ────────────────────────────────────────────────────────
+    plan: {
+      type:    String,
+      enum:    ['free', 'starter', 'growth', 'enterprise'],
+      default: 'free',
+    },
+    stripeCustomerId:     { type: String, index: true, sparse: true },
+    stripeSubscriptionId: { type: String, index: true, sparse: true },
+    stripePriceId:        { type: String },
   },
   { timestamps: true }
 );
@@ -108,12 +137,39 @@ OrganizationSchema.set('toJSON', {
 
 export const OrganizationModel = mongoose.model<IOrganization>('Organization', OrganizationSchema);
 
+// ─── Member Permissions ────────────────────────────────────────────────────
+// Granular access flags for Members. Owners always have full access.
+// Dashboard is always visible to all Members regardless of these flags.
+// Settings is always Owner-only and not represented here.
+// team: false = Team page hidden; true = Member can view & manage the Team page.
+export interface IMemberPermissions {
+  agents:        boolean; // Agents page — false: read-only, true: full access
+  calls:         boolean; // Calls page  — false: read-only, true: full access
+  knowledgeBase: boolean; // KB page     — false: read-only, true: full access
+  team:          boolean; // Team page   — false: hidden,    true: full management access
+}
+
+export const DEFAULT_MEMBER_PERMISSIONS: IMemberPermissions = {
+  agents:        true,
+  calls:         true,
+  knowledgeBase: true,
+  team:          false, // Team management is off by default for new invites
+};
+
+const MemberPermissionsSchema = {
+  agents:        { type: Boolean, default: true  },
+  calls:         { type: Boolean, default: true  },
+  knowledgeBase: { type: Boolean, default: true  },
+  team:          { type: Boolean, default: false },
+};
+
 // ─── Membership ────────────────────────────────────────────────────────────
 export interface IMembership extends Document {
   _id: mongoose.Types.ObjectId;
   userId: mongoose.Types.ObjectId;
   organizationId: mongoose.Types.ObjectId;
-  role: 'Owner' | 'Admin' | 'Member';
+  role: 'Owner' | 'Member';
+  permissions: IMemberPermissions; // Only meaningful for Members; Owners always have full access
   createdAt: Date;
   updatedAt: Date;
 }
@@ -127,7 +183,8 @@ const MembershipSchema = new Schema<IMembership>(
       required: true,
       index: true,
     },
-    role: { type: String, enum: ['Owner', 'Admin', 'Member'], required: true },
+    role: { type: String, enum: ['Owner', 'Member'], required: true },
+    permissions: { type: MemberPermissionsSchema, default: () => ({ ...DEFAULT_MEMBER_PERMISSIONS }) },
   },
   { timestamps: true }
 );
@@ -142,7 +199,8 @@ export interface IInvitation extends Document {
   _id: mongoose.Types.ObjectId;
   email: string;
   organizationId: mongoose.Types.ObjectId;
-  role: 'Admin' | 'Member';
+  role: 'Member';
+  permissions: IMemberPermissions; // Permissions that will be copied to the membership on accept
   token: string;
   expiresAt: Date;
   createdAt: Date;
@@ -153,7 +211,8 @@ const InvitationSchema = new Schema<IInvitation>(
   {
     email: { type: String, required: true, lowercase: true },
     organizationId: { type: Schema.Types.ObjectId, ref: 'Organization', required: true },
-    role: { type: String, enum: ['Admin', 'Member'], required: true },
+    role: { type: String, enum: ['Member'], required: true },
+    permissions: { type: MemberPermissionsSchema, default: () => ({ ...DEFAULT_MEMBER_PERMISSIONS }) },
     token: { type: String, required: true, unique: true },
     expiresAt: { type: Date, required: true, index: { expires: 0 } }, // TTL index — auto-delete
   },

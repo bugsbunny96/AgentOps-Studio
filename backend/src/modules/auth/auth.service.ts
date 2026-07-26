@@ -13,8 +13,11 @@ import type {
   ForgotPasswordDto,
   ResetPasswordDto,
   VerifyEmailDto,
+  ChangePasswordDto,
+  UpdateProfileDto,
 } from './auth.validation';
-import type { IOrganization } from '../organization/organization.model';
+import type { IOrganization, IMemberPermissions } from '../organization/organization.model';
+import { DEFAULT_MEMBER_PERMISSIONS } from '../organization/organization.model';
 
 // ─── Cookie Configuration ──────────────────────────────────────────────────
 export const ACCESS_COOKIE_OPTIONS = {
@@ -36,16 +39,17 @@ const REFRESH_PREFIX = 'refresh:';
 
 // ─── Helpers ───────────────────────────────────────────────────────────────
 function buildOrgList(
-  memberships: Array<{ organizationId: unknown; role: string }>
+  memberships: Array<{ organizationId: unknown; role: string; permissions?: IMemberPermissions }>
 ) {
   return memberships.map((m) => {
     const org = m.organizationId as IOrganization;
     return {
-      id: org._id.toString(),
-      name: org.name,
-      slug: org.slug,
+      id:               org._id.toString(),
+      name:             org.name,
+      slug:             org.slug,
       onboardingStatus: org.onboardingStatus,
-      role: m.role as 'Owner' | 'Admin' | 'Member',
+      role:             m.role as 'Owner' | 'Member',
+      permissions:      m.permissions ?? { ...DEFAULT_MEMBER_PERMISSIONS },
     };
   });
 }
@@ -70,7 +74,10 @@ export async function register(dto: RegisterDto) {
   });
 
   // Fire-and-forget email (don't block registration on email failure in dev)
-  sendVerificationEmail(user.email, user.name, verificationToken).catch(() => {
+  sendVerificationEmail(user.email, user.name, verificationToken, {
+    next:      dto.next,
+    emailHint: dto.emailHint,
+  }).catch(() => {
     // logged inside sendEmail
   });
 
@@ -218,6 +225,37 @@ export async function forgotPassword(dto: ForgotPasswordDto) {
   });
 
   return { message: SAFE_MSG };
+}
+
+// ─── Change Password (authenticated) ──────────────────────────────────────
+export async function changePassword(userId: string, dto: ChangePasswordDto) {
+  const user = await UserModel.findById(userId).select('+passwordHash');
+  if (!user) throw Unauthorized('User not found', 'USER_NOT_FOUND');
+
+  const currentPasswordMatch = await bcrypt.compare(dto.currentPassword, user.passwordHash);
+  if (!currentPasswordMatch) {
+    throw Unauthorized('Current password is incorrect', 'WRONG_PASSWORD');
+  }
+
+  user.passwordHash = await bcrypt.hash(dto.newPassword, 12);
+  await user.save();
+
+  return { message: 'Password changed successfully.' };
+}
+
+// ─── Update Profile (authenticated) ───────────────────────────────────────
+export async function updateProfile(userId: string, dto: UpdateProfileDto) {
+  const user = await UserModel.findById(userId);
+  if (!user) throw Unauthorized('User not found', 'USER_NOT_FOUND');
+
+  user.name = dto.name;
+  await user.save();
+
+  return {
+    id:   user._id.toString(),
+    name: user.name,
+    email: user.email,
+  };
 }
 
 // ─── Reset Password ────────────────────────────────────────────────────────

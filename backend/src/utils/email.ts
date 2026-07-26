@@ -55,9 +55,14 @@ export async function sendEmail(opts: SendEmailOptions): Promise<void> {
 export async function sendVerificationEmail(
   email: string,
   name: string,
-  token: string
+  token: string,
+  /** Optional query params chained through so the invite flow survives verification */
+  extra?: { next?: string; emailHint?: string }
 ): Promise<void> {
-  const verifyUrl = `${env.CLIENT_URL}/verify-email?token=${token}`;
+  const params = new URLSearchParams({ token });
+  if (extra?.next)      params.set('next',  extra.next);
+  if (extra?.emailHint) params.set('email', extra.emailHint);
+  const verifyUrl = `${env.CLIENT_URL}/verify-email?${params.toString()}`;
   // Always log in dev so the token is easy to grab without needing a real email
   if (env.NODE_ENV !== 'production') {
     logger.info(`[DEV] ✉️  Verification URL for ${email}: ${verifyUrl}`);

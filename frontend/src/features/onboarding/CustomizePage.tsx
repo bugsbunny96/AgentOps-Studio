@@ -1,28 +1,29 @@
 /**
  * L2.F4 — CustomizePage (Onboarding Step 4: Customize)
- * Collects supported languages and optional fallback phone number.
- * On submit → PATCH /api/v1/onboarding/org { step: 'customize' } → /onboarding/activate
+ *
+ * Collects:
+ *  • Voice provider + specific voice  (via VoiceSelector)
+ *  • Supported languages              (via VoiceSelector)
+ *  • Fallback phone number            (optional text field)
+ *
+ * On submit → PATCH /api/v1/onboarding/org { step: 'customize', ... } → /onboarding/activate
  */
 
 import { useState, useEffect } from 'react';
-import { useForm } from 'react-hook-form';
+import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Loader2, Mic } from 'lucide-react';
 import { AxiosError } from 'axios';
 import { useAuth } from '@/hooks/useAuth';
-
-// ─── Language options (mirrors backend SUPPORTED_LANGUAGE_CODES) ─────────────
-const LANGUAGE_OPTIONS = [
-  { code: 'en-US', label: 'English', sublabel: 'English (US)' },
-  { code: 'hi-IN', label: 'हिन्दी', sublabel: 'Hindi' },
-  { code: 'pa-IN', label: 'ਪੰਜਾਬੀ', sublabel: 'Punjabi' },
-] as const;
-
-type LanguageCode = (typeof LANGUAGE_OPTIONS)[number]['code'];
+import VoiceSelector, { type VoiceSelectorValue } from '@/features/agents/VoiceSelector';
+import type { VoiceProviderId, LanguageCode } from '@/features/agents/voice-catalog';
 
 // ─── Form schema ─────────────────────────────────────────────────────────────
+
 const CustomizeSchema = z.object({
+  voiceProvider: z.enum(['openai', 'elevenlabs', 'cartesia', 'azure'] as const),
+  voiceId: z.string().min(1),
   supportedLanguages: z
     .array(z.enum(['en-US', 'hi-IN', 'pa-IN'] as const))
     .min(1, 'Select at least one language for your AI agent'),
@@ -32,20 +33,22 @@ const CustomizeSchema = z.object({
 type CustomizeFormValues = z.infer<typeof CustomizeSchema>;
 
 // ─── Component ───────────────────────────────────────────────────────────────
+
 export default function CustomizePage() {
   const { updateOnboardingStep, currentOrg } = useAuth();
   const [serverError, setServerError] = useState<string | null>(null);
 
   const {
+    control,
     register,
     handleSubmit,
-    watch,
-    setValue,
     reset,
     formState: { errors, isSubmitting },
   } = useForm<CustomizeFormValues>({
     resolver: zodResolver(CustomizeSchema),
     defaultValues: {
+      voiceProvider: (currentOrg?.preferredVoiceProvider as VoiceProviderId) ?? 'openai',
+      voiceId:       (currentOrg?.preferredVoiceId as string) ?? 'nova',
       supportedLanguages: (currentOrg?.supportedLanguages as LanguageCode[]) ?? ['en-US'],
       fallbackNumber: currentOrg?.fallbackNumber ?? '',
     },
@@ -55,21 +58,13 @@ export default function CustomizePage() {
   useEffect(() => {
     if (!currentOrg) return;
     reset({
+      voiceProvider: (currentOrg.preferredVoiceProvider as VoiceProviderId) ?? 'openai',
+      voiceId:       (currentOrg.preferredVoiceId as string) ?? 'nova',
       supportedLanguages: (currentOrg.supportedLanguages as LanguageCode[]) ?? ['en-US'],
       fallbackNumber: currentOrg.fallbackNumber ?? '',
     });
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentOrg?.id]);
-
-  const selectedLanguages = watch('supportedLanguages') ?? [];
-
-  function toggleLanguage(code: LanguageCode) {
-    const current = selectedLanguages;
-    const next = current.includes(code)
-      ? current.filter((c) => c !== code)
-      : [...current, code];
-    setValue('supportedLanguages', next as LanguageCode[], { shouldValidate: true });
-  }
 
   async function onSubmit(values: CustomizeFormValues) {
     setServerError(null);
@@ -77,6 +72,8 @@ export default function CustomizePage() {
       await updateOnboardingStep(
         {
           step: 'customize',
+          voiceProvider: values.voiceProvider,
+          voiceId: values.voiceId,
           supportedLanguages: values.supportedLanguages,
           fallbackNumber: values.fallbackNumber || undefined,
         },
@@ -98,7 +95,7 @@ export default function CustomizePage() {
         <div>
           <h1 className="text-2xl font-bold text-slate-900">Customize your AI agent</h1>
           <p className="mt-1 text-sm text-slate-500">
-            Choose the languages your agent will speak and set a fallback number for escalations.
+            Choose your agent's voice and the languages it will speak. You can change these any time from Agent Details.
           </p>
         </div>
       </div>
@@ -111,58 +108,47 @@ export default function CustomizePage() {
       )}
 
       {/* Form */}
-      <form onSubmit={handleSubmit(onSubmit)} noValidate className="space-y-6">
-        {/* Language selection */}
-        <div>
-          <p className="block text-sm font-medium text-slate-700 mb-1">
-            Supported languages <span className="text-red-500">*</span>
-          </p>
-          <p className="text-xs text-slate-400 mb-3">
-            Your AI agent will respond in whichever of these languages the caller uses.
-          </p>
-          <div className="space-y-2">
-            {LANGUAGE_OPTIONS.map(({ code, label, sublabel }) => {
-              const isSelected = selectedLanguages.includes(code);
-              return (
-                <button
-                  key={code}
-                  type="button"
-                  onClick={() => toggleLanguage(code)}
-                  className={`w-full flex items-center justify-between rounded-lg border-2 px-4 py-3 text-left transition
-                    ${isSelected
-                      ? 'border-brand-500 bg-brand-50'
-                      : 'border-slate-200 bg-white hover:border-slate-300'
-                    }`}
-                >
-                  <div className="flex items-center gap-3">
-                    {/* Checkbox indicator */}
-                    <span
-                      className={`h-4 w-4 flex-shrink-0 rounded border-2 flex items-center justify-center transition
-                        ${isSelected ? 'border-brand-500 bg-brand-500' : 'border-slate-300'}`}
-                    >
-                      {isSelected && (
-                        <svg viewBox="0 0 10 8" className="h-2.5 w-2.5 text-white fill-current">
-                          <path d="M1 4l2.5 2.5L9 1" stroke="currentColor" strokeWidth="1.5" fill="none" strokeLinecap="round" strokeLinejoin="round" />
-                        </svg>
-                      )}
-                    </span>
-                    <span>
-                      <span className={`text-sm font-medium ${isSelected ? 'text-brand-700' : 'text-slate-700'}`}>
-                        {label}
-                      </span>
-                      <span className="ml-2 text-xs text-slate-400">{sublabel}</span>
-                    </span>
-                  </div>
-                </button>
-              );
-            })}
-          </div>
-          {/* Hidden register so RHF tracks the array */}
-          <input type="hidden" {...register('supportedLanguages')} />
-          {errors.supportedLanguages && (
-            <p className="mt-2 text-xs text-red-600">{errors.supportedLanguages.message}</p>
+      <form onSubmit={handleSubmit(onSubmit)} noValidate className="space-y-8">
+
+        {/* Voice selector (provider + voice + languages) */}
+        <Controller
+          name="voiceProvider"
+          control={control}
+          render={({ field: providerField }) => (
+            <Controller
+              name="voiceId"
+              control={control}
+              render={({ field: voiceField }) => (
+                <Controller
+                  name="supportedLanguages"
+                  control={control}
+                  render={({ field: langsField }) => {
+                    const selectorValue: VoiceSelectorValue = {
+                      voiceProvider: providerField.value,
+                      voiceId: voiceField.value,
+                      supportedLanguages: langsField.value,
+                    };
+                    return (
+                      <VoiceSelector
+                        value={selectorValue}
+                        onChange={(next) => {
+                          providerField.onChange(next.voiceProvider);
+                          voiceField.onChange(next.voiceId);
+                          langsField.onChange(next.supportedLanguages);
+                        }}
+                        disabled={isSubmitting}
+                      />
+                    );
+                  }}
+                />
+              )}
+            />
           )}
-        </div>
+        />
+
+        {errors.supportedLanguages && (
+          <p className="text-xs text-red-600">{errors.supportedLanguages.message}</p>
+        )}
 
         {/* Fallback number */}
         <div>

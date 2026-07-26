@@ -14,6 +14,9 @@ import { agentsRouter } from './modules/agents/agent.routes';
 import { callsRouter } from './modules/calls/call.routes';
 import { vapiWebhookRouter } from './modules/calls/webhook.routes';
 import { analyticsRouter } from './modules/analytics/analytics.routes';
+import { kbRouter }        from './modules/knowledge-base/kb.routes';
+import teamRouter          from './modules/team/team.routes';
+import { billingRouter }   from './modules/billing/billing.routes';
 
 const app = express();
 
@@ -34,6 +37,12 @@ app.use(cors({
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Organization-ID'],
   exposedHeaders: ['X-Total-Count'],
 }));
+
+// ─── Billing routes BEFORE express.json() ────────────────────────────
+// The Stripe webhook route requires raw bytes for signature verification.
+// The billing router handles its own body parsing per-route (raw for webhook,
+// json for checkout) — mounting it here keeps it outside the global json().
+app.use('/api/v1/billing', billingRouter);
 
 // ─── Body Parsing ────────────────────────────────────────────────────
 app.use(express.json({ limit: '10mb' }));
@@ -98,7 +107,8 @@ app.get('/health', (_req, res) => {
 // Layer 2 — Identity & Onboarding
 app.use('/api/v1/auth', authRouter);
 app.use('/api/v1/onboarding', onboardingRouter);
-// app.use('/api/v1/knowledge-base', knowledgeBaseRouter);
+app.use('/api/v1/knowledge-base', kbRouter);
+app.use('/api/v1/team',          teamRouter);
 // app.use('/api/v1/members', membersRouter);
 // app.use('/api/v1/navigation', navigationRouter);
 // app.use('/api/v1/feature-flags', featureFlagsRouter);

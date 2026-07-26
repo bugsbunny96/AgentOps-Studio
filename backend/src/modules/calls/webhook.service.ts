@@ -68,7 +68,7 @@ export interface VapiAssistantRequestEvent {
   };
 }
 
-interface VapiCallStartedEvent {
+export interface VapiCallStartedEvent {
   type: 'call-started';
   call: {
     id: string;
@@ -85,7 +85,7 @@ interface VapiMessage {
   time?: number;
 }
 
-interface VapiEndOfCallReportEvent {
+export interface VapiEndOfCallReportEvent {
   type: 'end-of-call-report';
   call: {
     id: string;

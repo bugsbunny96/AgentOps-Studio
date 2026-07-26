@@ -1,9 +1,9 @@
 import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Eye, EyeOff, Loader2, CheckCircle2 } from 'lucide-react';
+import { Eye, EyeOff, Loader2, CheckCircle2, Mail } from 'lucide-react';
 import { api } from '@/utils/api';
 import { AxiosError } from 'axios';
 
@@ -28,10 +28,16 @@ type RegisterFormValues = z.infer<typeof RegisterSchema>;
 
 // ─── Component ────────────────────────────────────────────────────────────
 export default function RegisterPage() {
-  const navigate = useNavigate();
+  const navigate            = useNavigate();
+  const [searchParams]      = useSearchParams();
   const [showPassword, setShowPassword] = useState(false);
-  const [serverError, setServerError] = useState<string | null>(null);
-  const [success, setSuccess] = useState(false);
+  const [serverError, setServerError]   = useState<string | null>(null);
+  const [success, setSuccess]           = useState(false);
+
+  // ?email pre-fills the form when coming from an invite link
+  // ?next is preserved and forwarded to the login page after verification
+  const prefilledEmail = searchParams.get('email') ?? '';
+  const nextPath       = searchParams.get('next')  ?? '';
 
   const {
     register,
@@ -40,24 +46,32 @@ export default function RegisterPage() {
     formState: { errors, isSubmitting },
   } = useForm<RegisterFormValues>({
     resolver: zodResolver(RegisterSchema),
-    defaultValues: { name: '', email: '', password: '', confirmPassword: '' },
+    defaultValues: {
+      name:            '',
+      email:           prefilledEmail,
+      password:        '',
+      confirmPassword: '',
+    },
   });
 
   const password = watch('password');
 
   const rules = [
-    { label: '8+ characters', ok: password.length >= 8 },
+    { label: '8+ characters',    ok: password.length >= 8 },
     { label: 'Uppercase letter', ok: /[A-Z]/.test(password) },
-    { label: 'Number', ok: /[0-9]/.test(password) },
+    { label: 'Number',           ok: /[0-9]/.test(password) },
   ];
 
   async function onSubmit(values: RegisterFormValues) {
     setServerError(null);
     try {
       await api.post('/auth/register', {
-        name: values.name,
-        email: values.email,
-        password: values.password,
+        name:      values.name,
+        email:     values.email,
+        password:  values.password,
+        // Forwarded into the verification email URL so the invite chain survives
+        ...(nextPath    && { next:      nextPath }),
+        ...(prefilledEmail && { emailHint: prefilledEmail }),
       });
       setSuccess(true);
     } catch (err) {
@@ -73,21 +87,38 @@ export default function RegisterPage() {
     }
   }
 
-  // ─── Success state ──────────────────────────────────────────────────────
+  // Build the post-verification login URL, preserving ?next and ?email
+  function buildLoginUrl() {
+    const params = new URLSearchParams();
+    if (nextPath)       params.set('next',  nextPath);
+    if (prefilledEmail) params.set('email', prefilledEmail);
+    const qs = params.toString();
+    return qs ? `/login?${qs}` : '/login';
+  }
+
+  // ─── Success state: "Check your inbox" ────────────────────────────────────
   if (success) {
     return (
       <div className="space-y-6 text-center">
         <div className="flex flex-col items-center gap-4">
-          <CheckCircle2 size={48} className="text-green-500" />
+          <div className="flex h-16 w-16 items-center justify-center rounded-full bg-brand-50 border border-brand-100">
+            <Mail size={28} className="text-brand-500" />
+          </div>
           <div>
             <h2 className="text-xl font-bold text-slate-900">Check your inbox</h2>
-            <p className="mt-2 text-sm text-slate-500">
-              We&apos;ve sent a verification email. Click the link inside to activate your account.
+            <p className="mt-2 text-sm text-slate-500 leading-relaxed">
+              We've sent a verification link to <strong>{prefilledEmail || 'your email'}</strong>.
+              Click it to activate your account, then sign in to continue.
             </p>
+            {nextPath && (
+              <p className="mt-2 text-xs text-brand-600 font-medium">
+                After verifying, you'll be taken straight back to accept the invitation.
+              </p>
+            )}
           </div>
         </div>
         <button
-          onClick={() => navigate('/login')}
+          onClick={() => navigate(buildLoginUrl())}
           className="w-full rounded-md bg-brand-600 px-4 py-2.5 text-sm font-semibold
             text-white hover:bg-brand-700 transition"
         >
@@ -97,15 +128,31 @@ export default function RegisterPage() {
     );
   }
 
+  // ─── Invite context banner ─────────────────────────────────────────────────
+  const showInviteBanner = Boolean(prefilledEmail && nextPath);
+
   return (
     <div className="space-y-6">
       {/* Header */}
       <div>
         <h1 className="text-2xl font-bold text-slate-900">Create your account</h1>
         <p className="mt-1 text-sm text-slate-500">
-          Start your 14-day free trial. No credit card required.
+          {showInviteBanner
+            ? 'Create an account to accept your invitation.'
+            : 'Start your 14-day free trial. No credit card required.'}
         </p>
       </div>
+
+      {/* Invite context banner — shown when coming from an invite link */}
+      {showInviteBanner && (
+        <div className="rounded-xl border border-brand-100 bg-brand-50 px-4 py-3 flex items-start gap-3">
+          <CheckCircle2 size={16} className="text-brand-500 mt-0.5 flex-shrink-0" />
+          <div className="text-xs text-brand-700 leading-relaxed">
+            <strong>You have a pending invitation.</strong> Create your account using{' '}
+            <strong>{prefilledEmail}</strong> and you'll be added to the workspace automatically.
+          </div>
+        </div>
+      )}
 
       {/* Server error */}
       {serverError && (
@@ -134,7 +181,7 @@ export default function RegisterPage() {
           {errors.name && <p className="mt-1 text-xs text-red-600">{errors.name.message}</p>}
         </div>
 
-        {/* Email */}
+        {/* Email — readonly if pre-filled from invite */}
         <div>
           <label htmlFor="reg-email" className="block text-sm font-medium text-slate-700 mb-1">
             Work email
@@ -143,12 +190,19 @@ export default function RegisterPage() {
             id="reg-email"
             type="email"
             autoComplete="email"
+            readOnly={Boolean(prefilledEmail)}
             {...register('email')}
             className={`w-full rounded-md border px-3 py-2 text-sm shadow-sm outline-none
               focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition
-              ${errors.email ? 'border-red-400 bg-red-50' : 'border-slate-300 bg-white'}`}
+              ${prefilledEmail ? 'bg-slate-50 text-slate-500 cursor-not-allowed' : 'bg-white'}
+              ${errors.email ? 'border-red-400 bg-red-50' : 'border-slate-300'}`}
             placeholder="you@company.com"
           />
+          {prefilledEmail && (
+            <p className="mt-1 text-xs text-slate-400">
+              This email matches your invitation and cannot be changed.
+            </p>
+          )}
           {errors.email && <p className="mt-1 text-xs text-red-600">{errors.email.message}</p>}
         </div>
 
@@ -177,7 +231,6 @@ export default function RegisterPage() {
               {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
             </button>
           </div>
-          {/* Strength hints */}
           {password.length > 0 && (
             <div className="mt-2 flex gap-4 flex-wrap">
               {rules.map((r) => (
@@ -185,25 +238,18 @@ export default function RegisterPage() {
                   key={r.label}
                   className={`text-xs flex items-center gap-1 ${r.ok ? 'text-green-600' : 'text-slate-400'}`}
                 >
-                  <span
-                    className={`inline-block w-1.5 h-1.5 rounded-full ${r.ok ? 'bg-green-500' : 'bg-slate-300'}`}
-                  />
+                  <span className={`inline-block w-1.5 h-1.5 rounded-full ${r.ok ? 'bg-green-500' : 'bg-slate-300'}`} />
                   {r.label}
                 </span>
               ))}
             </div>
           )}
-          {errors.password && (
-            <p className="mt-1 text-xs text-red-600">{errors.password.message}</p>
-          )}
+          {errors.password && <p className="mt-1 text-xs text-red-600">{errors.password.message}</p>}
         </div>
 
         {/* Confirm password */}
         <div>
-          <label
-            htmlFor="confirmPassword"
-            className="block text-sm font-medium text-slate-700 mb-1"
-          >
+          <label htmlFor="confirmPassword" className="block text-sm font-medium text-slate-700 mb-1">
             Confirm password
           </label>
           <input
@@ -221,7 +267,6 @@ export default function RegisterPage() {
           )}
         </div>
 
-        {/* Submit */}
         <button
           type="submit"
           disabled={isSubmitting}
@@ -235,10 +280,9 @@ export default function RegisterPage() {
         </button>
       </form>
 
-      {/* Footer */}
       <p className="text-center text-sm text-slate-500">
         Already have an account?{' '}
-        <Link to="/login" className="font-medium text-brand-600 hover:underline">
+        <Link to={buildLoginUrl()} className="font-medium text-brand-600 hover:underline">
           Sign in
         </Link>
       </p>

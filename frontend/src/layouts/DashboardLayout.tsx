@@ -1,12 +1,9 @@
 /**
  * DashboardLayout — primary app shell after onboarding.
- *
- * Changes vs original:
- *  - Top header: shows current page title (derived from pathname) + dynamic badge
- *  - "Agent Live" badge is CONDITIONAL on vapiAssistantId being set
- *  - Sidebar: unchanged (gradient active state, Zap logo, org pill)
+ * Redesigned with dark futuristic sidebar matching the landing page palette.
  */
 
+import { useEffect } from 'react';
 import { Outlet, NavLink, useLocation } from 'react-router-dom';
 import { useAppSelector } from '@/store';
 import { useAuth } from '@/hooks/useAuth';
@@ -17,22 +14,95 @@ import {
   BookOpen,
   Users,
   Settings,
+  CreditCard,
   LogOut,
-  AlertCircle,
+  Zap,
 } from 'lucide-react';
 import agentopsIcon from '@/assets/logos/agentops-icon.svg';
+import type { MemberPermissions } from '@/types';
+
+// ── Dark-layout global text remapping ─────────────────────────────────────────
+// Pages that pre-date the dark theme use Tailwind's light-theme utilities
+// (text-slate-900, text-gray-800, etc.) which are near-invisible on #030712.
+// We inject a single <style> block that:
+//   1. Remaps dark slate/gray text → light equivalents on dark bg.
+//   2. Restores original dark colours inside explicitly white card containers
+//      (higher CSS specificity wins: #dl-main .bg-white .text-* > #dl-main .text-*).
+const DARK_LAYOUT_CSS = `
+#dl-main { color: #e2e8f0; }
+
+/* Dark text → light when floating on dark background */
+#dl-main .text-slate-900 { color: #f1f5f9; }
+#dl-main .text-slate-800 { color: #e2e8f0; }
+#dl-main .text-slate-700 { color: #cbd5e1; }
+#dl-main .text-slate-600 { color: #94a3b8; }
+#dl-main .text-gray-900  { color: #f1f5f9; }
+#dl-main .text-gray-800  { color: #e2e8f0; }
+#dl-main .text-gray-700  { color: #cbd5e1; }
+#dl-main .text-gray-600  { color: #94a3b8; }
+
+/* Restore original dark text inside white card containers (specificity 1,2,0 > 1,1,0) */
+#dl-main .bg-white .text-slate-900,
+#dl-main .bg-white .text-gray-900  { color: #0f172a; }
+#dl-main .bg-white .text-slate-800,
+#dl-main .bg-white .text-gray-800  { color: #1e293b; }
+#dl-main .bg-white .text-slate-700,
+#dl-main .bg-white .text-gray-700  { color: #334155; }
+#dl-main .bg-white .text-slate-600,
+#dl-main .bg-white .text-gray-600  { color: #475569; }
+#dl-main .bg-white .text-slate-500 { color: #64748b; }
+
+/* Fix select/input elements inside forms on dark bg */
+#dl-main select,
+#dl-main input:not([type=checkbox]):not([type=radio]) {
+  color-scheme: dark;
+}
+#dl-main .bg-white select,
+#dl-main .bg-white input:not([type=checkbox]):not([type=radio]) {
+  color-scheme: light;
+}
+`;
+
+// ── Design tokens (mirrors landing page) ──────────────────────────────────────
+const T = {
+  bg:    '#030712',
+  bgS:   '#0d1524',
+  bgC:   'rgba(255,255,255,0.04)',
+  bdr:   'rgba(255,255,255,0.07)',
+  bdrB:  'rgba(255,255,255,0.12)',
+  blue:  '#3b82f6',
+  blueL: '#60a5fa',
+  violet:'#8b5cf6',
+  em:    '#10b981',
+  t1:    '#f8fafc',
+  t2:    '#94a3b8',
+  t3:    '#475569',
+};
 
 // ── Nav items ──────────────────────────────────────────────────────────────────
 const NAV = [
   { to: '/dashboard',      label: 'Dashboard',     icon: LayoutDashboard },
-  { to: '/agents',         label: 'Agents',         icon: Bot },
-  { to: '/calls',          label: 'Calls',          icon: PhoneCall },
-  { to: '/knowledge-base', label: 'Knowledge Base', icon: BookOpen },
-  { to: '/team',           label: 'Team',           icon: Users },
-  { to: '/settings',       label: 'Settings',       icon: Settings },
-];
+  { to: '/agents',         label: 'Agents',         icon: Bot             },
+  { to: '/calls',          label: 'Calls',          icon: PhoneCall       },
+  { to: '/knowledge-base', label: 'Knowledge Base', icon: BookOpen        },
+  { to: '/team',           label: 'Team',           icon: Users,       permission: 'team' as keyof MemberPermissions },
+  { to: '/billing',        label: 'Billing',        icon: CreditCard,  ownerOnly: true },
+  { to: '/settings',       label: 'Settings',       icon: Settings,    ownerOnly: true },
+] as const;
 
-// ── Derive page title from pathname ───────────────────────────────────────────
+function canSeeNav(
+  item: typeof NAV[number],
+  isOwner: boolean,
+  permissions: MemberPermissions | null,
+): boolean {
+  if (isOwner) return true;
+  if ('ownerOnly' in item && item.ownerOnly) return false;
+  if ('permission' in item && item.permission) {
+    return permissions?.[item.permission] ?? false;
+  }
+  return true;
+}
+
 function usePageTitle() {
   const { pathname } = useLocation();
   if (pathname.startsWith('/agents/') && pathname !== '/agents/new') return 'Agent Details';
@@ -43,16 +113,32 @@ function usePageTitle() {
   if (pathname === '/calls')            return 'Calls';
   if (pathname === '/knowledge-base')   return 'Knowledge Base';
   if (pathname === '/team')             return 'Team';
+  if (pathname === '/billing')          return 'Billing';
   if (pathname === '/settings')         return 'Settings';
   return 'AgentOps Studio';
 }
 
-// ── Component ─────────────────────────────────────────────────────────────────
-
 export function DashboardLayout() {
   const { user, logout } = useAuth();
-  const { currentOrg } = useAppSelector((s) => s.org);
-  const pageTitle = usePageTitle();
+  const { currentOrg, currentRole, currentPermissions } = useAppSelector((s) => s.org);
+  const pageTitle  = usePageTitle();
+  const isOwner    = currentRole === 'Owner';
+  const visibleNav = NAV.filter((item) => canSeeNav(item, isOwner, currentPermissions));
+
+  // Inject dark-layout CSS overrides once on mount
+  useEffect(() => {
+    const id = 'dl-dark-overrides';
+    if (!document.getElementById(id)) {
+      const el = document.createElement('style');
+      el.id = id;
+      el.textContent = DARK_LAYOUT_CSS;
+      document.head.appendChild(el);
+    }
+    return () => {
+      // Remove on unmount (e.g. logout → auth pages shouldn't inherit these rules)
+      document.getElementById('dl-dark-overrides')?.remove();
+    };
+  }, []);
 
   const initials = user?.name
     ?.split(' ')
@@ -64,54 +150,87 @@ export function DashboardLayout() {
   const isAgentLive = Boolean(currentOrg?.vapiAssistantId);
 
   return (
-    <div className="flex h-screen bg-slate-50 overflow-hidden">
+    <div style={{ display: 'flex', height: '100vh', background: T.bg, overflow: 'hidden' }}>
 
       {/* ── Sidebar ──────────────────────────────────────────────────────── */}
-      <aside className="flex w-64 flex-shrink-0 flex-col border-r border-slate-200 bg-white">
+      <aside style={{
+        display: 'flex', flexDirection: 'column',
+        width: 240, flexShrink: 0,
+        background: T.bgS,
+        borderRight: `1px solid ${T.bdr}`,
+      }}>
 
         {/* Logo */}
-        <div className="flex h-16 items-center gap-3 px-5 border-b border-slate-100">
-          <img src={agentopsIcon} alt="AgentOps" className="h-9 w-9 flex-shrink-0 rounded-xl" />
-          <div className="min-w-0">
-            <p className="text-sm font-bold text-slate-900 tracking-tight">AgentOps</p>
-            <p className="text-[10px] text-slate-400 font-medium tracking-wide uppercase">Studio</p>
+        <div style={{
+          display: 'flex', alignItems: 'center', gap: 10,
+          height: 64, padding: '0 20px',
+          borderBottom: `1px solid ${T.bdr}`,
+        }}>
+          <img src={agentopsIcon} alt="AgentOps" style={{ height: 36, width: 36, borderRadius: 10, flexShrink: 0 }} />
+          <div style={{ minWidth: 0 }}>
+            <p style={{ fontSize: 13, fontWeight: 800, color: T.t1, letterSpacing: '-0.02em', margin: 0 }}>AgentOps</p>
+            <p style={{ fontSize: 9, color: T.t3, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', margin: 0 }}>Studio</p>
           </div>
         </div>
 
-        {/* Org pill */}
-        <div className="mx-3 mt-3 mb-1 rounded-lg bg-slate-50 border border-slate-100 px-3 py-2">
-          <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 mb-0.5">Workspace</p>
-          <p className="text-sm font-semibold text-slate-800 truncate">
+        {/* Workspace pill */}
+        <div style={{
+          margin: '12px 12px 4px',
+          borderRadius: 10,
+          background: T.bgC,
+          border: `1px solid ${T.bdr}`,
+          padding: '8px 12px',
+        }}>
+          <p style={{ fontSize: 9, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', color: T.t3, margin: '0 0 2px' }}>Workspace</p>
+          <p style={{ fontSize: 13, fontWeight: 600, color: T.t1, margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
             {currentOrg?.name ?? 'Loading…'}
           </p>
-          <p className="text-[10px] text-slate-400 truncate">{currentOrg?.slug}</p>
+          <p style={{ fontSize: 10, color: T.t3, margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            {currentOrg?.slug}
+          </p>
         </div>
 
         {/* Nav */}
-        <nav className="flex-1 overflow-y-auto px-3 py-2 space-y-0.5">
-          {NAV.map(({ to, label, icon: Icon }) => (
+        <nav style={{ flex: 1, overflowY: 'auto', padding: '8px 12px', display: 'flex', flexDirection: 'column', gap: 2 }}>
+          {visibleNav.map(({ to, label, icon: Icon }) => (
             <NavLink
               key={to}
               to={to}
-              className={({ isActive }) =>
-                [
-                  'group flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-150',
-                  isActive
-                    ? 'bg-gradient-to-r from-brand-50 to-violet-50 text-brand-700 shadow-sm border border-brand-100'
-                    : 'text-slate-500 hover:bg-slate-50 hover:text-slate-800',
-                ].join(' ')
-              }
+              style={({ isActive }) => ({
+                display: 'flex', alignItems: 'center', gap: 10,
+                padding: '9px 12px', borderRadius: 9,
+                fontSize: 13, fontWeight: 500,
+                textDecoration: 'none',
+                transition: 'all 0.15s',
+                ...(isActive
+                  ? {
+                      background: 'linear-gradient(135deg, rgba(59,130,246,0.2), rgba(139,92,246,0.2))',
+                      color: T.blueL,
+                      border: '1px solid rgba(59,130,246,0.25)',
+                      boxShadow: '0 0 12px rgba(59,130,246,0.1)',
+                    }
+                  : {
+                      color: T.t2,
+                      border: '1px solid transparent',
+                      background: 'transparent',
+                    }),
+              })}
             >
               {({ isActive }) => (
                 <>
                   <Icon
-                    size={17}
+                    size={15}
                     strokeWidth={isActive ? 2.2 : 1.8}
-                    className={isActive ? 'text-brand-600' : 'text-slate-400 group-hover:text-slate-600'}
+                    style={{ color: isActive ? T.blueL : T.t3, flexShrink: 0 }}
                   />
                   {label}
                   {isActive && (
-                    <span className="ml-auto h-1.5 w-1.5 rounded-full bg-brand-500" />
+                    <span style={{
+                      marginLeft: 'auto',
+                      width: 5, height: 5, borderRadius: '50%',
+                      background: T.blue,
+                      boxShadow: `0 0 6px ${T.blue}`,
+                    }} />
                   )}
                 </>
               )}
@@ -120,67 +239,107 @@ export function DashboardLayout() {
         </nav>
 
         {/* User footer */}
-        <div className="border-t border-slate-100 p-3">
-          <div className="flex items-center gap-3 rounded-lg px-2 py-2">
-            <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full
-              bg-gradient-to-br from-brand-500 to-violet-500 text-white text-xs font-bold">
+        <div style={{ borderTop: `1px solid ${T.bdr}`, padding: 12 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '6px 8px', borderRadius: 9 }}>
+            <div style={{
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              width: 30, height: 30, borderRadius: '50%', flexShrink: 0,
+              background: 'linear-gradient(135deg, #3b82f6, #8b5cf6)',
+              fontSize: 11, fontWeight: 800, color: '#fff',
+            }}>
               {initials}
             </div>
-            <div className="min-w-0 flex-1">
-              <p className="truncate text-sm font-semibold text-slate-800">{user?.name}</p>
-              <p className="truncate text-[11px] text-slate-400">{user?.email}</p>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                <p style={{ fontSize: 12, fontWeight: 600, color: T.t1, margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  {user?.name}
+                </p>
+                {currentRole && (
+                  <span style={{
+                    fontSize: 8, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em',
+                    padding: '1px 5px', borderRadius: 999,
+                    background: T.bgC, border: `1px solid ${T.bdr}`, color: T.t3, flexShrink: 0,
+                  }}>
+                    {currentRole}
+                  </span>
+                )}
+              </div>
+              <p style={{ fontSize: 10, color: T.t3, margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                {user?.email}
+              </p>
             </div>
             <button
               onClick={logout}
               title="Sign out"
-              className="flex-shrink-0 rounded-md p-1.5 text-slate-400 hover:bg-red-50
-                hover:text-red-500 transition-colors"
+              style={{
+                flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                width: 28, height: 28, borderRadius: 7, border: 'none', cursor: 'pointer',
+                background: 'transparent', color: T.t3, transition: 'all 0.15s',
+              }}
+              onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(239,68,68,0.1)'; e.currentTarget.style.color = '#f87171'; }}
+              onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = T.t3; }}
             >
-              <LogOut size={14} />
+              <LogOut size={13} />
             </button>
           </div>
         </div>
       </aside>
 
       {/* ── Main ─────────────────────────────────────────────────────────── */}
-      <div className="flex flex-1 flex-col min-w-0 overflow-hidden">
+      <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minWidth: 0, overflow: 'hidden' }}>
 
-        {/* Top header bar */}
-        <header className="flex h-14 flex-shrink-0 items-center justify-between
-          border-b border-slate-200 bg-white/80 backdrop-blur-sm px-8">
-
-          {/* Page title */}
-          <div className="flex items-center gap-2.5">
-            <h2 className="text-sm font-semibold text-slate-800">{pageTitle}</h2>
+        {/* Top header */}
+        <header style={{
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          height: 56, flexShrink: 0,
+          padding: '0 32px',
+          borderBottom: `1px solid ${T.bdr}`,
+          background: 'rgba(13,21,36,0.8)',
+          backdropFilter: 'blur(12px)',
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <h2 style={{ fontSize: 13, fontWeight: 600, color: T.t1, margin: 0 }}>{pageTitle}</h2>
             {currentOrg?.industry && (
               <>
-                <span className="text-slate-200">·</span>
-                <span className="text-xs text-slate-400">{currentOrg.industry}</span>
+                <span style={{ color: T.bdr }}>·</span>
+                <span style={{ fontSize: 11, color: T.t3 }}>{currentOrg.industry}</span>
               </>
             )}
           </div>
 
-          {/* Status badge — conditional */}
-          <div className="flex items-center gap-3">
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
             {isAgentLive ? (
-              <div className="flex items-center gap-1.5 rounded-full border border-emerald-200
-                bg-emerald-50 px-3 py-1">
-                <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                <span className="text-xs font-medium text-emerald-700">Agent Live</span>
+              <div style={{
+                display: 'flex', alignItems: 'center', gap: 6,
+                padding: '4px 12px', borderRadius: 999,
+                background: 'rgba(16,185,129,0.1)',
+                border: '1px solid rgba(16,185,129,0.25)',
+              }}>
+                <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#10b981', boxShadow: '0 0 6px #10b981', animation: 'pulse 2s infinite' }} />
+                <span style={{ fontSize: 11, fontWeight: 600, color: '#10b981' }}>Agent Live</span>
               </div>
             ) : (
-              <div className="flex items-center gap-1.5 rounded-full border border-amber-200
-                bg-amber-50 px-3 py-1">
-                <AlertCircle size={11} className="text-amber-500" />
-                <span className="text-xs font-medium text-amber-700">Setup Needed</span>
+              <div style={{
+                display: 'flex', alignItems: 'center', gap: 6,
+                padding: '4px 12px', borderRadius: 999,
+                background: 'rgba(245,158,11,0.1)',
+                border: '1px solid rgba(245,158,11,0.25)',
+              }}>
+                <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#f59e0b' }} />
+                <span style={{ fontSize: 11, fontWeight: 600, color: '#f59e0b' }}>Setup Needed</span>
               </div>
             )}
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+              <Zap size={10} style={{ color: T.blue }} />
+              <span style={{ fontSize: 10, color: T.t3 }}>AgentOps Studio</span>
+            </div>
           </div>
         </header>
 
         {/* Page content */}
-        <main className="flex-1 overflow-y-auto">
-          <div className="mx-auto max-w-6xl px-8 py-8">
+        <main id="dl-main" style={{ flex: 1, overflowY: 'auto', background: T.bg }}>
+          <div style={{ maxWidth: 1140, margin: '0 auto', padding: '32px' }}>
             <Outlet />
           </div>
         </main>

@@ -7,6 +7,8 @@ import {
   ForgotPasswordSchema,
   ResetPasswordSchema,
   VerifyEmailSchema,
+  ChangePasswordSchema,
+  UpdateProfileSchema,
 } from './auth.validation';
 
 // POST /api/v1/auth/register
@@ -132,6 +134,44 @@ export async function resetPassword(
   try {
     const dto = ResetPasswordSchema.parse(req.body);
     const data = await authService.resetPassword(dto);
+    res.status(200).json({ success: true, data });
+  } catch (err) {
+    next(err);
+  }
+}
+
+// PATCH /api/v1/auth/change-password  (requires auth)
+export async function changePassword(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
+  try {
+    if (!req.userId) {
+      res.status(401).json({ success: false, code: 'UNAUTHORIZED', message: 'Not authenticated' });
+      return;
+    }
+    const dto = ChangePasswordSchema.parse(req.body);
+    const data = await authService.changePassword(req.userId, dto);
+    res.status(200).json({ success: true, data });
+  } catch (err) {
+    next(err);
+  }
+}
+
+// PATCH /api/v1/auth/profile  (requires auth)
+export async function updateProfile(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
+  try {
+    if (!req.userId) {
+      res.status(401).json({ success: false, code: 'UNAUTHORIZED', message: 'Not authenticated' });
+      return;
+    }
+    const dto = UpdateProfileSchema.parse(req.body);
+    const data = await authService.updateProfile(req.userId, dto);
     res.status(200).json({ success: true, data });
   } catch (err) {
     next(err);

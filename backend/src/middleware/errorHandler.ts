@@ -34,6 +34,9 @@ export const NotFound = (resource: string): AppError =>
 export const Conflict = (msg: string, code?: string): AppError =>
   new AppError(409, msg, code ?? 'CONFLICT');
 
+export const UnprocessableEntity = (msg: string, code?: string): AppError =>
+  new AppError(422, msg, code ?? 'UNPROCESSABLE_ENTITY');
+
 // ─── Global Error Handler ────────────────────────────────────────────────────
 export function errorHandler(
   err: Error,
