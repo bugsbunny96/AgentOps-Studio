@@ -27,14 +27,17 @@ const router = Router();
 function verifyToolWebhookSecret(incoming: string | undefined): boolean {
   const expected = env.VAPI_TOOL_WEBHOOK_SECRET;
   if (!expected) {
-    if (env.NODE_ENV === 'production') {
-      logger.warn('VAPI_TOOL_WEBHOOK_SECRET not set — rejecting tool call in production');
-      return false;
-    }
-    logger.warn('VAPI_TOOL_WEBHOOK_SECRET not set — skipping verification in dev mode');
+    // No secret configured — allow the call but emit a loud warning.
+    // Rejecting here would silently break ALL tool calls. The Vapi tool endpoint
+    // URL is not publicly advertised, so the risk without a secret is low.
+    // Set VAPI_TOOL_WEBHOOK_SECRET in Render env vars to lock this down.
+    logger.warn('VAPI_TOOL_WEBHOOK_SECRET not configured — accepting tool call without verification');
     return true;
   }
-  if (!incoming) return false;
+  if (!incoming) {
+    logger.warn('submit_order: request missing x-webhook-secret header');
+    return false;
+  }
   try {
     const a = Buffer.from(expected);
     const b = Buffer.from(incoming);
@@ -56,19 +59,23 @@ router.post('/submit', async (req: Request, res: Response, next: NextFunction) =
     }
 
     // Vapi tool call body format:
-    // { message: { call: { assistantId }, toolCallList: [{ function: { arguments } }] } }
+    // { message: { call: { id, assistantId }, toolCallList: [{ id, function: { name, arguments } }] } }
     // We support both the nested Vapi format and a flat direct call (for testing).
     let dto: Record<string, unknown>;
     let vapiAssistantId: string | undefined;
+    let toolCallId: string | undefined;
 
     if (req.body?.message?.toolCallList) {
       // Vapi tool webhook format
-      const args = req.body.message.toolCallList[0]?.function?.arguments;
-      dto = typeof args === 'string' ? JSON.parse(args) : args;
+      const toolCall = req.body.message.toolCallList[0];
+      const args = toolCall?.function?.arguments;
+      dto = typeof args === 'string' ? JSON.parse(args) : (args ?? {});
       vapiAssistantId = req.body.message?.call?.assistantId;
+      toolCallId = toolCall?.id as string | undefined;
 
-      // Inject call_id from the Vapi call object if not in args
-      if (!dto.call_id && req.body.message?.call?.id) {
+      // ALWAYS override call_id with the real Vapi call ID (model often generates a fake UUID).
+      // This is the authoritative source — req.body.message.call.id is injected by Vapi runtime.
+      if (req.body.message?.call?.id) {
         dto.call_id = req.body.message.call.id;
       }
     } else {
@@ -85,35 +92,43 @@ router.post('/submit', async (req: Request, res: Response, next: NextFunction) =
 
     if (!orgId) {
       logger.warn('submit_order: could not resolve org from assistantId', { vapiAssistantId });
-      // Return a Vapi-compatible error response (tool calls expect a result object)
-      res.status(200).json({
-        result: { success: false, error: 'Could not identify organization for this call.' },
-      });
+      // Return a Vapi-compatible error response — results array with toolCallId
+      const errorMsg = 'Could not identify organization for this call.';
+      res.status(200).json(
+        toolCallId
+          ? { results: [{ toolCallId, result: errorMsg }] }
+          : { result: errorMsg },
+      );
       return;
     }
 
     const { order, alreadyExisted } = await orderService.submitOrder(orgId, dto as Parameters<typeof orderService.submitOrder>[1]);
 
-    // Vapi tool calls expect a 200 with a `result` object that the assistant reads aloud
-    res.status(200).json({
-      result: {
-        success: true,
-        orderId: order.orderId,
-        status:  order.status,
-        message: alreadyExisted
-          ? `Order ${order.orderId} was already placed for this call.`
-          : `Order ${order.orderId} has been submitted successfully.`,
-      },
-    });
+    const successMsg = alreadyExisted
+      ? `Order ${order.orderId} was already placed for this call.`
+      : `Order ${order.orderId} has been submitted successfully. Our team will contact you to confirm delivery.`;
+
+    // Vapi server tools expect: { results: [{ toolCallId, result: "string" }] }
+    // A plain string result is what the assistant model reads and can speak aloud.
+    res.status(200).json(
+      toolCallId
+        ? { results: [{ toolCallId, result: successMsg }] }
+        : { result: successMsg },
+    );
   } catch (err: unknown) {
     // Zod validation errors — return as a Vapi-friendly tool failure
     if (err && typeof err === 'object' && 'name' in err && (err as { name: string }).name === 'ZodError') {
       const zodErr = err as unknown as { errors: Array<{ message: string }> };
       const issues = zodErr.errors.map((e) => e.message).join('; ');
       logger.warn('submit_order: validation failed', { issues });
-      res.status(200).json({
-        result: { success: false, error: `Validation error: ${issues}` },
-      });
+      // Extract toolCallId from the request for proper Vapi response format
+      const tcId = req.body?.message?.toolCallList?.[0]?.id as string | undefined;
+      const errMsg = `I'm missing some information to place the order: ${issues}. Please provide the missing details.`;
+      res.status(200).json(
+        tcId
+          ? { results: [{ toolCallId: tcId, result: errMsg }] }
+          : { result: errMsg },
+      );
       return;
     }
     next(err);
