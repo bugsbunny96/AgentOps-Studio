@@ -18,7 +18,7 @@ services:
 
     # ── Build ────────────────────────────────────────────────────────────────
     rootDir: backend
-    buildCommand: npm ci && npm run build
+    buildCommand: npm ci --include=dev && npm run build
     startCommand: node dist/index.js
 
     # ── Health check (Render uses this to confirm service is up) ─────────────
