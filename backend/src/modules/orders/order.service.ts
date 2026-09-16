@@ -16,6 +16,7 @@ import { SubmitOrderSchema, type SubmitOrderDto } from './order.validation';
 import { OrganizationModel } from '../organization/organization.model';
 import { VoiceAgentModel } from '../agents/agent.model';
 import { logger } from '../../utils/logger';
+import { env } from '../../config/env';
 
 // ── Order ID Generator ─────────────────────────────────────────────────────────
 
@@ -47,22 +48,34 @@ async function generateUniqueOrderId(): Promise<string> {
  * The `orgId` is resolved from the Vapi assistant's phone number / webhook auth context
  * (callers pass it explicitly; see order.routes.ts for how it is looked up).
  *
- * Returns the order document. If the call_id already has an order, returns the
+ * The `toolCallId` (Vapi's unique ID for this specific tool invocation) is the
+ * idempotency key. A single voice call can submit multiple products via multiple
+ * submit_order invocations — each has a different toolCallId, so they each get
+ * their own order document.
+ *
+ * Returns the order document. If the toolCallId already has an order, returns the
  * existing order with `alreadyExisted: true`.
  */
 export async function submitOrder(
   orgId: mongoose.Types.ObjectId,
   dto: SubmitOrderDto,
+  toolCallId?: string,
 ): Promise<{ order: IOrder; alreadyExisted: boolean }> {
 
   // Validate (throws ZodError if invalid — caught by the route handler)
   const validated = SubmitOrderSchema.parse(dto);
 
-  // Idempotency check — return existing order if the same call already submitted one
-  const existing = await OrderModel.findOne({ callId: validated.call_id });
+  // Idempotency check:
+  //   - Prefer toolCallId (unique per product line in a multi-product order)
+  //   - Fall back to callId for legacy requests that don't have toolCallId
+  const idempotencyQuery = toolCallId
+    ? { toolCallId }
+    : { callId: validated.call_id };
+
+  const existing = await OrderModel.findOne(idempotencyQuery);
   if (existing) {
-    logger.info('submitOrder: returning existing order for call_id', {
-      callId: validated.call_id,
+    logger.info('submitOrder: returning existing order (idempotency)', {
+      idempotencyKey: toolCallId ? `toolCallId=${toolCallId}` : `callId=${validated.call_id}`,
       orderId: existing.orderId,
     });
     return { order: existing, alreadyExisted: true };
@@ -73,6 +86,7 @@ export async function submitOrder(
   const order = await OrderModel.create({
     orderId,
     callId:          validated.call_id,
+    toolCallId:      toolCallId,  // undefined for legacy callers — sparse index ignores it
     organizationId:  orgId,
     customerName:    validated.customer_name,
     customerPhone:   validated.customer_phone,
@@ -151,16 +165,52 @@ export async function updateOrderStatus(
  * Resolve the orgId from a Vapi assistant ID.
  * Used by the submit_order webhook to find the org without requiring the user
  * to be logged in (it's a tool call from Vapi, not a user request).
+ *
+ * Lookup order:
+ *   1. OrganizationModel.vapiAssistantId  ← set by provisionAgent()
+ *   2. VoiceAgentModel.vapiAssistantId    ← also set by provisionAgent()
+ *   3. Single-org POC fallback            ← if only one org exists in the DB,
+ *                                            use it (handles manually-created
+ *                                            Vapi assistants not provisioned
+ *                                            through the app). Logs a warning.
+ *                                            REMOVE this fallback in production
+ *                                            when multi-tenancy is required.
  */
 export async function resolveOrgByAssistantId(
   vapiAssistantId: string,
 ): Promise<mongoose.Types.ObjectId | null> {
-  // vapiAssistantId is stored on the Agent model, not Organization.
-  // Look up the agent first, then return its organizationId.
+  // 1. Primary: Organization model (saved by provisionAgent)
+  const org = await OrganizationModel.findOne({ vapiAssistantId });
+  if (org) return org._id as mongoose.Types.ObjectId;
+
+  // 2. Secondary: VoiceAgent model (also saved by provisionAgent as belt+suspenders)
   const agent = await VoiceAgentModel.findOne({ vapiAssistantId }).select('organizationId');
   if (agent) return agent.organizationId as mongoose.Types.ObjectId;
 
-  // Fallback: check Organization model in case some orgs have it there too
-  const org = await OrganizationModel.findOne({ vapiAssistantId });
-  return org ? org._id as mongoose.Types.ObjectId : null;
+  // 3. POC fallback: if there is exactly one org in the system, use it.
+  //    This handles the case where a Vapi assistant was created manually in the
+  //    Vapi dashboard and its ID was never stored in MongoDB via provisionAgent.
+  //    Safe only in single-tenant deployments — remove when going multi-tenant.
+  const orgCount = await OrganizationModel.countDocuments();
+  if (orgCount === 1) {
+    const singleOrg = await OrganizationModel.findOne();
+    if (singleOrg) {
+      logger.warn(
+        'resolveOrgByAssistantId: vapiAssistantId not found in DB — using single-org POC fallback. ' +
+        'Run provisionAgent() or update org.vapiAssistantId in MongoDB to make this permanent.',
+        { vapiAssistantId, orgId: singleOrg._id.toString() },
+      );
+      // Persist the mapping so future lookups hit the fast path (no more fallback)
+      await OrganizationModel.findByIdAndUpdate(singleOrg._id, {
+        $set: { vapiAssistantId },
+      });
+      logger.info('resolveOrgByAssistantId: auto-saved vapiAssistantId to org', {
+        vapiAssistantId,
+        orgId: singleOrg._id.toString(),
+      });
+      return singleOrg._id as mongoose.Types.ObjectId;
+    }
+  }
+
+  return null;
 }

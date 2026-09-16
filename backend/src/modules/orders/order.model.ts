@@ -32,8 +32,16 @@ export interface IOrder extends Document {
   _id: mongoose.Types.ObjectId;
   /** Short human-readable order ID, e.g. RE-A3F9K2LM */
   orderId: string;
-  /** Vapi call ID — used for idempotency */
+  /** Vapi call ID — reference to the originating voice call */
   callId: string;
+  /**
+   * Vapi tool call ID (toolCallList[i].id) — used for idempotency.
+   * A single voice call (callId) can have multiple submit_order tool calls
+   * (one per product). toolCallId is unique per tool invocation and is the
+   * correct idempotency key for multi-product orders.
+   * Optional for backward compatibility with older orders that pre-date this field.
+   */
+  toolCallId?: string;
   organizationId: mongoose.Types.ObjectId;
   customerName: string;
   customerPhone: string;
@@ -75,7 +83,16 @@ const OrderSchema = new Schema<IOrder>(
     callId: {
       type: String,
       required: true,
-      unique: true,  // idempotency: one order per call
+      // NOT unique — a single call can submit multiple products via multiple tool calls.
+      // Use toolCallId for idempotency instead.
+      index: true,
+    },
+    toolCallId: {
+      type: String,
+      required: false,
+      // sparse: true so that legacy orders without toolCallId don't conflict
+      sparse: true,
+      unique: true,  // idempotency: one order per tool call invocation
       index: true,
     },
     organizationId: {
