@@ -3,17 +3,27 @@ import { env } from './config/env';
 import { connectDatabase, disconnectDatabase } from './config/database';
 import { redis } from './config/redis';
 import { logger } from './utils/logger';
-import { startCrawlWorker }      from './jobs/crawl.worker';
-import { startKbWorker }         from './jobs/kb.worker';
 import { startCallReportWorker } from './jobs/callReport.worker';
-import { startChurnRiskWorker }  from './jobs/churnRisk.worker';
-import { churnRiskQueue }        from './jobs/churnRisk.queue';
-import { startTrialEmailWorker }       from './jobs/trialEmail.worker';
-import { startTrialScanWorker }        from './jobs/trialScan.worker';
-import { trialScanQueue }              from './jobs/trialScan.queue';
-import { startCallMinutesResetWorker } from './jobs/callMinutesReset.worker';
-import { callMinutesResetQueue }       from './jobs/callMinutesReset.queue';
-import { startFollowUpAlertWorker }    from './jobs/followUpAlert.worker';
+// ── Workers disabled for POC to stay inside Redis Cloud free-tier connection limit ──
+// Redis Cloud free tier: 30 max connections.
+// Each BullMQ Worker uses 3 Redis connections (blocking + non-blocking + subscriber).
+// 8 workers × 3 = 24, plus shared queue client + main Redis = 26 — leaves no headroom
+// for Render instance overlap during redeploys, causing "ERR max number of clients".
+//
+// Active:   callReport (3 conns) + shared queue (1) + main (1) = 5 total ✅
+// Disabled: crawl, kb, churnRisk, trialEmail, trialScan, callMinutesReset, followUpAlert
+//           Re-enable each when you upgrade Redis Cloud or move to a paid Render plan.
+//
+// import { startCrawlWorker }            from './jobs/crawl.worker';
+// import { startKbWorker }               from './jobs/kb.worker';
+// import { startChurnRiskWorker }        from './jobs/churnRisk.worker';
+// import { churnRiskQueue }              from './jobs/churnRisk.queue';
+// import { startTrialEmailWorker }       from './jobs/trialEmail.worker';
+// import { startTrialScanWorker }        from './jobs/trialScan.worker';
+// import { trialScanQueue }              from './jobs/trialScan.queue';
+// import { startCallMinutesResetWorker } from './jobs/callMinutesReset.worker';
+// import { callMinutesResetQueue }       from './jobs/callMinutesReset.queue';
+// import { startFollowUpAlertWorker }    from './jobs/followUpAlert.worker';
 import http from 'http';
 
 let server: http.Server;
@@ -29,39 +39,20 @@ async function bootstrap(): Promise<void> {
   await redis.ping();
   logger.info('✅  Redis ping OK');
 
-  // 3. Start background workers
-  startCrawlWorker();
-  startKbWorker();
+  // 3. Start background workers (POC: callReport only — see import block above)
   startCallReportWorker();
-  startChurnRiskWorker();
-  startTrialEmailWorker();
-  startTrialScanWorker();
-  startCallMinutesResetWorker();
-  startFollowUpAlertWorker();
+  // startCrawlWorker();
+  // startKbWorker();
+  // startChurnRiskWorker();
+  // startTrialEmailWorker();
+  // startTrialScanWorker();
+  // startCallMinutesResetWorker();
+  // startFollowUpAlertWorker();
 
-  // 4. Schedule recurring background jobs (idempotent — BullMQ skips if already scheduled)
-  await churnRiskQueue.upsertJobScheduler(
-    'daily-churn-scan',          // scheduler key = job name in ChurnRiskJobName union
-    { pattern: '0 2 * * *' },    // cron: 02:00 UTC every day
-    { name: 'daily-churn-scan', data: {} },
-  );
-
-  // Trial email scan at 06:00 UTC daily — finds orgs at Day-5 / Day-7 and enqueues reminder emails
-  await trialScanQueue.upsertJobScheduler(
-    'daily-trial-scan',
-    { pattern: '0 6 * * *' },    // cron: 06:00 UTC every day
-    { name: 'daily-trial-scan', data: {} },
-  );
-
-  // Monthly call minutes reset — 00:00 UTC on the 1st of every month
-  // Resets callMinutesUsed=0 on all orgs so the new billing month starts fresh.
-  // The end-of-call-report handler also performs a per-org self-healing reset
-  // (aggregation-pipeline update) so accuracy is maintained even if this job fires late.
-  await callMinutesResetQueue.upsertJobScheduler(
-    'monthly-minutes-reset',
-    { pattern: '0 0 1 * *' },    // cron: 00:00 UTC on the 1st of every month
-    { name: 'monthly-minutes-reset', data: {} },
-  );
+  // 4. Schedule recurring background jobs — disabled for POC alongside their workers
+  // await churnRiskQueue.upsertJobScheduler('daily-churn-scan', { pattern: '0 2 * * *' }, { name: 'daily-churn-scan', data: {} });
+  // await trialScanQueue.upsertJobScheduler('daily-trial-scan', { pattern: '0 6 * * *' }, { name: 'daily-trial-scan', data: {} });
+  // await callMinutesResetQueue.upsertJobScheduler('monthly-minutes-reset', { pattern: '0 0 1 * *' }, { name: 'monthly-minutes-reset', data: {} });
 
   // 4. Start HTTP server
   server = app.listen(env.PORT, () => {
