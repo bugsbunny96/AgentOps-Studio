@@ -21,6 +21,7 @@ import {
 } from './vapi.service';
 import { generateSystemPrompt, buildFirstMessage, buildEndCallMessage } from './prompt.utils';
 import { getKbContext } from '../knowledge-base/kb.service';
+import { findAll as findAllCatalogItems } from '../catalog/catalog.service';
 import { env } from '../../config/env';
 import { NotFound } from '../../middleware/errorHandler';
 import { logger } from '../../utils/logger';
@@ -207,14 +208,74 @@ export async function provisionAgent(userId: string) {
         vapiPublicKey: env.VAPI_PUBLIC_KEY ?? null,
       };
     }
+
+    // org.vapiAssistantId is set but no VoiceAgent document exists.
+    // This happens when the Vapi assistant was created manually (not via provisionAgent)
+    // and resolveOrgByAssistantId auto-saved the vapiAssistantId on the first tool call.
+    // Adopt the existing assistant: push the correct catalog-inclusive system prompt,
+    // then create the missing VoiceAgent document so future lookups are fast.
+    logger.info('Adopting manually-created Vapi assistant — pushing catalog system prompt', {
+      orgId: orgId.toString(),
+      vapiAssistantId: org.vapiAssistantId,
+    });
+
+    const [kbCtx, catalogItems] = await Promise.all([
+      getKbContext(orgId),
+      findAllCatalogItems(orgId),
+    ]);
+    const adoptedPrompt = generateSystemPrompt(org, kbCtx, catalogItems);
+
+    // Push the regenerated (catalog-inclusive) system prompt to the existing Vapi assistant
+    await vapiUpdateAssistant(org.vapiAssistantId, {
+      model: {
+        provider:    'openai',
+        model:       'gpt-4o',
+        messages:    [{ role: 'system', content: adoptedPrompt }],
+        temperature: 0.65,
+        maxTokens:   300,
+      },
+    });
+
+    const adoptedAgent = await VoiceAgentModel.findOneAndUpdate(
+      { organizationId: orgId },
+      {
+        $setOnInsert: {
+          organizationId:     orgId,
+          name:               org.agentName || org.name,
+          systemPrompt:       adoptedPrompt,
+          vapiAssistantId:    org.vapiAssistantId,
+          voiceProvider:      (org.preferredVoiceProvider as IVoiceAgent['voiceProvider']) ?? 'openai',
+          voiceId:            org.preferredVoiceId ?? 'nova',
+          primaryLanguage:    org.supportedLanguages?.[0] ?? 'en-US',
+          supportedLanguages: org.supportedLanguages ?? ['en-US'],
+          status:             'Active',
+        },
+      },
+      { upsert: true, new: true },
+    );
+
+    logger.info('Manually-created assistant adopted + system prompt updated with catalog', {
+      orgId: orgId.toString(),
+      vapiAssistantId: org.vapiAssistantId,
+      catalogItems: catalogItems.length,
+    });
+
+    return {
+      agent: adoptedAgent!.toJSON(),
+      vapiAssistantId: org.vapiAssistantId,
+      vapiPublicKey: env.VAPI_PUBLIC_KEY ?? null,
+    };
   }
 
   // ── Provision: generate prompt + create Vapi assistant ─────────────
   logger.info('Provisioning new Vapi assistant', { orgId: orgId.toString() });
 
-  // Inject any existing KB docs so the initial Vapi prompt is fully populated.
-  const kbContext     = await getKbContext(orgId);
-  const systemPrompt  = generateSystemPrompt(org, kbContext);
+  // Inject current catalog + KB docs so the initial system prompt is fully populated.
+  const [kbContext, catalogItems] = await Promise.all([
+    getKbContext(orgId),
+    findAllCatalogItems(orgId),
+  ]);
+  const systemPrompt  = generateSystemPrompt(org, kbContext, catalogItems);
   const vapiPayload   = buildVapiPayload(org, systemPrompt);
   const vapiAssistant = await vapiCreateAssistant(vapiPayload);
 
@@ -411,7 +472,7 @@ export async function updateAgentVoice(
   if (dto.supportedLanguages) localUpdates.supportedLanguages = dto.supportedLanguages;
 
   // When languages change, regenerate system prompt with updated language rules.
-  // Also re-inject current KB context so it is not wiped from the Vapi prompt
+  // Also re-inject current KB context + catalog so they are not wiped from the Vapi prompt
   // (DRIFT-4 fix: language update previously dropped KB content).
   let newSystemPrompt: string | undefined;
   if (dto.supportedLanguages) {
@@ -419,8 +480,11 @@ export async function updateAgentVoice(
       ...org.toObject(),
       supportedLanguages: dto.supportedLanguages,
     } as IOrganization;
-    const kbContext     = await getKbContext(org._id);
-    newSystemPrompt     = generateSystemPrompt(orgWithNewLangs, kbContext);
+    const [kbContext, catalogItems] = await Promise.all([
+      getKbContext(org._id),
+      findAllCatalogItems(org._id),
+    ]);
+    newSystemPrompt           = generateSystemPrompt(orgWithNewLangs, kbContext, catalogItems);
     localUpdates.systemPrompt = newSystemPrompt;
   }
 
@@ -523,9 +587,12 @@ export async function updateAgentConfig(
     ...orgUpdates,
   } as IOrganization;
 
-  // ── Regenerate system prompt ───────────────────────────────────────────────
-  const kbContext       = await getKbContext(org._id);
-  const newSystemPrompt = generateSystemPrompt(orgForPrompt, kbContext);
+  // ── Regenerate system prompt (always includes current catalog + KB) ──────────
+  const [kbContext, catalogItems] = await Promise.all([
+    getKbContext(org._id),
+    findAllCatalogItems(org._id),
+  ]);
+  const newSystemPrompt = generateSystemPrompt(orgForPrompt, kbContext, catalogItems);
 
   // ── Update VoiceAgent record ───────────────────────────────────────────────
   const agentUpdates: Partial<{ name: string; systemPrompt: string }> = {

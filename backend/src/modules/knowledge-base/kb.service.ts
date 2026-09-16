@@ -27,6 +27,7 @@ import { crawlQueue }                          from '../../jobs/crawl.queue';
 //   kb.service    → agent.service (generateSystemPrompt)  ← cycle broken by moving to prompt.utils
 import { generateSystemPrompt }                from '../agents/prompt.utils';
 import { vapiUpdateAssistant }                 from '../agents/vapi.service';
+import { findAll as findAllCatalogItems }      from '../catalog/catalog.service';
 import { NotFound, BadRequest, Forbidden }      from '../../middleware/errorHandler';
 import { PLAN_LIMITS }                         from '../billing/billing.service';
 import { computeTrialState }                   from '../billing/trial.service';
@@ -342,8 +343,11 @@ export async function syncKbToVapi(orgId: string): Promise<void> {
   }
 
   try {
-    const kbContext    = await getKbContext(org._id);
-    const systemPrompt = generateSystemPrompt(org, kbContext);
+    const [kbContext, catalogItems] = await Promise.all([
+      getKbContext(org._id),
+      findAllCatalogItems(org._id),
+    ]);
+    const systemPrompt = generateSystemPrompt(org, kbContext, catalogItems);
 
     await vapiUpdateAssistant(org.vapiAssistantId, {
       model: {
