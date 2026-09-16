@@ -113,6 +113,7 @@ export const router = createBrowserRouter([
       { path: '/agents/:id', element: lazy_page(() => import('@/features/agents/AgentDetailPage')) },
       { path: '/calls', element: lazy_page(() => import('@/features/calls/CallsPage')) },
       { path: '/calls/:id', element: lazy_page(() => import('@/features/calls/CallDetailPage')) },
+      { path: '/orders', element: lazy_page(() => import('@/features/orders/OrdersPage')) },
       { path: '/knowledge-base', element: lazy_page(() => import('@/features/knowledge-base/KnowledgeBasePage')) },
       { path: '/team', element: lazy_page(() => import('@/features/team/TeamPage')) },
       { path: '/settings', element: lazy_page(() => import('@/features/settings/SettingsPage')) },

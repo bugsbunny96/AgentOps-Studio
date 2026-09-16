@@ -48,6 +48,7 @@ function buildOrgList(
       name:             org.name,
       slug:             org.slug,
       onboardingStatus: org.onboardingStatus,
+      vapiAssistantId:  org.vapiAssistantId,
       role:             m.role as 'Owner' | 'Member',
       permissions:      m.permissions ?? { ...DEFAULT_MEMBER_PERMISSIONS },
     };
