@@ -27,15 +27,19 @@ import { env } from './env';
 function parseRedisUrl(): RedisOptions {
   try {
     const url = new URL(env.REDIS_URL);
+    const isTls = url.protocol === 'rediss:';
     const opts: RedisOptions = {
       host:            url.hostname || 'localhost',
       port:            url.port ? parseInt(url.port, 10) : 6379,
       connectTimeout:  10_000,
     };
     if (url.password) opts.password = decodeURIComponent(url.password);
-    if (url.username && url.username !== 'default') opts.username = decodeURIComponent(url.username);
+    // Always set username — Redis Cloud ACL requires it even for 'default'
+    if (url.username) opts.username = decodeURIComponent(url.username);
     const dbNum = parseInt(url.pathname?.replace('/', '') ?? '0', 10);
     if (!isNaN(dbNum) && dbNum > 0) opts.db = dbNum;
+    // Enable TLS for rediss:// URLs (Redis Cloud TLS endpoint)
+    if (isTls) opts.tls = {};
     return opts;
   } catch {
     return { host: 'localhost', port: 6379 };
@@ -48,6 +52,11 @@ function parseWorkerOptions(): ConnectionOptions {
     ...base,
     maxRetriesPerRequest: null,   // required by BullMQ workers
     enableOfflineQueue:   false,  // don't queue commands during disconnects (prevents pile-up)
+    keepAlive:            10_000, // send keepalive every 10s — prevents cloud Redis from closing idle connections
+    retryStrategy(times: number): number | null {
+      if (times > 10) return null; // stop after 10 retries
+      return Math.min(times * 500, 5_000);
+    },
   };
 }
 
