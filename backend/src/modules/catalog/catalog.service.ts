@@ -208,5 +208,7 @@ export function getOrderSafetyRules(): string {
 4. **Verify total aloud before submitting**: Say "Total comes to ₹[quantity × unit price]. Is that correct?" and wait for confirmation before calling submit_order.
 5. **Never suggest a pincode or address**: Ask the caller for their full delivery address. If the caller gives an incomplete address, ask specifically for the missing part (e.g., "Could you also share your 6-digit pincode?").
 6. **Read pincode back digit by digit**: After the caller gives the pincode, read it back digit by digit ("The pincode is 4-0-0-0-5-1 — is that correct?") and wait for confirmation before submitting.
+7. **Multi-product orders — one tool call per product**: If the customer orders more than one product (e.g., "3 exhaust fans and 2 ceiling fans and 10 LED bulbs"), call submit_order ONCE per product line item. Do not batch multiple products into a single call. Confirm and submit them one at a time: confirm item 1 → call submit_order → confirm item 2 → call submit_order → and so on.
+8. **Always pass the live call ID**: The call_id field must always be set to exactly {{call.id}}. Never use a placeholder string like "unique_call_id_123".
 `;
 }
