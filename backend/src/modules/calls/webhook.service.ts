@@ -20,8 +20,17 @@ import { OrganizationModel }  from '../organization/organization.model';
 import { VoiceAgentModel }    from '../agents/agent.model';
 import { CallModel, TranscriptModel, SummaryModel } from './call.model';
 import { isWithinBusinessHours, formatBusinessHours } from '../../utils/businessHours';
+import { PLAN_LIMITS }        from '../billing/billing.service';
+import { computeTrialState }  from '../billing/trial.service';
 import { env }    from '../../config/env';
 import { logger } from '../../utils/logger';
+import { enqueueFollowUpAlert } from '../../jobs/followUpAlert.queue';
+
+// ─── Helper: start of current UTC month ──────────────────────────────────────
+function startOfCurrentMonthUTC(): Date {
+  const now = new Date();
+  return new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1));
+}
 
 // ─── Shared-secret verification ───────────────────────────────────────────────
 
@@ -85,6 +94,33 @@ interface VapiMessage {
   time?: number;
 }
 
+/** Structured output from the electrical-shop-call-summary Vapi schema */
+interface CallStructuredOutput {
+  language_used?:              Array<'hi' | 'en' | 'mixed'>;
+  intent?:                     'product_inquiry' | 'order' | 'order_status_check' | 'complaint' | 'other';
+  products_discussed?:         Array<{
+    category:         string;
+    item:             string;
+    qty:              number | null;
+    unit_price_quoted: number | null;
+  }>;
+  order?: {
+    order_requested?:              boolean;
+    fulfillment_type?:             'pickup' | 'delivery' | 'not_applicable';
+    delivery_address?: {
+      line1:   string | null;
+      city:    string | null;
+      pincode: string | null;
+    } | null;
+    preferred_delivery_window?:    string | null;
+    total_amount?:                 number | null;
+    customer_confirmed_readback?:  boolean;
+  };
+  follow_up_needed?:  boolean;
+  follow_up_reason?:  string | null;
+  call_summary?:      string;
+}
+
 export interface VapiEndOfCallReportEvent {
   type: 'end-of-call-report';
   call: {
@@ -100,6 +136,11 @@ export interface VapiEndOfCallReportEvent {
   messages?: VapiMessage[];
   summary?: string;
   cost?: number;
+  /** Vapi artifact: recording URL + structured output from artifactPlan schema */
+  artifact?: {
+    recordingUrl?:        string;
+    structuredDataOutput?: CallStructuredOutput;
+  };
 }
 
 export type VapiWebhookEvent =
@@ -154,6 +195,57 @@ function buildAfterHoursAssistant(
   };
 }
 
+// ─── buildMinutesLimitAssistant ───────────────────────────────────────────────
+
+/**
+ * Returns an inline Vapi assistant payload that plays a "minutes limit reached"
+ * message and ends the call immediately.
+ *
+ * Returned when the org has consumed its monthly call-minute quota.
+ * This prevents any Vapi cost from accruing on over-limit calls — Vapi
+ * connects the inline assistant (which is our cost), but the conversation is
+ * a single short message, not the full live assistant.
+ */
+function buildMinutesLimitAssistant(
+  orgName:      string,
+  limitMinutes: number,
+): object {
+  const message =
+    `Thank you for calling ${orgName}. ` +
+    `We've reached our monthly call limit of ${limitMinutes} minutes. ` +
+    `Please contact us via email or call back next month. ` +
+    `We apologize for the inconvenience. Goodbye!`;
+
+  return {
+    assistant: {
+      name: `${orgName} — Limit Reached`,
+      model: {
+        provider:    'openai',
+        model:       'gpt-4o-mini',
+        messages: [
+          {
+            role: 'system',
+            content:
+              `You are a polite answering service. ` +
+              `Say exactly this message and then end the call: "${message}"`,
+          },
+        ],
+        temperature: 0,
+        maxTokens:   150,
+      },
+      voice: {
+        provider: 'openai',
+        voiceId:  'nova',
+      },
+      firstMessage:     message,
+      firstMessageMode: 'assistant-speaks-first',
+      endCallPhrases:   ['goodbye', 'bye', 'thank you'],
+      maxDurationSeconds: 45,
+      backgroundSound: 'off',
+    },
+  };
+}
+
 // ─── handleAssistantRequest (SYNCHRONOUS) ─────────────────────────────────────
 
 /**
@@ -184,6 +276,32 @@ export async function handleAssistantRequest(
     });
     // For web/test calls with no phone number, pass through to Vapi default
     return { message: 'No matching organization found for this phone number' };
+  }
+
+  // ── Call minutes quota gate ───────────────────────────────────────────────
+  // Must be checked BEFORE Vapi connects any assistant to prevent cost exposure.
+  // Trial orgs use 'growth' effective plan; planOverride takes precedence over plan.
+  {
+    const basePlan   = (org.planOverride ?? org.plan) || 'free';
+    const trialState = computeTrialState(
+      basePlan,
+      org.trialUsed  ?? false,
+      org.trialEndsAt,
+    );
+    const effectivePlan = (trialState.isInTrial ? 'growth' : basePlan) as keyof typeof PLAN_LIMITS;
+    const minutesLimit  = PLAN_LIMITS[effectivePlan]?.callMinutes ?? Infinity;
+    const minutesUsed   = org.callMinutesUsed ?? 0;
+
+    if (minutesLimit !== Infinity && minutesUsed >= minutesLimit) {
+      logger.warn('assistant-request: call minutes limit exceeded — blocking call', {
+        orgId:        org._id.toString(),
+        effectivePlan,
+        minutesUsed,
+        minutesLimit,
+        callId:       event.call.id,
+      });
+      return buildMinutesLimitAssistant(org.name, minutesLimit);
+    }
   }
 
   const hoursLabel = formatBusinessHours(
@@ -294,6 +412,35 @@ export async function handleEndOfCallReport(event: VapiEndOfCallReportEvent): Pr
     return;
   }
 
+  // Vapi puts recordingUrl in both the top-level field and artifact.recordingUrl.
+  // artifact.recordingUrl is the authoritative source in newer Vapi payloads.
+  const resolvedRecordingUrl =
+    event.artifact?.recordingUrl ?? event.recordingUrl;
+
+  // Extract structured output (may be absent if the call ended before Vapi generated it)
+  const so = event.artifact?.structuredDataOutput;
+  const structuredFields = so
+    ? {
+        languageUsed:              so.language_used ?? [],
+        intent:                    so.intent,
+        productsDiscussed: (so.products_discussed ?? []).map((p) => ({
+          category:        p.category,
+          item:            p.item,
+          qty:             p.qty ?? null,
+          unitPriceQuoted: p.unit_price_quoted ?? null,
+        })),
+        orderRequested:            so.order?.order_requested ?? false,
+        fulfillmentType:           so.order?.fulfillment_type,
+        deliveryAddress:           so.order?.delivery_address ?? null,
+        preferredDeliveryWindow:   so.order?.preferred_delivery_window ?? null,
+        totalAmount:               so.order?.total_amount ?? null,
+        customerConfirmedReadback: so.order?.customer_confirmed_readback ?? false,
+        followUpNeeded:            so.follow_up_needed ?? false,
+        followUpReason:            so.follow_up_reason ?? null,
+        callSummaryStructured:     so.call_summary,
+      }
+    : {};
+
   const call = await CallModel.findOneAndUpdate(
     { vapiCallId: event.call.id },
     {
@@ -304,9 +451,11 @@ export async function handleEndOfCallReport(event: VapiEndOfCallReportEvent): Pr
         callerNumber:   callerNumber(event.call),
         status:         'completed',
         duration:       Math.round(event.durationSeconds ?? 0),
-        recordingUrl:   event.recordingUrl,
+        recordingUrl:   resolvedRecordingUrl,
         cost:           event.cost ?? 0,
         endedReason:    event.call.endedReason,
+        // Spread structured output fields (empty object if not present)
+        ...structuredFields,
       },
     },
     { upsert: true, new: true },
@@ -315,6 +464,45 @@ export async function handleEndOfCallReport(event: VapiEndOfCallReportEvent): Pr
   if (!call) {
     logger.error('end-of-call-report: failed to upsert call', { vapiCallId: event.call.id });
     return;
+  }
+
+  // ── Increment monthly call-minute counter on the org (atomic, self-healing) ─
+  // Uses an aggregation-pipeline update so the reset check + increment happen in
+  // a single round-trip — no race conditions between concurrent call completions.
+  if (event.durationSeconds && event.durationSeconds > 0) {
+    const minutesThisCall = Math.max(1, Math.ceil(event.durationSeconds / 60));
+    const monthStart      = startOfCurrentMonthUTC();
+
+    await OrganizationModel.findByIdAndUpdate(
+      ctx.org._id,
+      [
+        {
+          $set: {
+            // Self-healing: if stored reset date is before this month, start fresh.
+            callMinutesUsed: {
+              $cond: {
+                if:   { $lt: ['$callMinutesResetAt', monthStart] },
+                then: minutesThisCall,
+                else: { $add: ['$callMinutesUsed', minutesThisCall] },
+              },
+            },
+            callMinutesResetAt: {
+              $cond: {
+                if:   { $lt: ['$callMinutesResetAt', monthStart] },
+                then: monthStart,
+                else: '$callMinutesResetAt',
+              },
+            },
+          },
+        },
+      ],
+    );
+
+    logger.info('end-of-call-report: call minutes incremented', {
+      orgId:         ctx.org._id.toString(),
+      minutesThisCall,
+      durationSeconds: event.durationSeconds,
+    });
   }
 
   // Build transcript turns
@@ -344,35 +532,80 @@ export async function handleEndOfCallReport(event: VapiEndOfCallReportEvent): Pr
   }
 
   if (turns.length > 0) {
-    await TranscriptModel.findOneAndUpdate(
-      { callId: call._id },
-      { $set: { callId: call._id, turns } },
-      { upsert: true },
-    );
-  }
+    // Build the denormalised fullText string for MongoDB text-search indexing.
+    // Format: "AGENT: <text>\nUSER: <text>\n..." — one line per turn.
+    // Speaker prefix makes phrase searches like "user said: appointment" work.
+    const fullText = turns
+      .map((t) => `${t.speaker === 'agent' ? 'AGENT' : 'USER'}: ${t.text}`)
+      .join('\n');
 
-  if (event.summary) {
-    await SummaryModel.findOneAndUpdate(
+    await TranscriptModel.findOneAndUpdate(
       { callId: call._id },
       {
         $set: {
-          callId:          call._id,
-          summaryText:     event.summary,
-          intentDetected:  [],
-          actionItems:     [],
-          resolutionState: 'Resolved',
+          callId:         call._id,
+          organizationId: ctx.org._id,  // required for tenant-scoped text search
+          turns,
+          fullText,                      // indexed by transcript_fulltext_idx
         },
       },
       { upsert: true },
     );
   }
 
+  // Prefer structured output summary; fall back to Vapi's built-in summary (may be
+  // empty when analysisPlan.summaryPlan.enabled is false — which is the case for
+  // electrical-shop agents that use structuredDataOutput instead).
+  const summaryText = so?.call_summary ?? event.summary;
+  if (summaryText) {
+    const resolutionState =
+      so?.follow_up_needed === true   ? 'Needs_Followup' :
+      event.call.endedReason === 'transfer' ? 'Transferred' :
+      'Resolved';
+
+    await SummaryModel.findOneAndUpdate(
+      { callId: call._id },
+      {
+        $set: {
+          callId:          call._id,
+          summaryText,
+          intentDetected:  so?.intent ? [so.intent] : [],
+          actionItems:     so?.follow_up_reason ? [so.follow_up_reason] : [],
+          resolutionState,
+        },
+      },
+      { upsert: true },
+    );
+  }
+
+  // ── Enqueue follow-up alert when structured output flags it ─────────────
+  if (so?.follow_up_needed === true) {
+    try {
+      await enqueueFollowUpAlert({
+        callId:        call._id.toString(),
+        vapiCallId:    event.call.id,
+        orgId:         ctx.org._id.toString(),
+        followUpReason: so.follow_up_reason ?? null,
+        callerNumber:  event.call.customer?.number,
+        callEndedAt:   new Date().toISOString(),
+        callSummary:   so.call_summary ?? null,
+      });
+    } catch (alertErr) {
+      // Non-fatal — log but don't fail the webhook handler
+      logger.error('Failed to enqueue follow-up alert', { vapiCallId: event.call.id, err: alertErr });
+    }
+  }
+
   logger.info('end-of-call-report processed', {
-    vapiCallId:  event.call.id,
-    orgId:       ctx.org._id.toString(),
-    duration:    event.durationSeconds,
-    turns:       turns.length,
-    hasSummary:  Boolean(event.summary),
+    vapiCallId:       event.call.id,
+    orgId:            ctx.org._id.toString(),
+    duration:         event.durationSeconds,
+    turns:            turns.length,
+    hasSummary:       Boolean(summaryText),
+    hasStructured:    Boolean(so),
+    intent:           so?.intent,
+    followUpNeeded:   so?.follow_up_needed ?? false,
+    orderRequested:   so?.order?.order_requested ?? false,
   });
 }
 

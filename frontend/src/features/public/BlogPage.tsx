@@ -1,26 +1,87 @@
 /**
- * BlogPage — SEO foundation with 2 seeded articles
+ * BlogPage — dynamic, API-driven
  * Route: /blog (public)
  *
- * Posts (inline, no backend):
- *   1. The Real ROI of an AI Voice Agent for Indian SMBs
- *   2. How to Set Up an AI Receptionist in 30 Minutes
+ * Fetches published posts from GET /api/v1/blog.
+ * Clicking a card fetches the full post body and renders it inline.
+ * Falls back to an elegant empty state if there are no posts yet.
  */
 
 import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
+import api from '@/utils/api';
+
+// ─── Types ────────────────────────────────────────────────────────────────────
+
+interface BlogPostCard {
+  _id:         string;
+  slug:        string;
+  title:       string;
+  subtitle:    string;
+  author:      string;
+  tags:        string[];
+  publishedAt: string;
+  createdAt:   string;
+}
+
+interface BlogPostFull extends BlogPostCard {
+  body:        string;
+  coverImage?: string;
+}
+
+// ─── Design tokens ────────────────────────────────────────────────────────────
 
 const T = {
   bg: '#030712', bgS: '#0d1524',
   bgC: 'rgba(255,255,255,0.03)', bdr: 'rgba(255,255,255,0.07)', bdrB: 'rgba(255,255,255,0.12)',
-  blue: '#3b82f6', violet: '#8b5cf6', em: '#10b981', amber: '#f59e0b',
+  blue: '#3b82f6', violet: '#8b5cf6', em: '#10b981',
   t1: '#f8fafc', t2: '#94a3b8', t3: '#475569',
 };
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
 
 const pill = (bg: string, color: string, border: string): React.CSSProperties => ({
   display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: 11, fontWeight: 700,
   padding: '4px 10px', borderRadius: 999, background: bg, color, border: `1px solid ${border}`,
 });
+
+function tagColor(index: number) {
+  const palette = [T.em, T.violet, T.blue, '#f59e0b', '#ec4899'];
+  return palette[index % palette.length];
+}
+
+function readTime(body: string) {
+  const words = body.split(/\s+/).length;
+  const mins  = Math.max(1, Math.round(words / 200));
+  return `${mins} min read`;
+}
+
+function formatDate(iso: string) {
+  return new Date(iso).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' });
+}
+
+// ─── Minimal Markdown renderer (same as Compose page) ─────────────────────────
+
+function renderMarkdown(md: string): string {
+  return md
+    .replace(/^### (.+)$/gm, '<h3 style="font-size:17px;font-weight:700;color:#f8fafc;margin:24px 0 10px">$1</h3>')
+    .replace(/^## (.+)$/gm,  '<h2 style="font-size:20px;font-weight:800;color:#f8fafc;margin:32px 0 12px">$1</h2>')
+    .replace(/^# (.+)$/gm,   '<h1 style="font-size:24px;font-weight:900;color:#f8fafc;margin:36px 0 14px">$1</h1>')
+    .replace(/\*\*(.+?)\*\*/g, '<strong style="color:#f8fafc">$1</strong>')
+    .replace(/\*(.+?)\*/g,     '<em>$1</em>')
+    .replace(/`(.+?)`/g,       '<code style="background:rgba(255,255,255,0.08);padding:2px 6px;border-radius:4px;font-size:0.9em;font-family:monospace">$1</code>')
+    .replace(/^> (.+)$/gm,     '<blockquote style="border-left:3px solid #3b82f6;margin:16px 0;padding:10px 18px;color:#94a3b8;background:rgba(59,130,246,0.06);border-radius:0 8px 8px 0">$1</blockquote>')
+    .replace(/^- (.+)$/gm,     '<li style="margin:6px 0 6px 24px;color:#94a3b8;line-height:1.7">$1</li>')
+    .split('\n\n')
+    .map((block) => {
+      if (block.startsWith('<h') || block.startsWith('<blockquote') || block.startsWith('<li')) return block;
+      return `<p style="color:#94a3b8;font-size:15px;line-height:1.85;margin:0 0 16px">${block}</p>`;
+    })
+    .join('');
+}
+
+// ─── Scroll-reveal wrapper ─────────────────────────────────────────────────────
 
 function Reveal({ children, delay = 0 }: { children: React.ReactNode; delay?: number }) {
   const ref = useRef<HTMLDivElement>(null);
@@ -30,92 +91,40 @@ function Reveal({ children, delay = 0 }: { children: React.ReactNode; delay?: nu
     const io = new IntersectionObserver(([e]) => { if (e.isIntersecting) { setVis(true); io.disconnect(); } }, { threshold: 0.06 });
     io.observe(el); return () => io.disconnect();
   }, []);
-  return <div ref={ref} style={{ opacity: vis ? 1 : 0, transform: vis ? 'none' : 'translateY(18px)', transition: `opacity .6s ease ${delay}ms, transform .6s ease ${delay}ms` }}>{children}</div>;
+  return (
+    <div ref={ref} style={{ opacity: vis ? 1 : 0, transform: vis ? 'none' : 'translateY(18px)', transition: `opacity .6s ease ${delay}ms, transform .6s ease ${delay}ms` }}>
+      {children}
+    </div>
+  );
 }
 
-// ─── Article content ──────────────────────────────────────────────────────────
+// ─── Full article view ─────────────────────────────────────────────────────────
 
-const POSTS = [
-  {
-    slug: 'voice-ai-roi',
-    tag: 'ROI',
-    tagColor: T.em,
-    date: 'July 8, 2026',
-    readTime: '6 min read',
-    title: 'The Real ROI of an AI Voice Agent for Indian SMBs',
-    subtitle: 'How logistics, real estate, and healthcare businesses are cutting cost-per-call by 70% while answering 3× more enquiries.',
-    coverEmoji: '📞',
-    intro: `Every missed call is a missed rupee. For Indian SMBs, the math is brutal: the average business answers only 62% of inbound calls during business hours, and virtually zero after 6 PM. An AI voice agent doesn't take breaks.`,
-    sections: [
-      {
-        h: 'What does a missed call actually cost?',
-        body: `Let's take a logistics company handling 200 inbound calls per day — tracking queries, delivery reschedules, complaints. At a conservative ₹500 average order value and a 30% caller-to-customer conversion rate, each missed call costs roughly ₹150 in lost revenue. At 38% miss rate, that's ₹11,400 per day — over ₹3.4 lakh per month.\n\nThe real number is usually worse. Callers who hit voicemail don't always call back. They call your competitor.`,
-      },
-      {
-        h: 'The three numbers that matter',
-        body: `When evaluating AI voice ROI, track three metrics:\n\n**Cost per handled call**: With a human receptionist at ₹25,000/month handling 150 calls/day (25 working days = 3,750 calls), cost per call is ₹6.67. An AI agent at ₹14,999/month handling 1,000+ calls/day costs under ₹0.60 per call.\n\n**After-hours capture rate**: Businesses that deploy an AI agent typically see 15–25% of bookings and enquiries come in between 7 PM and 9 AM — entirely new revenue that didn't exist before.\n\n**Call-to-conversion rate**: AI agents are consistent — they never have a bad day, never forget to mention a promotion, never rush a caller. Our customers see conversion parity with their best human agents within 30 days.`,
-      },
-      {
-        h: 'A real example: real estate in Bangalore',
-        body: `A Whitefield property developer was spending ₹65,000/month on two receptionists who collectively handled around 80 property enquiries per day. They deployed AgentOps Studio for ₹14,999/month.\n\nResult after 60 days:\n- Handled 220 enquiries/day (2.75× more)\n- 34 additional site visits booked after 7 PM that would have been missed\n- Total incremental revenue from those visits: ₹2.1 crore in closed deals\n- Monthly staff cost reduction: ₹50,001\n\nROI: 1,400% in the first quarter.`,
-      },
-      {
-        h: 'What AI voice agents cannot do (yet)',
-        body: `AI agents are excellent at handling predictable, high-frequency queries — tracking, booking, FAQ, routing. They're not ready for complex negotiations, emotionally sensitive escalations, or situations that require nuanced judgement.\n\nThe right model: let the AI handle 80% of call volume (the repetitive stuff), so your human team can focus 100% of their energy on the 20% that actually needs them.`,
-      },
-      {
-        h: 'Getting started: 3 questions to ask',
-        body: `1. **What are your top 5 most common inbound call types?** If 3 of them are "where is my order?", "what are your hours?", or "can I reschedule?" — you're an ideal candidate.\n\n2. **What percentage of calls do you miss today?** If you don't know, pull your missed call data from your phone system. Most businesses are shocked.\n\n3. **What is the average value of a handled inquiry?** This number lets you calculate your ROI before you sign up for anything.`,
-      },
-    ],
-    cta: { text: 'Calculate your own ROI — start free', to: '/register' },
-  },
-  {
-    slug: 'setup-ai-receptionist',
-    tag: 'How-To',
-    tagColor: T.violet,
-    date: 'July 1, 2026',
-    readTime: '8 min read',
-    title: 'How to Set Up an AI Receptionist in 30 Minutes',
-    subtitle: 'A step-by-step guide for non-technical founders who want a live AI voice agent handling their inbound calls before lunch.',
-    coverEmoji: '🤖',
-    intro: `You don't need an engineer, a vendor contract, or a three-month implementation timeline. If you can fill out a form and paste some text, you can have a working AI receptionist handling real calls today.`,
-    sections: [
-      {
-        h: 'Step 1: Set up your account (5 minutes)',
-        body: `Go to agentops.studio and click "Start free". You'll be asked for your:\n- Business name\n- Industry (logistics, real estate, healthcare, or other)\n- Primary language (Hindi, English, or both)\n- Business hours\n\nDon't overthink this — you can change everything later. The goal is to get your agent live and improve from real call data.`,
-      },
-      {
-        h: 'Step 2: Build your Knowledge Base (10 minutes)',
-        body: `Your AI agent answers questions from your Knowledge Base (KB). Think of it as a cheat sheet for your agent.\n\nWhat to add first:\n**Basic FAQ** (paste directly into the KB editor)\n- What do you do?\n- What are your business hours?\n- Where are you located?\n- How much does your service cost?\n- How do I track my order / book an appointment / get a quote?\n\n**Pro tip**: Record yourself answering your 10 most common inbound questions. Transcribe it (use Whisper or just type). Paste that into your KB. Done. Your agent now answers like you.`,
-      },
-      {
-        h: 'Step 3: Configure your agent\'s behaviour (5 minutes)',
-        body: `Under Agent Settings, configure:\n\n**Greeting script**: How should your agent introduce itself? Example: "Welcome to Sharma Logistics. I'm an AI assistant — I can help you track your shipment, reschedule a delivery, or answer any questions. How can I help you today?"\n\n**Fallback behaviour**: What should happen when a caller asks something the agent doesn't know? Options: offer to take a message, transfer to your mobile, or offer a callback.\n\n**After-hours message**: Should the agent still answer after hours? (Yes — this is where you capture after-hours revenue.) Configure a custom message like "Our office is closed, but I can still take your details and have someone call you back first thing tomorrow."`,
-      },
-      {
-        h: 'Step 4: Connect your phone number (5 minutes)',
-        body: `AgentOps Studio connects to your existing Exotel or Vapi number. If you don't have one yet, we'll walk you through getting a virtual number — it takes about 10 minutes and costs around ₹500/month.\n\nOnce your number is connected, your agent is live. All inbound calls to that number go to your AI agent first. If it can't handle the call, it routes to you.`,
-      },
-      {
-        h: 'Step 5: Make a test call (5 minutes)',
-        body: `Call your own number. Ask your agent a question from your KB. Ask it something it doesn't know. See how it handles the fallback.\n\nGo into your dashboard and review the transcript of your test call. Notice anything wrong? Edit your KB, save, and the agent updates immediately — no redeployment needed.\n\nMost founders need 2–3 iterations of their KB before they're happy with the quality. Plan for this. It's not a failure; it's the product working as designed.`,
-      },
-      {
-        h: 'What to do in week 1',
-        body: `Day 1–3: Review every transcript. Find the questions your agent got wrong and add them to your KB.\n\nDay 4–7: Check your analytics dashboard. What are the top 5 query types? Is there a pattern of callers hanging up at a specific point? Fix the script at that point.\n\nAfter 1 week: Your agent should be handling 75–85% of queries without human intervention. The remaining 15–25% will be complex queries that genuinely need you.`,
-      },
-    ],
-    cta: { text: 'Start your 30-minute setup now →', to: '/register' },
-  },
-];
+function ArticleView({ slug, onClose }: { slug: string; onClose: () => void }) {
+  useEffect(() => { window.scrollTo({ top: 0, behavior: 'smooth' }); }, []);
 
-// ─── ArticleView ──────────────────────────────────────────────────────────────
+  const { data: post, isLoading } = useQuery<BlogPostFull>({
+    queryKey: ['blog-post', slug],
+    queryFn:  async () => {
+      const r = await api.get(`/blog/${slug}`);
+      return r.data.data;
+    },
+  });
 
-function ArticleView({ post, onClose }: { post: typeof POSTS[0]; onClose: () => void }) {
-  useEffect(() => {
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  }, []);
+  const color = tagColor(0);
+
+  if (isLoading) {
+    return (
+      <div style={{ display: 'flex', justifyContent: 'center', padding: 80 }}>
+        <div style={{ width: 28, height: 28, borderRadius: '50%', border: '3px solid rgba(59,130,246,0.2)', borderTopColor: T.blue, animation: 'spin .7s linear infinite' }} />
+      </div>
+    );
+  }
+
+  if (!post) return null;
+
+  const primaryTag = post.tags[0] ?? 'Article';
+  const tc = tagColor(0);
 
   return (
     <div style={{ maxWidth: 720, margin: '0 auto', padding: '0 24px 100px' }}>
@@ -126,40 +135,47 @@ function ArticleView({ post, onClose }: { post: typeof POSTS[0]; onClose: () => 
         ← Back to blog
       </button>
 
+      {post.coverImage && (
+        <img src={post.coverImage} alt="" style={{ width: '100%', maxHeight: 320, objectFit: 'cover', borderRadius: 16, marginBottom: 32 }} />
+      )}
+
       <div style={{ marginBottom: 12 }}>
-        <span style={pill(`${post.tagColor}15`, post.tagColor, `${post.tagColor}30`)}>{post.tag}</span>
+        <span style={pill(`${tc}15`, tc, `${tc}30`)}>{primaryTag}</span>
       </div>
-      <h1 style={{ fontSize: 'clamp(24px,4vw,40px)', fontWeight: 900, lineHeight: 1.15, margin: '0 0 14px', letterSpacing: '-0.02em' }}>{post.title}</h1>
-      <p style={{ color: T.t2, fontSize: 16, lineHeight: 1.6, margin: '0 0 20px' }}>{post.subtitle}</p>
+      <h1 style={{ fontSize: 'clamp(24px,4vw,40px)', fontWeight: 900, lineHeight: 1.15, margin: '0 0 14px', letterSpacing: '-0.02em', color: T.t1 }}>{post.title}</h1>
+      {post.subtitle && <p style={{ color: T.t2, fontSize: 16, lineHeight: 1.6, margin: '0 0 20px' }}>{post.subtitle}</p>}
       <div style={{ display: 'flex', gap: 16, color: T.t3, fontSize: 12, marginBottom: 40, flexWrap: 'wrap' }}>
-        <span>{post.date}</span>
+        <span>By {post.author}</span>
         <span>·</span>
-        <span>{post.readTime}</span>
+        <span>{formatDate(post.publishedAt)}</span>
+        <span>·</span>
+        <span>{readTime(post.body)}</span>
       </div>
 
-      <div style={{ background: post.tagColor + '10', border: `1px solid ${post.tagColor}25`, borderRadius: 16, padding: '28px 32px', marginBottom: 40 }}>
-        <p style={{ color: T.t2, fontSize: 15, lineHeight: 1.8, margin: 0, fontStyle: 'italic' }}>{post.intro}</p>
-      </div>
+      <div dangerouslySetInnerHTML={{ __html: renderMarkdown(post.body) }} />
 
-      {post.sections.map((sec) => (
-        <div key={sec.h} style={{ marginBottom: 36 }}>
-          <h2 style={{ fontSize: 20, fontWeight: 800, margin: '0 0 12px', color: T.t1 }}>{sec.h}</h2>
-          {sec.body.split('\n\n').map((para, i) => {
-            // Minimal bold: replace **text** with <strong>
-            const parts = para.split(/(\*\*[^*]+\*\*)/g).map((p, j) =>
-              p.startsWith('**') ? <strong key={j} style={{ color: T.t1 }}>{p.slice(2, -2)}</strong> : p
-            );
-            return (
-              <p key={i} style={{ color: T.t2, fontSize: 15, lineHeight: 1.8, margin: '0 0 12px' }}>
-                {parts}
-              </p>
-            );
-          })}
+      <div style={{ background: `linear-gradient(135deg, ${color}15, ${color}08)`, border: `1px solid ${color}30`, borderRadius: 16, padding: '28px 32px', textAlign: 'center', marginTop: 56 }}>
+        <p style={{ color: T.t2, fontSize: 14, margin: '0 0 16px' }}>Ready to transform your inbound calls?</p>
+        <Link to="/register" style={{ display: 'inline-flex', alignItems: 'center', padding: '12px 28px', borderRadius: 9, background: color, color: '#fff', fontWeight: 700, fontSize: 15, textDecoration: 'none' }}>
+          Start free →
+        </Link>
+      </div>
+    </div>
+  );
+}
+
+// ─── Skeleton loader ──────────────────────────────────────────────────────────
+
+function SkeletonCard() {
+  return (
+    <div style={{ background: T.bgC, border: `1px solid ${T.bdr}`, borderRadius: 20, padding: 'clamp(24px,4vw,36px)' }}>
+      <div style={{ display: 'flex', gap: 24 }}>
+        <div style={{ width: 68, height: 68, borderRadius: 16, background: 'rgba(255,255,255,0.05)', flexShrink: 0 }} />
+        <div style={{ flex: 1 }}>
+          <div style={{ width: 80, height: 20, borderRadius: 999, background: 'rgba(255,255,255,0.06)', marginBottom: 12 }} />
+          <div style={{ width: '80%', height: 22, borderRadius: 8, background: 'rgba(255,255,255,0.06)', marginBottom: 10 }} />
+          <div style={{ width: '60%', height: 16, borderRadius: 8, background: 'rgba(255,255,255,0.04)' }} />
         </div>
-      ))}
-
-      <div style={{ background: `linear-gradient(135deg, ${post.tagColor}15, ${post.tagColor}08)`, border: `1px solid ${post.tagColor}30`, borderRadius: 16, padding: '28px 32px', textAlign: 'center', marginTop: 48 }}>
-        <Link to={post.cta.to} style={{ display: 'inline-flex', alignItems: 'center', padding: '12px 28px', borderRadius: 9, background: post.tagColor, color: post.tagColor === T.em ? '#fff' : '#fff', fontWeight: 700, fontSize: 15, textDecoration: 'none' }}>{post.cta.text}</Link>
       </div>
     </div>
   );
@@ -168,15 +184,35 @@ function ArticleView({ post, onClose }: { post: typeof POSTS[0]; onClose: () => 
 // ─── BlogPage ─────────────────────────────────────────────────────────────────
 
 export default function BlogPage() {
-  const [openPost, setOpenPost] = useState<typeof POSTS[0] | null>(null);
+  const [openSlug, setOpenSlug] = useState<string | null>(null);
+  const [tagFilter, setTagFilter] = useState<string | undefined>(undefined);
+  const [page, setPage] = useState(1);
 
-  if (openPost) {
+  const { data, isLoading, isError } = useQuery({
+    queryKey: ['blog-list', page, tagFilter],
+    queryFn:  async () => {
+      const params = new URLSearchParams({ page: String(page), limit: '10' });
+      if (tagFilter) params.set('tag', tagFilter);
+      const r = await api.get(`/blog?${params}`);
+      return r.data.data as { posts: BlogPostCard[]; total: number; page: number; limit: number };
+    },
+  });
+
+  if (openSlug) {
     return (
       <div style={{ background: T.bg, color: T.t1, minHeight: '100vh', fontFamily: 'Inter, system-ui, sans-serif', paddingTop: 64 }}>
-        <ArticleView post={openPost} onClose={() => setOpenPost(null)} />
+        <ArticleView slug={openSlug} onClose={() => setOpenSlug(null)} />
+        <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
       </div>
     );
   }
+
+  const posts      = data?.posts ?? [];
+  const total      = data?.total ?? 0;
+  const totalPages = Math.ceil(total / 10);
+
+  // Collect all tags for filter
+  const allTags = Array.from(new Set(posts.flatMap((p) => p.tags))).slice(0, 8);
 
   return (
     <div style={{ background: T.bg, color: T.t1, minHeight: '100vh', fontFamily: 'Inter, system-ui, sans-serif' }}>
@@ -189,7 +225,9 @@ export default function BlogPage() {
           </div>
           <h1 style={{ fontSize: 'clamp(28px,5vw,52px)', fontWeight: 900, lineHeight: 1.1, margin: '0 0 16px', letterSpacing: '-0.03em' }}>
             Guides for AI-powered{' '}
-            <span style={{ background: `linear-gradient(135deg, ${T.blue}, ${T.violet})`, WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>voice operations</span>
+            <span style={{ background: `linear-gradient(135deg, ${T.blue}, ${T.violet})`, WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+              voice operations
+            </span>
           </h1>
           <p style={{ color: T.t2, fontSize: 'clamp(14px,2vw,17px)', lineHeight: 1.7, margin: 0 }}>
             Practical guides for Indian SMBs deploying AI voice agents — ROI calculators, setup walkthroughs, and real case studies.
@@ -197,41 +235,139 @@ export default function BlogPage() {
         </div>
       </section>
 
+      {/* Tag filters */}
+      {allTags.length > 0 && (
+        <section style={{ maxWidth: 800, margin: '0 auto', padding: '0 24px 28px', display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+          <button
+            onClick={() => { setTagFilter(undefined); setPage(1); }}
+            style={{ padding: '5px 14px', borderRadius: 999, fontSize: 12, fontWeight: 600, cursor: 'pointer', border: `1px solid ${!tagFilter ? T.blue : T.bdr}`, background: !tagFilter ? 'rgba(59,130,246,0.1)' : T.bgC, color: !tagFilter ? T.blue : T.t2 }}
+          >
+            All
+          </button>
+          {allTags.map((tag, i) => {
+            const tc = tagColor(i);
+            const active = tagFilter === tag;
+            return (
+              <button
+                key={tag}
+                onClick={() => { setTagFilter(tag); setPage(1); }}
+                style={{ padding: '5px 14px', borderRadius: 999, fontSize: 12, fontWeight: 600, cursor: 'pointer', border: `1px solid ${active ? tc : T.bdr}`, background: active ? `${tc}15` : T.bgC, color: active ? tc : T.t2 }}
+              >
+                {tag}
+              </button>
+            );
+          })}
+        </section>
+      )}
+
       {/* Post list */}
       <section style={{ maxWidth: 800, margin: '0 auto', padding: '0 24px 100px', display: 'flex', flexDirection: 'column', gap: 20 }}>
-        {POSTS.map((post, i) => (
-          <Reveal key={post.slug} delay={i * 80}>
-            <button
-              onClick={() => setOpenPost(post)}
-              style={{ display: 'block', width: '100%', background: T.bgC, border: `1px solid ${T.bdr}`, borderRadius: 20, padding: 'clamp(24px,4vw,36px)', textAlign: 'left', cursor: 'pointer', fontFamily: 'inherit', transition: 'border-color .25s, transform .25s', color: 'inherit' }}
-              onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = T.bdrB; (e.currentTarget as HTMLButtonElement).style.transform = 'translateY(-2px)'; }}
-              onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = T.bdr; (e.currentTarget as HTMLButtonElement).style.transform = 'none'; }}
-            >
-              <div style={{ display: 'flex', gap: 24, alignItems: 'flex-start' }}>
-                <div style={{ fontSize: 40, flexShrink: 0, width: 68, height: 68, display: 'flex', alignItems: 'center', justifyContent: 'center', background: `${post.tagColor}12`, border: `1px solid ${post.tagColor}25`, borderRadius: 16 }}>{post.coverEmoji}</div>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10, flexWrap: 'wrap' }}>
-                    <span style={pill(`${post.tagColor}15`, post.tagColor, `${post.tagColor}30`)}>{post.tag}</span>
-                    <span style={{ color: T.t3, fontSize: 12 }}>{post.date} · {post.readTime}</span>
-                  </div>
-                  <h2 style={{ fontSize: 'clamp(16px,2.5vw,22px)', fontWeight: 800, margin: '0 0 8px', color: T.t1, lineHeight: 1.2 }}>{post.title}</h2>
-                  <p style={{ color: T.t2, fontSize: 14, lineHeight: 1.6, margin: '0 0 16px' }}>{post.subtitle}</p>
-                  <span style={{ color: post.tagColor, fontSize: 13, fontWeight: 600 }}>Read article →</span>
-                </div>
-              </div>
-            </button>
-          </Reveal>
+
+        {isLoading && [0, 1].map((i) => (
+          <Reveal key={i} delay={i * 60}><SkeletonCard /></Reveal>
         ))}
 
-        {/* Coming soon */}
-        <Reveal delay={160}>
-          <div style={{ background: T.bgC, border: `1px dashed ${T.bdr}`, borderRadius: 20, padding: 'clamp(20px,4vw,32px)', textAlign: 'center' }}>
-            <p style={{ color: T.t3, fontSize: 14, margin: '0 0 8px' }}>More articles coming soon</p>
-            <p style={{ color: T.t3, fontSize: 12, margin: 0 }}>Hindi vs English scripts · Comparing Vapi vs Twilio · Reducing AI hallucinations in customer calls</p>
+        {isError && (
+          <div style={{ textAlign: 'center', padding: '48px 24px', color: T.t2 }}>
+            <p>Failed to load posts. Please try again later.</p>
           </div>
-        </Reveal>
+        )}
+
+        {!isLoading && !isError && posts.length === 0 && (
+          <Reveal>
+            <div style={{ background: T.bgC, border: `1px dashed ${T.bdr}`, borderRadius: 20, padding: 'clamp(32px,6vw,56px)', textAlign: 'center' }}>
+              <p style={{ color: T.t2, fontSize: 16, margin: '0 0 8px', fontWeight: 600 }}>No articles yet</p>
+              <p style={{ color: T.t3, fontSize: 13, margin: 0 }}>
+                Hindi vs English scripts · Comparing Vapi vs Twilio · Reducing AI hallucinations in customer calls — coming soon.
+              </p>
+            </div>
+          </Reveal>
+        )}
+
+        {!isLoading && posts.map((post, i) => {
+          const primaryTag = post.tags[0] ?? 'Article';
+          const tc         = tagColor(i);
+          return (
+            <Reveal key={post._id} delay={i * 80}>
+              <button
+                onClick={() => setOpenSlug(post.slug)}
+                style={{
+                  display: 'block', width: '100%', background: T.bgC,
+                  border: `1px solid ${T.bdr}`, borderRadius: 20,
+                  padding: 'clamp(24px,4vw,36px)', textAlign: 'left',
+                  cursor: 'pointer', fontFamily: 'inherit',
+                  transition: 'border-color .25s, transform .25s', color: 'inherit',
+                }}
+                onMouseEnter={(e) => { e.currentTarget.style.borderColor = T.bdrB; e.currentTarget.style.transform = 'translateY(-2px)'; }}
+                onMouseLeave={(e) => { e.currentTarget.style.borderColor = T.bdr;  e.currentTarget.style.transform = 'none'; }}
+              >
+                <div style={{ display: 'flex', gap: 24, alignItems: 'flex-start' }}>
+                  {/* Cover image or emoji fallback */}
+                  <div style={{
+                    fontSize: 28, flexShrink: 0, width: 68, height: 68,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    background: `${tc}12`, border: `1px solid ${tc}25`, borderRadius: 16,
+                    overflow: 'hidden',
+                  }}>
+                    📝
+                  </div>
+
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10, flexWrap: 'wrap' }}>
+                      {post.tags.slice(0, 2).map((tag, ti) => (
+                        <span key={tag} style={pill(`${tagColor(ti)}15`, tagColor(ti), `${tagColor(ti)}30`)}>{tag}</span>
+                      ))}
+                      <span style={{ color: T.t3, fontSize: 12 }}>
+                        {formatDate(post.publishedAt)}
+                      </span>
+                    </div>
+                    <h2 style={{ fontSize: 'clamp(16px,2.5vw,22px)', fontWeight: 800, margin: '0 0 8px', color: T.t1, lineHeight: 1.2 }}>
+                      {post.title}
+                    </h2>
+                    {post.subtitle && (
+                      <p style={{ color: T.t2, fontSize: 14, lineHeight: 1.6, margin: '0 0 16px' }}>{post.subtitle}</p>
+                    )}
+                    <span style={{ color: tc, fontSize: 13, fontWeight: 600 }}>Read article →</span>
+                  </div>
+                </div>
+              </button>
+            </Reveal>
+          );
+        })}
+
+        {/* Pagination */}
+        {totalPages > 1 && (
+          <div style={{ display: 'flex', justifyContent: 'center', gap: 8, paddingTop: 8 }}>
+            {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
+              <button
+                key={p}
+                onClick={() => setPage(p)}
+                style={{
+                  width: 36, height: 36, borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: 'pointer',
+                  background: page === p ? T.blue : T.bgC,
+                  border: `1px solid ${page === p ? T.blue : T.bdr}`,
+                  color: page === p ? '#fff' : T.t2,
+                  fontFamily: 'inherit',
+                }}
+              >
+                {p}
+              </button>
+            ))}
+          </div>
+        )}
+
+        {/* Coming soon footer */}
+        {posts.length > 0 && totalPages <= 1 && (
+          <Reveal delay={160}>
+            <div style={{ background: T.bgC, border: `1px dashed ${T.bdr}`, borderRadius: 20, padding: 'clamp(20px,4vw,32px)', textAlign: 'center' }}>
+              <p style={{ color: T.t3, fontSize: 14, margin: '0 0 6px' }}>More articles coming soon</p>
+              <p style={{ color: T.t3, fontSize: 12, margin: 0 }}>Hindi vs English scripts · Comparing Vapi vs Twilio · Reducing AI hallucinations in customer calls</p>
+            </div>
+          </Reveal>
+        )}
       </section>
 
+      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
     </div>
   );
 }

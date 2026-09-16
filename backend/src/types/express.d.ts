@@ -12,5 +12,11 @@ declare namespace Express {
     orgId?: string;
     /** Active user's role within the current organization — set by validateOrganization middleware */
     userRole?: 'Owner' | 'Admin' | 'Member';
+    /**
+     * The plan that governs feature access for the current request.
+     * Equals org.plan except during an active trial, where it is 'growth'.
+     * Set by the trialGate middleware.
+     */
+    effectivePlan?: 'free' | 'starter' | 'growth' | 'enterprise';
   }
 }

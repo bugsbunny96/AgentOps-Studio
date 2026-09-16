@@ -44,6 +44,14 @@ api.interceptors.response.use(
       }
     }
 
+    // 402 TRIAL_EXPIRED — redirect to billing page so user can upgrade
+    if (error.response?.status === 402) {
+      const data = error.response.data as { code?: string };
+      if (data?.code === 'TRIAL_EXPIRED') {
+        window.location.href = '/billing'; // intentional hard redirect
+      }
+    }
+
     // 403 ONBOARDING_INCOMPLETE — let React Router handle, not window.location
     if (error.response?.status === 403) {
       const data = error.response.data as { code?: string };

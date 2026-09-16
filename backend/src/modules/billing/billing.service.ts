@@ -19,30 +19,48 @@ import { OrganizationModel, MembershipModel, InvitationModel, type Plan } from '
 import { KbDocumentModel } from '../knowledge-base/kb.model';
 import { BadRequest, NotFound } from '../../middleware/errorHandler';
 import { logger } from '../../utils/logger';
+import { computeTrialState } from './trial.service';
 
-// ─── Plan Limits (shared with kb.service + team.service) ─────────────────────
+// ─── Plan Limits (shared with kb.service + team.service + webhook.service) ────
+//
+// callMinutes: max cumulative call-minutes per calendar month.
+//   - Matches the minute allocations shown on the pricing/billing page.
+//   - Enforced at the assistant-request webhook BEFORE Vapi connects the call,
+//     preventing cost exposure when an org is over-limit.
+//   - free=60  (1 hr — enough for demos/testing without Vapi cost exposure)
+//   - starter=500   (matches "500 minutes / month" on pricing page)
+//   - growth=2000   (matches "2,000 minutes / month" on pricing page)
+//   - enterprise=∞  (direct contract; no per-minute cap)
 
-export const PLAN_LIMITS: Record<Plan, { kbDocs: number; teamMembers: number }> = {
-  free:       { kbDocs: 5,        teamMembers: 0        }, // owner only
-  starter:    { kbDocs: 5,        teamMembers: 1        }, // owner + 1 member
-  growth:     { kbDocs: 50,       teamMembers: 5        }, // owner + 5 members
-  enterprise: { kbDocs: Infinity, teamMembers: Infinity }, // unlimited
+export const PLAN_LIMITS: Record<Plan, { kbDocs: number; teamMembers: number; callMinutes: number }> = {
+  free:       { kbDocs: 5,        teamMembers: 0,        callMinutes: 60       },
+  starter:    { kbDocs: 5,        teamMembers: 1,        callMinutes: 500      },
+  growth:     { kbDocs: 50,       teamMembers: 5,        callMinutes: 2_000    },
+  enterprise: { kbDocs: Infinity, teamMembers: Infinity, callMinutes: Infinity },
 };
 
 // ─── Plan name → Stripe price ID mapping ──────────────────────────────────────
+//
+// INR-first strategy: if STRIPE_*_PRICE_ID_INR env vars are set they are used
+// exclusively, so Indian customers are billed in ₹ (the currency is embedded in
+// the Stripe Price object — no `currency` param needed on the session).
+// If the INR variants are absent, we fall back to the primary price IDs.
 
 function getPlanPriceId(plan: 'starter' | 'growth'): string {
   if (plan === 'starter') {
-    if (!env.STRIPE_STARTER_PRICE_ID) throw BadRequest('Starter plan is not configured');
-    return env.STRIPE_STARTER_PRICE_ID;
+    const id = env.STRIPE_STARTER_PRICE_ID_INR ?? env.STRIPE_STARTER_PRICE_ID;
+    if (!id) throw BadRequest('Starter plan is not configured');
+    return id;
   }
-  if (!env.STRIPE_GROWTH_PRICE_ID) throw BadRequest('Growth plan is not configured');
-  return env.STRIPE_GROWTH_PRICE_ID;
+  const id = env.STRIPE_GROWTH_PRICE_ID_INR ?? env.STRIPE_GROWTH_PRICE_ID;
+  if (!id) throw BadRequest('Growth plan is not configured');
+  return id;
 }
 
 function getPlanFromPriceId(priceId: string): Plan | null {
-  if (priceId === env.STRIPE_STARTER_PRICE_ID) return 'starter';
-  if (priceId === env.STRIPE_GROWTH_PRICE_ID)  return 'growth';
+  // Check INR variants first (they are preferred at checkout)
+  if (priceId === env.STRIPE_STARTER_PRICE_ID_INR || priceId === env.STRIPE_STARTER_PRICE_ID) return 'starter';
+  if (priceId === env.STRIPE_GROWTH_PRICE_ID_INR  || priceId === env.STRIPE_GROWTH_PRICE_ID)  return 'growth';
   return null;
 }
 
@@ -233,25 +251,92 @@ export async function handleStripeWebhook(
   return { received: true };
 }
 
+// ─── createPortalSession ──────────────────────────────────────────────────────
+
+/**
+ * Creates a Stripe Customer Portal session so the org Owner can manage their
+ * subscription, update payment methods, download invoices, and cancel — without
+ * involving support.
+ *
+ * Pre-requisite: the Stripe Customer Portal must be configured in the Stripe
+ * Dashboard (Customers → Customer portal → Activate portal).
+ *
+ * Returns the one-time portal URL to redirect the browser to.
+ * The URL is valid for a short window (~5 minutes) and is single-use.
+ */
+export async function createPortalSession(userId: string): Promise<{ url: string }> {
+  const stripe = getStripe();
+  const { org, orgId } = await resolveOwnerOrgForBilling(userId);
+
+  const orgData = org as unknown as { stripeCustomerId?: string };
+
+  if (!orgData.stripeCustomerId) {
+    throw BadRequest(
+      'No active subscription found. Please upgrade to a paid plan first.',
+      'NO_STRIPE_CUSTOMER',
+    );
+  }
+
+  const returnUrl = `${env.CLIENT_URL}/billing`;
+
+  const portalSession = await stripe.billingPortal.sessions.create({
+    customer:   orgData.stripeCustomerId,
+    return_url: returnUrl,
+  });
+
+  logger.info('Stripe Customer Portal session created', {
+    orgId,
+    customerId: orgData.stripeCustomerId,
+    sessionId:  portalSession.id,
+  });
+
+  return { url: portalSession.url };
+}
+
 // ─── getBillingStatus ─────────────────────────────────────────────────────────
 
 export interface BillingStatus {
   plan:            Plan;
+  /** The plan that governs feature access. Equals `plan` except during an active trial, where it's 'growth'. */
+  effectivePlan:   Plan;
   kbDocs:          { used: number; limit: number | null };
   teamMembers:     { used: number; limit: number | null };
+  /** Monthly call-minute quota. limit=null means unlimited (enterprise). resetAt = ISO string of next reset. */
+  callMinutes:     { used: number; limit: number | null; resetAt: string };
   stripeCustomerId: string | null;
+  // ── Trial ─────────────────────────────────────────────────────────
+  isInTrial:       boolean;
+  isTrialExpired:  boolean;
+  trialDaysLeft:   number;
+  trialEndsAt:     string | null;  // ISO string for JSON serialisation
 }
 
 /**
- * Returns the current billing plan + feature usage counts.
+ * Returns the current billing plan + feature usage counts + trial state.
  * Available to the org Owner only.
  */
 export async function getBillingStatus(userId: string): Promise<BillingStatus> {
   const { org, orgId } = await resolveOwnerOrgForBilling(userId);
 
   // org is typed loosely from the lean query, access plan with fallback
-  const plan: Plan = ((org as unknown as { plan?: Plan }).plan) ?? 'free';
-  const limits     = PLAN_LIMITS[plan];
+  type OrgExtra = {
+    plan?:               Plan;
+    stripeCustomerId?:   string;
+    trialUsed?:          boolean;
+    trialEndsAt?:        Date;
+    callMinutesUsed?:    number;
+    callMinutesResetAt?: Date;
+  };
+  const orgData = org as unknown as OrgExtra;
+
+  const plan: Plan = orgData.plan ?? 'free';
+
+  // Compute trial state
+  const trial = computeTrialState(plan, orgData.trialUsed ?? false, orgData.trialEndsAt);
+
+  // During an active trial, treat the org as growth-level for feature access
+  const effectivePlan: Plan = trial.isInTrial ? 'growth' : plan;
+  const limits = PLAN_LIMITS[effectivePlan];
 
   const [kbDocsUsed, membersUsed, pendingInvites] = await Promise.all([
     KbDocumentModel.countDocuments({ organizationId: orgId }),
@@ -259,8 +344,13 @@ export async function getBillingStatus(userId: string): Promise<BillingStatus> {
     InvitationModel.countDocuments({ organizationId: orgId, expiresAt: { $gt: new Date() } }),
   ]);
 
+  // ── Compute next reset date: 1st of following month UTC ────────────────────
+  const now   = new Date();
+  const nextResetAt = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 1));
+
   return {
     plan,
+    effectivePlan,
     kbDocs: {
       used:  kbDocsUsed,
       limit: limits.kbDocs === Infinity ? null : limits.kbDocs,
@@ -269,6 +359,15 @@ export async function getBillingStatus(userId: string): Promise<BillingStatus> {
       used:  membersUsed + pendingInvites,
       limit: limits.teamMembers === Infinity ? null : limits.teamMembers,
     },
-    stripeCustomerId: ((org as unknown as { stripeCustomerId?: string }).stripeCustomerId) ?? null,
+    callMinutes: {
+      used:    orgData.callMinutesUsed ?? 0,
+      limit:   limits.callMinutes === Infinity ? null : limits.callMinutes,
+      resetAt: nextResetAt.toISOString(),
+    },
+    stripeCustomerId: orgData.stripeCustomerId ?? null,
+    isInTrial:        trial.isInTrial,
+    isTrialExpired:   trial.isTrialExpired,
+    trialDaysLeft:    trial.trialDaysLeft,
+    trialEndsAt:      trial.trialEndsAt?.toISOString() ?? null,
   };
 }

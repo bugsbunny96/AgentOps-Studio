@@ -42,9 +42,11 @@ import { signAccessToken } from '@/utils/jwt';
 const {
   mockCheckoutCreate,
   mockWebhooksConstructEvent,
+  mockPortalCreate,
 } = vi.hoisted(() => ({
   mockCheckoutCreate:          vi.fn(),
   mockWebhooksConstructEvent:  vi.fn(),
+  mockPortalCreate:            vi.fn(),
 }));
 
 vi.mock('stripe', () => {
@@ -52,6 +54,11 @@ vi.mock('stripe', () => {
     checkout: {
       sessions: {
         create: mockCheckoutCreate,
+      },
+    },
+    billingPortal: {
+      sessions: {
+        create: mockPortalCreate,
       },
     },
     webhooks: {
@@ -88,10 +95,14 @@ vi.mock('@/config/env', async (importOriginal) => {
     ...original,
     env: {
       ...original.env,
-      STRIPE_SECRET_KEY:       'sk_test_mock',
-      STRIPE_WEBHOOK_SECRET:   'whsec_mock',
-      STRIPE_STARTER_PRICE_ID: 'price_starter_mock',
-      STRIPE_GROWTH_PRICE_ID:  'price_growth_mock',
+      STRIPE_SECRET_KEY:           'sk_test_mock',
+      STRIPE_WEBHOOK_SECRET:       'whsec_mock',
+      // Primary (USD) price IDs — present as fallback
+      STRIPE_STARTER_PRICE_ID:     'price_starter_mock',
+      STRIPE_GROWTH_PRICE_ID:      'price_growth_mock',
+      // INR-denominated price IDs — these take priority in getPlanPriceId()
+      STRIPE_STARTER_PRICE_ID_INR: 'price_starter_inr_mock',
+      STRIPE_GROWTH_PRICE_ID_INR:  'price_growth_inr_mock',
     },
   };
 });
@@ -131,6 +142,11 @@ beforeEach(() => {
   mockCheckoutCreate.mockResolvedValue({
     id:  'cs_test_mock_session_123',
     url: 'https://checkout.stripe.com/pay/cs_test_mock_session_123',
+  });
+
+  mockPortalCreate.mockResolvedValue({
+    id:  'bps_test_mock_session_123',
+    url: 'https://billing.stripe.com/p/session/bps_test_mock_session_123',
   });
 
   mockWebhooksConstructEvent.mockImplementation(
@@ -201,7 +217,7 @@ describe('POST /api/v1/billing/checkout', () => {
     expect(mockCheckoutCreate).toHaveBeenCalledWith(
       expect.objectContaining({
         mode:       'subscription',
-        line_items: [{ price: 'price_starter_mock', quantity: 1 }],
+        line_items: [{ price: 'price_starter_inr_mock', quantity: 1 }],
       }),
     );
   });
@@ -218,7 +234,7 @@ describe('POST /api/v1/billing/checkout', () => {
     expect(res.status).toBe(200);
     expect(mockCheckoutCreate).toHaveBeenCalledWith(
       expect.objectContaining({
-        line_items: [{ price: 'price_growth_mock', quantity: 1 }],
+        line_items: [{ price: 'price_growth_inr_mock', quantity: 1 }],
       }),
     );
   });
@@ -399,5 +415,57 @@ describe('POST /api/v1/billing/webhook', () => {
 
     expect(res.status).toBe(200);
     expect(res.body.received).toBe(true);
+  });
+});
+
+// ── POST /portal ───────────────────────────────────────────────────────────────
+
+describe('POST /api/v1/billing/portal', () => {
+  it('returns 401 when not authenticated', async () => {
+    const res = await request(app)
+      .post('/api/v1/billing/portal')
+      .send({});
+    expect(res.status).toBe(401);
+  });
+
+  it('returns 400 NO_STRIPE_CUSTOMER when org has no Stripe customer ID', async () => {
+    const ts = Date.now();
+    const { cookie } = await createOwnerWithOrg(ts);
+
+    // Org was created without stripeCustomerId — portal cannot be opened
+    const res = await request(app)
+      .post('/api/v1/billing/portal')
+      .set('Cookie', cookie)
+      .send({});
+
+    expect(res.status).toBe(400);
+    expect(res.body.code).toBe('NO_STRIPE_CUSTOMER');
+  });
+
+  it('returns 200 with portal URL when org has a Stripe customer ID', async () => {
+    const ts = Date.now();
+    const { org, cookie } = await createOwnerWithOrg(ts);
+
+    // Simulate org already having a Stripe customer (paid subscription)
+    await OrganizationModel.findByIdAndUpdate(org._id, {
+      plan:             'starter',
+      stripeCustomerId: 'cus_portal_test',
+    });
+
+    const res = await request(app)
+      .post('/api/v1/billing/portal')
+      .set('Cookie', cookie)
+      .send({});
+
+    expect(res.status).toBe(200);
+    expect(res.body.success).toBe(true);
+    expect(res.body.data.url).toBe('https://billing.stripe.com/p/session/bps_test_mock_session_123');
+    expect(mockPortalCreate).toHaveBeenCalledOnce();
+    expect(mockPortalCreate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        customer:   'cus_portal_test',
+        return_url: expect.stringContaining('/billing'),
+      }),
+    );
   });
 });

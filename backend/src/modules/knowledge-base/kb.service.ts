@@ -29,6 +29,7 @@ import { generateSystemPrompt }                from '../agents/prompt.utils';
 import { vapiUpdateAssistant }                 from '../agents/vapi.service';
 import { NotFound, BadRequest, Forbidden }      from '../../middleware/errorHandler';
 import { PLAN_LIMITS }                         from '../billing/billing.service';
+import { computeTrialState }                   from '../billing/trial.service';
 import type { Plan }                           from '../organization/organization.model';
 import { logger }                              from '../../utils/logger';
 
@@ -151,17 +152,20 @@ export async function createDoc(userId: string, dto: CreateKbDocDto): Promise<IK
   if (!dto.content?.trim())  throw BadRequest('Content is required');
   if (dto.content.length > 50_000) throw BadRequest('Content exceeds 50,000 character limit');
 
-  // ── Plan limit check ──────────────────────────────────────────────
-  const plan: Plan  = (org as unknown as { plan?: Plan }).plan ?? 'free';
-  const kbDocLimit  = PLAN_LIMITS[plan].kbDocs;
+  // ── Plan limit check (trial-aware) ───────────────────────────────
+  const orgData = org as unknown as { plan?: Plan; trialUsed?: boolean; trialEndsAt?: Date };
+  const plan: Plan  = orgData.plan ?? 'free';
+  const trial       = computeTrialState(plan, orgData.trialUsed ?? false, orgData.trialEndsAt);
+  // During an active trial treat the org as 'growth' for feature limits
+  const effectivePlan: Plan = trial.isInTrial ? 'growth' : plan;
+  const kbDocLimit  = PLAN_LIMITS[effectivePlan].kbDocs;
   if (kbDocLimit !== Infinity) {
     const currentCount = await KbDocumentModel.countDocuments({ organizationId: orgId });
     if (currentCount >= kbDocLimit) {
-      throw Forbidden(
-        `Your ${plan} plan allows up to ${kbDocLimit} Knowledge Base document${kbDocLimit === 1 ? '' : 's'}. ` +
-        'Upgrade your plan to add more.',
-        'KB_PLAN_LIMIT_REACHED',
-      );
+      const upgradeMsg = trial.isTrialExpired
+        ? 'Your free trial has ended. Upgrade to add more Knowledge Base documents.'
+        : `Your ${effectivePlan} plan allows up to ${kbDocLimit} Knowledge Base document${kbDocLimit === 1 ? '' : 's'}. Upgrade your plan to add more.`;
+      throw Forbidden(upgradeMsg, 'KB_PLAN_LIMIT_REACHED');
     }
   }
 

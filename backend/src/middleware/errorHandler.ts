@@ -96,6 +96,25 @@ export function errorHandler(
     url: req.originalUrl,
   });
 
+  // Fire-and-forget write to ErrorLog collection (never throws)
+  void (async () => {
+    try {
+      const { writeErrorLog } = await import('../modules/error-log/error-log.service');
+      await writeErrorLog({
+        message:    err.message,
+        code:       'INTERNAL_SERVER_ERROR',
+        statusCode: 500,
+        stack:      err.stack,
+        path:       req.originalUrl,
+        method:     req.method,
+        orgId:      (req as { orgId?: string }).orgId,
+        userId:     (req as { userId?: string }).userId,
+      });
+    } catch {
+      // Silently swallow — must never throw inside an error handler
+    }
+  })();
+
   res.status(500).json({
     success: false,
     code: 'INTERNAL_SERVER_ERROR',

@@ -12,7 +12,7 @@ import { useQuery, useMutation } from '@tanstack/react-query';
 import {
   Bot, BookOpen, PhoneCall, ArrowRight, Copy, CheckCheck,
   Timer, CheckCircle2, PhoneOutgoing, X, Loader2, CheckCircle,
-  AlertCircle, Activity, Zap, Phone, Settings, TrendingUp, TrendingDown, Minus,
+  AlertCircle, Activity, Zap, Phone, Settings, TrendingUp, TrendingDown, Minus, Clock,
 } from 'lucide-react';
 import { useAppSelector } from '@/store';
 import { api } from '@/utils/api';
@@ -373,6 +373,58 @@ function CallNumberModal({ agentId, onClose }: { agentId: string; onClose: () =>
   );
 }
 
+// ── Trial Banner ──────────────────────────────────────────────────────────────
+interface BillingStatus {
+  isInTrial:      boolean;
+  isTrialExpired: boolean;
+  trialDaysLeft:  number;
+  trialEndsAt:    string | null;
+  callMinutes:    { used: number; limit: number | null; resetAt: string };
+}
+
+function TrialBanner({ billing }: { billing: BillingStatus }) {
+  if (!billing.isInTrial && !billing.isTrialExpired) return null;
+
+  const urgent = billing.isTrialExpired || billing.trialDaysLeft <= 2;
+  const bg     = urgent ? 'rgba(244,63,94,0.08)' : 'rgba(245,158,11,0.08)';
+  const bdr    = urgent ? 'rgba(244,63,94,0.25)' : 'rgba(245,158,11,0.25)';
+  const color  = urgent ? '#f87171'              : '#fbbf24';
+  const icon   = billing.isTrialExpired ? AlertCircle : Clock;
+  const Icon   = icon;
+
+  const message = billing.isTrialExpired
+    ? 'Your free trial has expired. Upgrade to keep your AI agent running.'
+    : billing.trialDaysLeft <= 1
+      ? 'Your free trial expires today! Upgrade now to avoid interruption.'
+      : `Your free trial ends in ${billing.trialDaysLeft} days. Upgrade to keep full access.`;
+
+  return (
+    <div style={{
+      display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+      gap: 16, padding: '12px 20px', borderRadius: 12,
+      background: bg, border: `1px solid ${bdr}`,
+    }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+        <Icon size={15} style={{ color, flexShrink: 0 }} />
+        <span style={{ fontSize: 13, color, fontWeight: 500 }}>{message}</span>
+      </div>
+      <a
+        href="/billing"
+        style={{
+          flexShrink: 0, fontSize: 12, fontWeight: 700, color: '#fff',
+          padding: '6px 14px', borderRadius: 8, textDecoration: 'none',
+          background: urgent
+            ? 'linear-gradient(135deg,#f43f5e,#e11d48)'
+            : 'linear-gradient(135deg,#f59e0b,#d97706)',
+          whiteSpace: 'nowrap',
+        }}
+      >
+        Upgrade now
+      </a>
+    </div>
+  );
+}
+
 // ═════════════════════════════════════════════════════════════════════════════
 // MAIN PAGE
 // ═════════════════════════════════════════════════════════════════════════════
@@ -383,6 +435,12 @@ export function DashboardPage() {
   const [copiedPhone,   setCopiedPhone]   = useState(false);
 
   // ── Data queries ─────────────────────────────────────────────────────────────
+  const { data: billingStatus } = useQuery<BillingStatus>({
+    queryKey: ['billing', 'status'],
+    queryFn: () => api.get('/billing/status').then((r) => r.data?.data ?? r.data),
+    staleTime: 5 * 60_000,
+  });
+
   const { data: agents = [] } = useQuery<VoiceAgent[]>({
     queryKey: ['agents'],
     queryFn: () => api.get('/agents').then((r) => r.data?.agents ?? r.data ?? []),
@@ -473,6 +531,11 @@ export function DashboardPage() {
       }} />
 
       <div style={{ position: 'relative', zIndex: 1, display: 'flex', flexDirection: 'column', gap: 24 }}>
+
+        {/* ── TRIAL BANNER ─────────────────────────────────────────────── */}
+        {billingStatus && (billingStatus.isInTrial || billingStatus.isTrialExpired) && (
+          <TrialBanner billing={billingStatus} />
+        )}
 
         {/* ── HERO BANNER ─────────────────────────────────────────────────── */}
         <div style={{

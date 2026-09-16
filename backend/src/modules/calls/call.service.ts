@@ -38,6 +38,17 @@ export interface InitiateCallPayload {
   agentId: string;
 }
 
+export interface SearchTranscriptsQuery {
+  /** The search string — minimum 2 characters. MongoDB $text operators are supported:
+   *  - Double quotes for phrase: "appointment booking"
+   *  - Minus prefix to exclude: -cancel
+   */
+  q: string;
+  page?: number;
+  /** Max 50 results per page for search (search is CPU-heavy; keep pages small). */
+  limit?: number;
+}
+
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 async function getOrgId(userId: string): Promise<string> {
@@ -343,5 +354,133 @@ export async function getCallById(userId: string, callId: string) {
     call:       call.toJSON(),
     transcript: transcript?.toJSON() ?? null,
     summary:    summary?.toJSON()    ?? null,
+  };
+}
+
+// ─── searchTranscripts ────────────────────────────────────────────────────────
+
+/**
+ * Full-text search across all transcripts belonging to the caller's org.
+ *
+ * Uses the MongoDB text index (`transcript_fulltext_idx`) on the `fullText`
+ * field. Results are ordered by relevance score (textScore) descending.
+ *
+ * Only transcripts with `organizationId` set are included — calls that
+ * completed before this feature was deployed will not appear in results.
+ * This is intentional: security > coverage.
+ *
+ * Query string supports MongoDB $text operators:
+ *   - Phrase match:   "appointment booking"
+ *   - Exclude term:  -cancel
+ *   - OR (default):  book appointment  (either word)
+ *
+ * @param userId - authenticated user; org is resolved from their membership
+ * @param query  - { q, page, limit }
+ */
+
+/** Extract a short context window around the first matching term. */
+function buildSnippet(fullText: string, rawQuery: string, contextChars = 160): string {
+  // Strip MongoDB operators to get plain search words
+  const terms = rawQuery
+    .replace(/"/g, '') // remove phrase quotes
+    .split(/\s+/)
+    .map((t) => t.replace(/^-/, '').toLowerCase()) // strip negation prefix
+    .filter(Boolean);
+
+  const lower = fullText.toLowerCase();
+
+  let matchPos = -1;
+  for (const term of terms) {
+    if (!term) continue;
+    const pos = lower.indexOf(term);
+    if (pos !== -1) { matchPos = pos; break; }
+  }
+
+  if (matchPos === -1) {
+    // MongoDB matched via stemming/stop-word removal — fallback to start of text
+    const snippet = fullText.slice(0, contextChars * 2);
+    return fullText.length > contextChars * 2 ? snippet + '…' : snippet;
+  }
+
+  const start   = Math.max(0, matchPos - contextChars);
+  const end     = Math.min(fullText.length, matchPos + contextChars);
+  const snippet = fullText.slice(start, end);
+
+  return (start > 0 ? '…' : '') + snippet + (end < fullText.length ? '…' : '');
+}
+
+export async function searchTranscripts(userId: string, query: SearchTranscriptsQuery) {
+  const q = (query.q ?? '').trim();
+
+  // Guard: enforce minimum query length to avoid expensive full-collection scans
+  if (q.length < 2) {
+    throw BadRequest(
+      'Search query must be at least 2 characters',
+      'QUERY_TOO_SHORT',
+    );
+  }
+
+  const orgId = await getOrgId(userId);
+  const oid   = new mongoose.Types.ObjectId(orgId);
+
+  const page  = Math.max(1, query.page  ?? 1);
+  const limit = Math.min(50, Math.max(1, query.limit ?? 10)); // hard cap at 50
+  const skip  = (page - 1) * limit;
+
+  // Scoped to this org only — cross-tenant leakage is impossible because
+  // organizationId is always set to the caller's org (set at write time).
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const searchFilter: Record<string, any> = {
+    organizationId: oid,
+    $text: { $search: q },
+  };
+
+  // We need fullText for snippet building — use .select('+fullText') to override
+  // the schema-level `select: false`. textScore projection is separate.
+  const [rawDocs, total] = await Promise.all([
+    TranscriptModel
+      .find(searchFilter)
+      .select('+fullText')                        // include the hidden fullText field
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      .sort({ score: { $meta: 'textScore' } } as any)
+      .skip(skip)
+      .limit(limit)
+      .lean(),
+    TranscriptModel.countDocuments(searchFilter),
+  ]);
+
+  if (rawDocs.length === 0) {
+    return { results: [], total: 0, page, pageSize: limit, totalPages: 0 };
+  }
+
+  // Fetch the parent Call records in one query
+  const callIds = rawDocs.map((t) => t.callId);
+  const calls   = await CallModel.find({ _id: { $in: callIds } });
+  const callMap = new Map(calls.map((c) => [c._id.toString(), c.toJSON()]));
+
+  const results = rawDocs
+    .map((t) => {
+      const call = callMap.get(t.callId.toString());
+      if (!call) return null; // orphaned transcript — skip gracefully
+
+      return {
+        call,
+        transcript: {
+          id:      (t._id as mongoose.Types.ObjectId).toString(),
+          callId:  t.callId.toString(),
+          snippet: t.fullText ? buildSnippet(t.fullText, q) : '',
+          // Return the first 3 matching turns so the UI can render them
+          turns:   t.turns.slice(0, 3),
+        },
+      };
+    })
+    .filter(Boolean);
+
+  return {
+    results,
+    total,
+    page,
+    pageSize:   limit,
+    totalPages: Math.ceil(total / limit),
   };
 }

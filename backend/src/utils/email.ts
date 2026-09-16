@@ -91,6 +91,121 @@ export async function sendVerificationEmail(
   });
 }
 
+// ─── Trial reminder emails ─────────────────────────────────────────────────
+
+/**
+ * Day-5 trial reminder — sent when 2 days remain on the free trial.
+ * Tone: helpful nudge. Highlights what they'll lose, shows upgrade CTA.
+ */
+export async function sendTrialDay5Email(
+  email: string,
+  name: string,
+  orgName: string,
+): Promise<void> {
+  const upgradeUrl = `${env.CLIENT_URL}/billing`;
+  await sendEmail({
+    to: email,
+    subject: `⏳ 2 days left in your AgentOps Studio trial — ${orgName}`,
+    html: `
+      <!DOCTYPE html>
+      <html>
+      <body style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 24px; background: #ffffff;">
+        <div style="background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%); border-radius: 12px; padding: 28px 32px; margin-bottom: 24px;">
+          <h1 style="color: #ffffff; margin: 0 0 8px; font-size: 22px;">Your free trial ends in 2 days</h1>
+          <p style="color: #c7d2fe; margin: 0; font-size: 15px;">Hi ${name}, don't lose access to your AI voice agent.</p>
+        </div>
+
+        <p style="color: #374151; font-size: 15px; line-height: 1.6;">
+          Your 7-day free trial for <strong>${orgName}</strong> ends in <strong>2 days</strong>.
+          After that, you'll revert to the free plan — which means limited knowledge base documents
+          and no team members.
+        </p>
+
+        <div style="background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 8px; padding: 20px; margin: 20px 0;">
+          <p style="margin: 0 0 12px; font-weight: 700; color: #111827;">What you keep with a paid plan:</p>
+          <ul style="margin: 0; padding-left: 20px; color: #374151; line-height: 1.8;">
+            <li>✅ AI voice agent always live — inbound calls answered 24/7</li>
+            <li>✅ Up to 50 knowledge base documents</li>
+            <li>✅ Team collaboration (multiple members)</li>
+            <li>✅ Full call transcripts + AI summaries</li>
+            <li>✅ Analytics dashboard</li>
+          </ul>
+        </div>
+
+        <a href="${upgradeUrl}"
+           style="display:inline-block;padding:14px 28px;background:#6366f1;color:white;
+                  text-decoration:none;border-radius:8px;font-weight:700;font-size:15px;margin:8px 0;">
+          Upgrade Now — from ₹4,100/month
+        </a>
+
+        <p style="color: #6b7280; font-size: 13px; margin-top: 20px;">
+          Questions? Reply to this email and we'll help you choose the right plan.
+        </p>
+        <hr style="border:none;border-top:1px solid #e5e7eb;margin:24px 0;"/>
+        <p style="color: #9ca3af; font-size: 12px;">AgentOps Studio — AI Voice Agent Operations Platform</p>
+      </body>
+      </html>
+    `,
+  });
+}
+
+/**
+ * Day-7 trial expiry — sent on the last day of the free trial.
+ * Tone: urgency. Makes crystal clear what happens at midnight.
+ */
+export async function sendTrialDay7Email(
+  email: string,
+  name: string,
+  orgName: string,
+): Promise<void> {
+  const upgradeUrl = `${env.CLIENT_URL}/billing`;
+  await sendEmail({
+    to: email,
+    subject: `🚨 Trial expires TODAY — upgrade to keep your AI agent live for ${orgName}`,
+    html: `
+      <!DOCTYPE html>
+      <html>
+      <body style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 24px; background: #ffffff;">
+        <div style="background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); border-radius: 12px; padding: 28px 32px; margin-bottom: 24px;">
+          <h1 style="color: #ffffff; margin: 0 0 8px; font-size: 22px;">Your trial ends today</h1>
+          <p style="color: #fecaca; margin: 0; font-size: 15px;">Hi ${name}, this is your final reminder.</p>
+        </div>
+
+        <p style="color: #374151; font-size: 15px; line-height: 1.6;">
+          Your 7-day free trial for <strong>${orgName}</strong> expires <strong>today</strong>.
+        </p>
+
+        <div style="background: #fff7ed; border: 1px solid #fed7aa; border-radius: 8px; padding: 20px; margin: 20px 0;">
+          <p style="margin: 0 0 8px; font-weight: 700; color: #9a3412;">⚠️ What happens when your trial ends:</p>
+          <ul style="margin: 0; padding-left: 20px; color: #374151; line-height: 1.8;">
+            <li>Your AI voice agent will stop answering new calls</li>
+            <li>Knowledge base limited to 5 documents</li>
+            <li>Team members will lose access</li>
+            <li>Your call history and transcripts are safely preserved</li>
+          </ul>
+        </div>
+
+        <p style="color: #374151; font-size: 15px;">
+          Upgrade now and your agent stays live without interruption. No setup required.
+        </p>
+
+        <a href="${upgradeUrl}"
+           style="display:inline-block;padding:14px 28px;background:#ef4444;color:white;
+                  text-decoration:none;border-radius:8px;font-weight:700;font-size:15px;margin:8px 0;">
+          Upgrade Now — Keep My Agent Live
+        </a>
+
+        <p style="color: #6b7280; font-size: 13px; margin-top: 20px;">
+          Need help deciding? Reply and we'll walk you through it in under 5 minutes.
+        </p>
+        <hr style="border:none;border-top:1px solid #e5e7eb;margin:24px 0;"/>
+        <p style="color: #9ca3af; font-size: 12px;">AgentOps Studio — AI Voice Agent Operations Platform</p>
+      </body>
+      </html>
+    `,
+  });
+}
+
 export async function sendPasswordResetEmail(
   email: string,
   name: string,

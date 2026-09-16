@@ -2,7 +2,7 @@
 
 > **Founder**: Rishabh Sharma  
 > **CEO Agent**: Claude (orchestrator)  
-> **Last updated**: 2026-06-26  
+> **Last updated**: 2026-07-30 (Session 4)  
 > **Operating model**: All 5 agents work in parallel on every task. No idle agents.  
 > **Execution Framework**: `agents/EXECUTION-FRAMEWORK.md` — full WBS with atomic tasks  
 > **SOP**: `agents/SOP.md` — read at session start  
@@ -33,6 +33,128 @@
 ## ⚡ Zero-Idle Rule
 
 Every sprint task below has a row for ALL 5 agents. If an agent's primary work is not on this task, it runs its background lane (marked 🔁). No agent ever shows nothing.
+
+---
+
+## 🏢 Company Status — 2026-07-30 Session 5 (Transcript Search)
+
+| Agent | Current Task | Status |
+|---|---|---|
+| 🔵 Product | Full-text transcript search is a Tier 1 differentiator for Indian SMB CX teams — enables supervisors to review calls by keyword, find objection patterns, and audit agent quality at scale | ✅ |
+| 🟢 Engineering | Added `fullText` + `organizationId` to TranscriptModel; MongoDB text index (`transcript_fulltext_idx`, language='none' for exact match); webhook service populates both fields on every new call; `searchTranscripts()` service with relevance sorting + snippet extraction; `searchTranscriptsHandler` controller; `GET /api/v1/calls/search` registered before `/:id`; tsc --noEmit clean | ✅ |
+| 🟠 AI Agent | `fullText` format "AGENT: <text>\nUSER: <text>" is structured for future use as RAG retrieval source — each line can become a chunk in a KB re-sync pipeline | ✅ Background |
+| 🟡 Growth Agent | "Search your call transcripts" is a compelling demo feature — recommend adding to feature matrix on /pricing and in outbound sequences | ✅ Background |
+| 🟣 Customer Agent | Supervisors can now search for specific phrases ("want to cancel", "escalate") across all org transcripts — direct churn-signal extraction use case; update CS playbook | ✅ |
+
+**Session deliverables**:
+- `backend/src/modules/calls/call.model.ts` — `ITranscript` extended with `fullText?: string` and `organizationId?: ObjectId`; text index `transcript_fulltext_idx` with `default_language: 'none'` (exact/phrase matching, no stemming); compound index `{ organizationId, createdAt }`; `fullText` hidden by default via `select: false` + stripped from `toJSON`
+- `backend/src/modules/calls/webhook.service.ts` — `handleEndOfCallReport` now derives `fullText` from turns ("AGENT: …\nUSER: …") and writes `organizationId` + `fullText` in the TranscriptModel upsert
+- `backend/src/modules/calls/call.service.ts` — `SearchTranscriptsQuery` interface; `buildSnippet()` helper (±160-char context window centred on first matched term); `searchTranscripts()` service (org-scoped $text search, relevance-sorted, paginated, joins CallModel, returns turns[0..2])
+- `backend/src/modules/calls/call.controller.ts` — `searchTranscriptsHandler` (GET /api/v1/calls/search)
+- `backend/src/modules/calls/call.routes.ts` — `GET /search` registered before `/:id` (prevents Express treating "search" as ObjectId param)
+
+**Founder note**:
+- Pre-deployment transcripts lack `fullText`/`organizationId` → won't appear in search (correct — security > coverage)
+- MongoDB Atlas creates the text index automatically on next app start (Mongoose `autoIndex: true` default)
+- For production Atlas, if `autoIndex` is disabled, run in Atlas UI: `db.transcripts.createIndex({ fullText: "text" }, { name: "transcript_fulltext_idx", default_language: "none" })`
+
+---
+
+## 🏢 Company Status — 2026-07-30 Session 4 (Monitoring)
+
+| Agent | Current Task | Status |
+|---|---|---|
+| 🔵 Product | Monitoring as a product-quality signal: Sentry surface-area maps to user-facing error hotspots; UptimeRobot uptime SLA is a future trust/pricing lever for enterprise tiers | ✅ |
+| 🟢 Engineering | Installed @sentry/react + @sentry/vite-plugin; created lib/sentry.ts (init, captureException, setSentryUser); SentryErrorBoundary component; wired into main.tsx; sentryVitePlugin in vite.config.ts; added /api/v1/health alias (now returns 503 when Mongo is disconnected); tsc --noEmit clean on both frontend + backend | ✅ |
+| 🟠 AI | Background: Sentry tags include plan + orgId — this unlocks AI error rate analysis by plan tier (e.g. voice call failures on Growth vs Starter) | ✅ Background |
+| 🟡 Growth | UptimeRobot free tier gives a public-status-page URL once set up — link from footer increases enterprise trust; uptime SLA can be a paid-plan differentiator | ✅ |
+| 🟣 Customer | Sentry error alerts → can be piped to email/Slack for CS team to proactively reach out to users hitting errors; UptimeRobot → instant downtime notification | ✅ |
+
+**Session deliverables**:
+- `frontend/src/lib/sentry.ts` — Sentry init (disabled in dev), captureException helper, setSentryUser / clearSentryUser for per-user error grouping
+- `frontend/src/components/SentryErrorBoundary.tsx` — fullscreen dark-theme fallback; replaces blank white screen on unhandled render errors; shows error detail in dev only
+- `frontend/src/main.tsx` — `initSentry()` called before React tree; `<SentryErrorBoundary>` wraps entire app
+- `frontend/vite.config.ts` — `sentryVitePlugin` added; source maps uploaded to Sentry only when `SENTRY_AUTH_TOKEN` present (CI); no-ops in local dev
+- `frontend/.env.example` — added `VITE_SENTRY_DSN`, `VITE_APP_VERSION`, and build-time Sentry env var comments
+- `backend/src/app.ts` — `/health` refactored into named `healthHandler`; new `/api/v1/health` alias added; both return `503` when MongoDB is disconnected (proper degraded-state signalling for monitors)
+
+**Founder action required**:
+1. Create free Sentry account → create project "agentops-frontend" → copy DSN → add `VITE_SENTRY_DSN=https://xxx@oyyy.ingest.sentry.io/zzz` to production `.env`
+2. Create free UptimeRobot account → add HTTP monitor → URL: `https://api.agentopsstudio.com/api/v1/health` → keyword: `"status":"ok"` → alert to your email
+3. (Optional CI source-maps) Add `SENTRY_AUTH_TOKEN`, `SENTRY_ORG`, `SENTRY_PROJECT` to GitHub Actions secrets
+4. Stripe webhook monitoring — Stripe Dashboard → Developers → Webhooks → click your endpoint → "Event deliveries" tab shows success/failure log; enable email alerts under Developer → Alerts
+
+---
+
+## 🏢 Company Status — 2026-07-29 Session 3 (Legal Pages)
+
+| Agent | Current Task | Status |
+|---|---|---|
+| 🔵 Product | Legal pages as a trust and conversion asset: T&C + Privacy required for Stripe approval, SMB trust signal, reduces support questions on data handling | ✅ |
+| 🟢 Engineering | Created TermsPage.tsx + PrivacyPolicyPage.tsx; added /terms + /privacy routes to routes/index.tsx; refactored PublicLayout.tsx footer link columns from href="#" to proper <Link> components; tsc --noEmit clean | ✅ |
+| 🟠 AI | Background: Privacy Policy Section 5 documents all AI data processors (OpenAI, Deepgram, ElevenLabs, Vapi) transparently — surfaces our AI data flow for user trust | ✅ Background |
+| 🟡 Growth | Terms + Privacy required for Stripe approval workflow — unblocks go-live. Trust badges on public site reduces checkout friction. | ✅ |
+| 🟣 Customer | SPDI Rules Grievance Officer designation + 30-day resolution SLA reduces regulatory risk; Section 9 call recording notice clarifies user obligations = fewer compliance support tickets | ✅ |
+
+**Session deliverables**:
+- `frontend/src/features/public/TermsPage.tsx` — India-specific Terms of Service: 20 sections covering IT Act 2000, TRAI regulations, subscription/billing terms (INR + GST), refund policy (Consumer Protection Act 2019), call recording obligations, AUP, IP, limitation of liability, Bengaluru arbitration clause, Grievance Officer contact
+- `frontend/src/features/public/PrivacyPolicyPage.tsx` — India-specific Privacy Policy: SPDI Rules 2011 + DPDPA 2023 aligned; 15 sections covering data categories, third-party processors table (9 processors), data retention schedule, 7 user rights cards, call recording notice (critical), cookies table, mandatory Grievance Officer section
+- `frontend/src/routes/index.tsx` — added `/terms` and `/privacy` lazy routes as children of PublicLayout
+- `frontend/src/layouts/PublicLayout.tsx` — refactored footer's 3 link columns (Product, Company, Legal) from string arrays + href="#" to typed `{ label, to }` objects + `<Link>` components with real routes
+
+**Founder action required before publishing**:
+1. Replace `[LEGAL ENTITY NAME]` with your registered company name in both pages
+2. Replace `[REGISTERED ADDRESS]` with actual registered address
+3. Replace `[YOUR GSTIN]` with actual GSTIN
+4. Replace `[GRIEVANCE OFFICER NAME]` in TermsPage.tsx (PrivacyPage already uses "Rishabh Sharma")
+5. Set up grievance@agentopsstudio.com, legal@agentopsstudio.com, privacy@agentopsstudio.com email addresses
+6. Have a licensed Indian advocate review both documents before publication
+
+---
+
+## 🏢 Company Status — 2026-07-29 Session 2 (Stripe Customer Portal)
+
+| Agent | Current Task | Status |
+|---|---|---|
+| 🔵 Product | Identified self-serve portal removes founder from cancellation/invoice support loop; hardcoded placeholder link flagged and replaced | ✅ |
+| 🟢 Engineering | Task #62–66: createPortalSession() + handler + POST /portal route + billingPortal mock + 3 tests + BillingPage button — tsc clean | ✅ |
+| 🟠 AI | Background: portal session URL is stateless/single-use — no persistence or queue interaction needed | ✅ Background |
+| 🟡 Growth | "Manage subscription" CTA surfaces Stripe-hosted invoice history — reduces support tickets and increases trust | ✅ Background |
+| 🟣 Customer | Self-serve cancel + downgrade removes founder from support loop entirely; churn still logged via Stripe webhook subscription.deleted | ✅ |
+
+**Session deliverables**:
+- `backend/src/modules/billing/billing.service.ts` — `createPortalSession(userId)`: resolves org's Stripe customer ID, calls `stripe.billingPortal.sessions.create`, returns one-time portal URL; 400 `NO_STRIPE_CUSTOMER` guard for free/trial orgs
+- `backend/src/modules/billing/billing.controller.ts` — `createPortalSessionHandler`
+- `backend/src/modules/billing/billing.routes.ts` — `POST /api/v1/billing/portal` (express.json + authenticate)
+- `backend/src/__tests__/billing.test.ts` — `mockPortalCreate` in vi.hoisted + Stripe mock; 3 new tests (401, 400 no customer, 200 portal URL)
+- `frontend/src/features/billing/BillingPage.tsx` — `portalMutation` (POST /billing/portal); replaced hardcoded `<a href="...test_placeholder">` with proper button (Loader2 spinner, error toast, `window.location.href` redirect)
+
+**Founder action required**: Stripe Dashboard → Customers → Customer portal → Activate portal → configure what customers can do (cancel, downgrade, update card, download invoices). Until activated, the portal API call will throw a Stripe error.
+
+---
+
+## 🏢 Company Status — 2026-07-29 (Session: INR Pricing + Call Minutes + Rate Limiting)
+
+| Agent | Current Task | Status |
+|---|---|---|
+| 🔵 Product | Reviewed entire billing UX — KnowledgeBasePage + TeamPage flat-field references fixed; all billing meters use nested API shape | ✅ |
+| 🟢 Engineering | Task #50–56: callMinutesUsed + BullMQ cron + Vapi gate + billing meters; Task #57–61: INR Stripe price IDs — tsc clean both sides | ✅ |
+| 🟠 AI | Call minutes limit gate in `handleAssistantRequest` — inline Vapi assistant blocks over-limit calls before STT/LLM cost incurred | ✅ |
+| 🟡 Growth | All public pages already ₹ INR — PricingPage, HomePage, ContactPage verified; .env.example Stripe section added | ✅ |
+| 🟣 Customer | Rate limiting confirmed: auth endpoints already at 10/15min (more restrictive than requested); no change needed | ✅ |
+
+**Session deliverables**:
+- `backend/src/config/env.ts` — added `STRIPE_STARTER_PRICE_ID_INR` + `STRIPE_GROWTH_PRICE_ID_INR` optional env vars
+- `backend/src/modules/billing/billing.service.ts` — `getPlanPriceId()` prefers INR variants; `getPlanFromPriceId()` checks both variants for subscription webhook matching
+- `backend/src/__tests__/billing.test.ts` — INR price ID mocks added; test assertions updated to `price_starter_inr_mock` / `price_growth_inr_mock`
+- `backend/.env.example` — full Stripe section added (SK, webhook secret, starter/growth USD + INR price IDs)
+- `backend/src/modules/organization/organization.model.ts` — `callMinutesUsed` + `callMinutesResetAt` fields
+- `backend/src/jobs/callMinutesReset.queue.ts` + `callMinutesReset.worker.ts` — monthly BullMQ cron + self-healing aggregation-pipeline reset
+- `backend/src/modules/calls/webhook.service.ts` — call minutes gate + atomic increment in end-of-call-report
+- `frontend/src/features/billing/BillingPage.tsx` — call minutes UsageMeter with reset date subtitle
+- `frontend/src/features/knowledge-base/KnowledgeBasePage.tsx` + `frontend/src/features/team/TeamPage.tsx` — fixed nested API field references
+
+**Founder action required (INR)**: Create INR-denominated prices in Stripe Dashboard (Products → Add price → Currency: INR), then set `STRIPE_STARTER_PRICE_ID_INR` and `STRIPE_GROWTH_PRICE_ID_INR` in your `.env`. Existing checkout works with USD prices until then.
 
 ---
 

@@ -23,7 +23,7 @@ import { useAppSelector } from '@/store';
 import { useAuth } from '@/hooks/useAuth';
 import {
   Copy, CheckCircle2, Phone, ExternalLink, Loader2,
-  Pencil, Save, Eye, EyeOff,
+  Pencil, Save, Eye, EyeOff, Shield,
 } from 'lucide-react';
 import { api } from '@/utils/api';
 import type { AxiosError } from 'axios';
@@ -697,6 +697,82 @@ function PhoneNumberSetup() {
   );
 }
 
+// ─── Admin Access Log Section ──────────────────────────────────────────────────
+
+interface AdminAccessEvent {
+  action:    string;
+  createdAt: string;
+}
+
+interface AdminAccessLogResponse {
+  events: AdminAccessEvent[];
+  count:  number;
+}
+
+const ACTION_LABELS: Record<string, string> = {
+  SA_ORG_IMPERSONATE:       'Platform operator viewed your organisation',
+  SA_ORG_VIEW:              'Platform operator accessed your organisation data',
+  SA_ORG_EXIT_IMPERSONATION:'Platform operator exited your organisation',
+};
+
+function AdminAccessLogSection() {
+  const { data, isLoading } = useQuery<AdminAccessLogResponse>({
+    queryKey: ['team-admin-access-log'],
+    queryFn: () => api.get('/team/admin-access-log').then(r => r.data?.data ?? { events: [], count: 0 }),
+    staleTime: 60_000,
+  });
+
+  const events = data?.events ?? [];
+
+  return (
+    <Section title="Recent Admin Access">
+      <div style={{ paddingTop: 8 }}>
+        <p style={{ fontSize: 12, color: '#64748b', marginBottom: 12, lineHeight: 1.6 }}>
+          For transparency, this log shows when the AgentOps platform team has accessed your organisation,
+          for example to debug an issue. Operator identity is not disclosed.
+        </p>
+        {isLoading ? (
+          <p style={{ fontSize: 12, color: '#94a3b8' }}>Loading…</p>
+        ) : events.length === 0 ? (
+          <div style={{
+            display: 'flex', alignItems: 'center', gap: 8,
+            padding: '10px 14px', borderRadius: 8,
+            background: 'rgba(16,185,129,0.05)', border: '1px solid rgba(16,185,129,0.15)',
+          }}>
+            <Shield size={14} style={{ color: '#10b981', flexShrink: 0 }} />
+            <span style={{ fontSize: 12, color: '#34d399' }}>
+              No recent admin access to your organisation.
+            </span>
+          </div>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+            {events.map((ev, i) => (
+              <div key={i} style={{
+                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                padding: '8px 12px', borderRadius: 8,
+                background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(0,0,0,0.06)',
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <Shield size={13} style={{ color: '#94a3b8', flexShrink: 0 }} />
+                  <span style={{ fontSize: 12, color: '#475569' }}>
+                    {ACTION_LABELS[ev.action] ?? ev.action}
+                  </span>
+                </div>
+                <span style={{ fontSize: 11, color: '#94a3b8', flexShrink: 0 }}>
+                  {new Date(ev.createdAt).toLocaleDateString('en-IN', {
+                    day: 'numeric', month: 'short', year: 'numeric',
+                    hour: '2-digit', minute: '2-digit',
+                  })}
+                </span>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </Section>
+  );
+}
+
 // ─── Main ─────────────────────────────────────────────────────────────────────
 
 export default function SettingsPage() {
@@ -853,7 +929,10 @@ export default function SettingsPage() {
         )}
       </Section>
 
-      {/* ── 6. Security ──────────────────────────────────────────────────── */}
+      {/* ── 6. Recent Admin Access ───────────────────────────────────────── */}
+      {currentRole === 'Owner' && <AdminAccessLogSection />}
+
+      {/* ── 7. Security ──────────────────────────────────────────────────── */}
       <Section
         title="Security"
         action={

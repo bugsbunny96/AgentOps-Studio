@@ -17,6 +17,7 @@ import {
   vapiUpdateAssistant,
   type VapiCreateAssistantPayload,
   type VapiVoice,
+  type VapiTranscriber,
 } from './vapi.service';
 import { generateSystemPrompt, buildFirstMessage, buildEndCallMessage } from './prompt.utils';
 import { getKbContext } from '../knowledge-base/kb.service';
@@ -33,36 +34,106 @@ export { generateSystemPrompt };
 // DB stores 'elevenlabs' (matches VoiceAgent schema); Vapi REST API expects '11labs'.
 
 const VAPI_PROVIDER_MAP: Record<string, VapiVoice['provider']> = {
-  openai:     'openai',
-  elevenlabs: '11labs',
-  deepgram:   'deepgram',
-  cartesia:   'cartesia',
-  playht:     'playht',
-  azure:      'azure',
+  openai:         'openai',
+  elevenlabs:     '11labs',
+  deepgram:       'deepgram',
+  cartesia:       'cartesia',
+  playht:         'playht',
+  azure:          'azure',
+  vapi:           'vapi',
+  'custom-voice': 'custom-voice',
 };
+
+/**
+ * Builds the Vapi voice config block from agent + env settings.
+ * If SARVAM_BRIDGE_URL is set, uses the custom-voice bridge for Sarvam TTS.
+ * Otherwise uses Vapi native Naina V2.
+ */
+function buildVapiVoice(
+  rawProvider: string,
+  voiceId: string,
+  voiceVersion: string | undefined,
+  hasNonEnglish: boolean,
+): VapiVoice {
+  const vapiProvider = VAPI_PROVIDER_MAP[rawProvider] ?? 'openai';
+
+  // Custom-voice bridge (opt-in via SARVAM_BRIDGE_URL env var)
+  if (vapiProvider === 'custom-voice' && env.SARVAM_BRIDGE_URL) {
+    return {
+      provider: 'custom-voice',
+      server: {
+        url: `${env.SARVAM_BRIDGE_URL}/api/synthesize`,
+        timeoutSeconds: 10,
+      },
+    };
+  }
+
+  // Vapi native voice (e.g. Naina V2 for Hindi support)
+  if (vapiProvider === 'vapi') {
+    return {
+      provider: 'vapi',
+      voiceId:  voiceId || 'Naina',
+      version:  voiceVersion || '2',
+      language: 'auto',
+    };
+  }
+
+  // ElevenLabs multilingual model
+  if (vapiProvider === '11labs' && hasNonEnglish) {
+    return { provider: '11labs', voiceId, model: 'eleven_multilingual_v2' };
+  }
+
+  return { provider: vapiProvider, voiceId };
+}
 
 function buildVapiPayload(
   org: IOrganization,
   systemPrompt: string,
+  agentConfig?: {
+    transcriberProvider?: IVoiceAgent['transcriberProvider'];
+    transcriberModel?: string;
+    transcriberLanguage?: string;
+    vapiToolIds?: string[];
+    vapiStructuredOutputId?: string;
+    voiceProvider?: string;
+    voiceId?: string;
+    voiceVersion?: string;
+  },
 ): VapiCreateAssistantPayload {
   const agentName = org.agentName || org.name;
   const isMultilingual = (org.supportedLanguages?.length ?? 0) > 1;
   const hasNonEnglish  = org.supportedLanguages?.some((l) => l !== 'en-US') ?? false;
 
-  // Resolve voice from onboarding choice; fall back to openai/nova if not set
-  const rawProvider   = org.preferredVoiceProvider ?? 'openai';
-  const vapiProvider  = VAPI_PROVIDER_MAP[rawProvider] ?? 'openai';
-  const voiceId       = org.preferredVoiceId ?? 'nova';
+  // Resolve voice provider from agent config or org onboarding choice
+  const rawProvider  = agentConfig?.voiceProvider ?? org.preferredVoiceProvider ?? 'openai';
+  const voiceId      = agentConfig?.voiceId ?? org.preferredVoiceId ?? 'nova';
+  const voiceVersion = agentConfig?.voiceVersion;
 
-  // ElevenLabs requires 'eleven_multilingual_v2' to speak Hindi/Punjabi correctly.
-  // Other providers (OpenAI, Azure) handle multilingual natively without a model override.
-  const voice: VapiVoice = {
-    provider: vapiProvider,
-    voiceId,
-    ...(vapiProvider === '11labs' && hasNonEnglish
-      ? { model: 'eleven_multilingual_v2' }
-      : {}),
+  const voice: VapiVoice = buildVapiVoice(rawProvider, voiceId, voiceVersion, hasNonEnglish);
+
+  // Transcriber — use agent-level config when available
+  const transcriberProvider = agentConfig?.transcriberProvider ?? 'deepgram';
+  const transcriberLanguage = agentConfig?.transcriberLanguage ??
+    (isMultilingual ? 'multi' : (org.supportedLanguages?.[0] ?? 'en-US'));
+  const transcriberModel = agentConfig?.transcriberModel ??
+    (isMultilingual ? 'nova-3' : 'nova-2');
+
+  const transcriber: VapiTranscriber = {
+    provider: transcriberProvider,
+    language: transcriberLanguage,
+    model:    transcriberModel,
   };
+
+  // Tool IDs — from agent config or env defaults
+  const toolIds: string[] = agentConfig?.vapiToolIds?.length
+    ? agentConfig.vapiToolIds
+    : [
+        env.VAPI_TOOL_ID_END_CALL,
+        env.VAPI_TOOL_ID_SUBMIT_ORDER,
+      ].filter(Boolean) as string[];
+
+  // Structured output schema ID
+  const structuredOutputId = agentConfig?.vapiStructuredOutputId ?? env.VAPI_STRUCTURED_OUTPUT_ID;
 
   return {
     name: `${agentName} — AgentOps Studio`,
@@ -70,24 +141,29 @@ function buildVapiPayload(
       provider: 'openai',
       model: 'gpt-4o',
       messages: [{ role: 'system', content: systemPrompt }],
-      temperature: 0.65,
+      temperature: 0.3,
       maxTokens: 300,
+      ...(toolIds.length ? { toolIds } : {}),
     },
-    transcriber: {
-      provider: 'deepgram',
-      // 'multi' tells Deepgram to auto-detect language on every utterance.
-      // nova-3 has significantly better multilingual accuracy (especially short Hindi/Punjabi
-      // utterances) vs nova-2. Fall back to nova-2 for English-only to avoid any cost delta.
-      language: isMultilingual ? 'multi' : (org.supportedLanguages?.[0] ?? 'en-US'),
-      model: isMultilingual ? 'nova-3' : 'nova-2',
-    },
+    transcriber,
     voice,
     firstMessage: buildFirstMessage(org),
     firstMessageMode: 'assistant-speaks-first',
     endCallMessage: buildEndCallMessage(org),
     endCallPhrases: ['goodbye', 'bye', "that's all", 'thank you, bye', 'end call', 'धन्यवाद', 'ਧੰਨਵਾਦ'],
-    maxDurationSeconds: 1800,  // 30 min hard cap
+    maxDurationSeconds: 900,          // 15 min cap (POC uses 900s)
+    silenceTimeoutSeconds: 20,        // end call after 20s silence
     backgroundSound: 'off',
+    // Disable Vapi's built-in analysis — we use structured output schema instead
+    analysisPlan: {
+      summaryPlan:           { enabled: false },
+      successEvaluationPlan: { enabled: false },
+    },
+    // Enable recording + structured output schema
+    artifactPlan: {
+      recordingEnabled: true,
+      ...(structuredOutputId ? { structuredOutputIds: [structuredOutputId] } : {}),
+    },
     metadata: {
       organizationId: org._id.toString(),
       platform: 'agentops-studio',
@@ -465,15 +541,34 @@ export async function updateAgentConfig(
 
   // ── Push to Vapi ───────────────────────────────────────────────────────────
   if (org.vapiAssistantId) {
+    // Build the full payload (including transcriber, voice, analysisPlan, artifactPlan)
+    // so a config update never accidentally drops these settings from the assistant.
+    const orgForPayload = {
+      ...org.toObject(),
+      ...orgUpdates,
+    } as IOrganization;
+
+    const fullPayload = buildVapiPayload(orgForPayload, newSystemPrompt, {
+      transcriberProvider:   agent.transcriberProvider,
+      transcriberModel:      agent.transcriberModel,
+      transcriberLanguage:   agent.transcriberLanguage,
+      vapiToolIds:           agent.vapiToolIds,
+      vapiStructuredOutputId: agent.vapiStructuredOutputId,
+      voiceProvider:         agent.voiceProvider,
+      voiceId:               agent.voiceId,
+      voiceVersion:          agent.voiceVersion,
+    });
+
     const vapiPatch: Partial<VapiCreateAssistantPayload> = {
-      model: {
-        provider: 'openai',
-        model: 'gpt-4o',
-        messages: [{ role: 'system', content: newSystemPrompt }],
-        temperature: 0.65,
-        maxTokens: 300,
-      },
+      model:         fullPayload.model,
+      transcriber:   fullPayload.transcriber,
+      voice:         fullPayload.voice,
+      analysisPlan:  fullPayload.analysisPlan,
+      artifactPlan:  fullPayload.artifactPlan,
+      silenceTimeoutSeconds: fullPayload.silenceTimeoutSeconds,
+      maxDurationSeconds:    fullPayload.maxDurationSeconds,
     };
+
     // Vapi assistant name mirrors the agent name when it changes
     if (dto.name !== undefined) {
       vapiPatch.name = `${dto.name} — AgentOps Studio`;

@@ -17,7 +17,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import {
   CheckCircle2, Zap, Building2, Loader2, AlertCircle, ChevronRight,
-  X, CreditCard, BarChart3, Users, FileText,
+  X, CreditCard, BarChart3, Users, FileText, Clock, Rocket, Phone,
 } from 'lucide-react';
 import api from '@/utils/api';
 
@@ -45,9 +45,16 @@ type Plan = 'free' | 'starter' | 'growth' | 'enterprise';
 
 interface BillingStatus {
   plan:             Plan;
+  effectivePlan:    Plan;
   kbDocs:           { used: number; limit: number | null };
   teamMembers:      { used: number; limit: number | null };
+  /** Monthly call-minute quota. limit=null = unlimited. resetAt = ISO date of next reset. */
+  callMinutes:      { used: number; limit: number | null; resetAt: string };
   stripeCustomerId: string | null;
+  isInTrial:        boolean;
+  isTrialExpired:   boolean;
+  trialDaysLeft:    number;
+  trialEndsAt:      string | null;
 }
 
 // ─── Plan definitions — prices match landing page ─────────────────────────────
@@ -163,29 +170,38 @@ const PLANS: Array<{
 const PLAN_ORDER: Plan[] = ['free', 'starter', 'growth', 'enterprise'];
 
 // ─── UsageMeter ───────────────────────────────────────────────────────────────
-function UsageMeter({ label, used, limit, icon: Icon }: {
-  label: string; used: number; limit: number | null; icon: React.ElementType;
+function UsageMeter({ label, used, limit, icon: Icon, subtitle }: {
+  label:    string;
+  used:     number;
+  limit:    number | null;
+  icon:     React.ElementType;
+  subtitle?: string;
 }) {
-  const pct     = limit === null ? 0 : Math.min(100, Math.round((used / limit) * 100));
-  const atLimit = limit !== null && used >= limit;
+  const pct      = limit === null ? 0 : Math.min(100, Math.round((used / limit) * 100));
+  const atLimit  = limit !== null && used >= limit;
   const barColor = pct >= 100 ? T.rose : pct >= 80 ? T.amb : T.blue;
 
   return (
     <div style={{
       padding: '16px 18px', borderRadius: 12,
-      background: T.bgC, border: `1px solid ${T.bdr}`,
+      background: T.bgC, border: `1px solid ${atLimit ? 'rgba(244,63,94,0.25)' : T.bdr}`,
       display: 'flex', flexDirection: 'column', gap: 10,
     }}>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <Icon size={13} style={{ color: T.t3 }} />
-          <span style={{ fontSize: 12, fontWeight: 600, color: T.t2 }}>{label}</span>
+      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 8 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <Icon size={13} style={{ color: atLimit ? T.rose : T.t3 }} />
+            <span style={{ fontSize: 12, fontWeight: 600, color: T.t2 }}>{label}</span>
+          </div>
+          {subtitle && (
+            <span style={{ fontSize: 10, color: T.t3, paddingLeft: 21 }}>{subtitle}</span>
+          )}
         </div>
         <span style={{
-          fontSize: 12, fontWeight: 700,
+          fontSize: 12, fontWeight: 700, flexShrink: 0,
           color: atLimit ? T.rose : T.t1,
         }}>
-          {used} / {limit === null ? '∞' : limit}
+          {used.toLocaleString()} / {limit === null ? '∞' : limit.toLocaleString()}
         </span>
       </div>
       {limit !== null && (
@@ -195,10 +211,88 @@ function UsageMeter({ label, used, limit, icon: Icon }: {
             background: barColor,
             width: `${pct}%`,
             transition: 'width 0.5s ease',
-            boxShadow: atLimit ? `0 0 6px ${T.rose}` : undefined,
+            boxShadow: atLimit ? `0 0 8px ${T.rose}` : pct >= 80 ? `0 0 6px ${T.amb}` : undefined,
           }} />
         </div>
       )}
+    </div>
+  );
+}
+
+// ─── TrialBanner ─────────────────────────────────────────────────────────────
+function TrialBanner({
+  isInTrial,
+  isTrialExpired,
+  trialDaysLeft,
+  trialEndsAt,
+  onUpgrade,
+}: {
+  isInTrial:      boolean;
+  isTrialExpired: boolean;
+  trialDaysLeft:  number;
+  trialEndsAt:    string | null;
+  onUpgrade:      () => void;
+}) {
+  if (!isInTrial && !isTrialExpired) return null;
+
+  const isUrgent  = isTrialExpired || trialDaysLeft <= 2;
+  const bgColor   = isUrgent ? 'rgba(244,63,94,0.08)' : 'rgba(245,158,11,0.08)';
+  const bdrColor  = isUrgent ? 'rgba(244,63,94,0.25)' : 'rgba(245,158,11,0.25)';
+  const textColor = isUrgent ? T.rose : T.amb;
+  const iconColor = isUrgent ? T.rose : T.amb;
+  const trialDate = trialEndsAt ? new Date(trialEndsAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : '';
+
+  const headline = isTrialExpired
+    ? 'Your free trial has ended'
+    : trialDaysLeft <= 1
+      ? `Your free trial expires today`
+      : `${trialDaysLeft} days left in your free trial`;
+
+  const subtext = isTrialExpired
+    ? 'Upgrade now to keep your AI agent live and continue using all features.'
+    : `Your trial ends on ${trialDate}. Upgrade before it expires to avoid any disruption.`;
+
+  return (
+    <div style={{
+      display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+      gap: 16, flexWrap: 'wrap',
+      padding: '14px 18px', borderRadius: 12,
+      background: bgColor, border: `1px solid ${bdrColor}`,
+    }}>
+      <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12, flex: 1 }}>
+        <div style={{
+          width: 36, height: 36, borderRadius: 9, flexShrink: 0,
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          background: isUrgent ? 'rgba(244,63,94,0.12)' : 'rgba(245,158,11,0.12)',
+          border: `1px solid ${bdrColor}`,
+        }}>
+          {isTrialExpired
+            ? <AlertCircle size={16} style={{ color: iconColor }} />
+            : <Clock size={16} style={{ color: iconColor }} />}
+        </div>
+        <div>
+          <p style={{ fontSize: 14, fontWeight: 700, color: textColor, margin: '0 0 3px' }}>
+            {headline}
+          </p>
+          <p style={{ fontSize: 12, color: T.t2, margin: 0, lineHeight: 1.5 }}>{subtext}</p>
+        </div>
+      </div>
+      <button
+        onClick={onUpgrade}
+        style={{
+          display: 'flex', alignItems: 'center', gap: 6,
+          padding: '9px 16px', borderRadius: 9, border: 'none',
+          background: isUrgent
+            ? 'linear-gradient(135deg, #f43f5e, #e11d48)'
+            : 'linear-gradient(135deg, #f59e0b, #d97706)',
+          color: '#fff', fontSize: 12, fontWeight: 700,
+          cursor: 'pointer', flexShrink: 0,
+          boxShadow: isUrgent ? '0 0 16px rgba(244,63,94,0.3)' : '0 0 16px rgba(245,158,11,0.25)',
+        }}
+      >
+        <Rocket size={13} />
+        {isTrialExpired ? 'Upgrade Now' : 'Upgrade to Keep Access'}
+      </button>
     </div>
   );
 }
@@ -459,13 +553,30 @@ export default function BillingPage() {
     },
   });
 
+  // Stripe Customer Portal — manage payment methods, invoices, cancellation
+  const portalMutation = useMutation({
+    mutationFn: async () => {
+      const res = await api.post<{ success: boolean; data: { url: string } }>('/billing/portal');
+      return res.data.data.url;
+    },
+    onSuccess: (url) => { window.location.href = url; },
+    onError: (err: unknown) => {
+      const msg =
+        err && typeof err === 'object' && 'response' in err
+          ? ((err as { response?: { data?: { message?: string } } }).response?.data?.message ?? 'Failed to open billing portal')
+          : 'Failed to open billing portal';
+      setToast({ type: 'error', msg });
+    },
+  });
+
   function handleUpgrade(plan: 'starter' | 'growth') {
     setUpgrading(plan);
     checkoutMutation.mutate(plan);
   }
 
-  const currentPlan = data?.plan ?? 'free';
-  const currentPlanDef = PLANS.find((p) => p.id === currentPlan);
+  const currentPlan    = data?.plan ?? 'free';
+  const effectivePlan  = data?.effectivePlan ?? currentPlan;
+  const currentPlanDef = PLANS.find((p) => p.id === effectivePlan);
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 28 }}>
@@ -493,6 +604,17 @@ export default function BillingPage() {
             <X size={13} />
           </button>
         </div>
+      )}
+
+      {/* Trial Banner */}
+      {data && (
+        <TrialBanner
+          isInTrial={data.isInTrial}
+          isTrialExpired={data.isTrialExpired}
+          trialDaysLeft={data.trialDaysLeft}
+          trialEndsAt={data.trialEndsAt}
+          onUpgrade={() => handleUpgrade('growth')}
+        />
       )}
 
       {/* Header */}
@@ -595,9 +717,19 @@ export default function BillingPage() {
               </p>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                 <p style={{ fontSize: 18, fontWeight: 800, color: T.t1, margin: 0, letterSpacing: '-0.02em', textTransform: 'capitalize' }}>
-                  {currentPlan}
+                  {data?.isInTrial ? 'Free Trial' : currentPlan}
                 </p>
-                {currentPlanDef && currentPlanDef.price !== '₹0' && (
+                {data?.isInTrial && (
+                  <span style={{
+                    fontSize: 11, fontWeight: 700,
+                    padding: '2px 8px', borderRadius: 999,
+                    background: 'rgba(245,158,11,0.12)', border: '1px solid rgba(245,158,11,0.25)',
+                    color: T.amb,
+                  }}>
+                    {data.trialDaysLeft} day{data.trialDaysLeft !== 1 ? 's' : ''} left
+                  </span>
+                )}
+                {!data?.isInTrial && currentPlanDef && currentPlanDef.price !== '₹0' && (
                   <span style={{
                     fontSize: 11, fontWeight: 700, color: currentPlanDef.accentColor,
                     padding: '2px 8px', borderRadius: 999,
@@ -609,24 +741,32 @@ export default function BillingPage() {
               </div>
             </div>
             {data.stripeCustomerId && (
-              <a
-                href="https://billing.stripe.com/p/login/test_placeholder"
+              <button
+                onClick={() => portalMutation.mutate()}
+                disabled={portalMutation.isPending}
+                title="Manage payment methods, invoices, and cancellation via Stripe"
                 style={{
-                  fontSize: 12, fontWeight: 600, color: T.blueL, textDecoration: 'none',
                   display: 'flex', alignItems: 'center', gap: 5,
                   padding: '7px 12px', borderRadius: 8,
-                  background: 'rgba(59,130,246,0.08)', border: '1px solid rgba(59,130,246,0.2)',
+                  background: 'rgba(59,130,246,0.08)',
+                  border: '1px solid rgba(59,130,246,0.2)',
+                  color: T.blueL, fontSize: 12, fontWeight: 600,
+                  cursor: portalMutation.isPending ? 'not-allowed' : 'pointer',
+                  opacity: portalMutation.isPending ? 0.65 : 1,
+                  transition: 'opacity 0.2s',
                 }}
               >
-                Manage billing <ChevronRight size={11} />
-              </a>
+                {portalMutation.isPending
+                  ? <><Loader2 size={11} style={{ animation: 'bilSpin 1s linear infinite' }} /> Opening…</>
+                  : <>Manage subscription <ChevronRight size={11} /></>}
+              </button>
             )}
           </div>
 
           {/* Usage meters */}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
             <UsageMeter
-              label="Knowledge Base Documents"
+              label="KB Documents"
               used={data.kbDocs.used}
               limit={data.kbDocs.limit}
               icon={FileText}
@@ -637,9 +777,30 @@ export default function BillingPage() {
               limit={data.teamMembers.limit}
               icon={Users}
             />
+            <UsageMeter
+              label="Call Minutes (this month)"
+              used={data.callMinutes.used}
+              limit={data.callMinutes.limit}
+              icon={Phone}
+              subtitle={`Resets ${new Date(data.callMinutes.resetAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}`}
+            />
           </div>
 
-          {/* Limit warning */}
+          {/* Limit warnings */}
+          {data.callMinutes.limit !== null && data.callMinutes.used >= data.callMinutes.limit && (
+            <div style={{
+              display: 'flex', alignItems: 'flex-start', gap: 10,
+              padding: '11px 14px', borderRadius: 10,
+              background: 'rgba(244,63,94,0.07)', border: '1px solid rgba(244,63,94,0.2)',
+            }}>
+              <Phone size={14} style={{ color: T.rose, flexShrink: 0, marginTop: 1 }} />
+              <span style={{ fontSize: 12, color: T.rose, lineHeight: 1.5 }}>
+                <strong>Monthly call limit reached.</strong> Inbound calls are currently blocked to
+                prevent unexpected Vapi charges. Upgrade below or wait until{' '}
+                {new Date(data.callMinutes.resetAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'long' })}.
+              </span>
+            </div>
+          )}
           {((data.kbDocs.limit !== null && data.kbDocs.used >= data.kbDocs.limit) ||
             (data.teamMembers.limit !== null && data.teamMembers.used >= data.teamMembers.limit)) && (
             <div style={{

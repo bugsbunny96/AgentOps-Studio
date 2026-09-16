@@ -19,6 +19,7 @@ const envSchema = z.object({
   JWT_REFRESH_SECRET: z.string().min(32, 'JWT_REFRESH_SECRET must be at least 32 characters'),
   JWT_ACCESS_EXPIRES_IN: z.string().default('15m'),
   JWT_REFRESH_EXPIRES_IN: z.string().default('7d'),
+  SA_JWT_SECRET: z.string().min(32, 'SA_JWT_SECRET must be at least 32 characters').default('sa-dev-secret-change-in-production-32chars'),
 
   // ── CORS ──────────────────────────────────────────────────────────────
   CLIENT_URL: z.string().default('http://localhost:5173'),
@@ -36,17 +37,58 @@ const envSchema = z.object({
   VAPI_API_KEY: z.string().optional(),
   VAPI_PUBLIC_KEY: z.string().optional(),   // from Vapi dashboard → Account → API Keys → Public
   VAPI_WEBHOOK_SECRET: z.string().optional(),
+  /** ID of the Vapi 'end_receptionist_call' server tool */
+  VAPI_TOOL_ID_END_CALL: z.string().optional(),
+  /** ID of the Vapi 'submit_order' server tool */
+  VAPI_TOOL_ID_SUBMIT_ORDER: z.string().optional(),
+  /** ID of the electrical-shop-call-summary structured output schema in Vapi */
+  VAPI_STRUCTURED_OUTPUT_ID: z.string().optional(),
+  /**
+   * Secret used to validate x-webhook-secret header on Vapi tool-call endpoints
+   * (e.g. POST /api/v1/orders/submit). Separate from VAPI_WEBHOOK_SECRET.
+   */
+  VAPI_TOOL_WEBHOOK_SECRET: z.string().optional(),
 
-  // ── Exotel ───────────────────────────────────────────────────────────
+  // ── Sarvam TTS Bridge (opt-in custom voice) ──────────────────────────
+  SARVAM_API_KEY: z.string().optional(),
+  /**
+   * Public URL of the deployed TTS bridge service.
+   * When set, Vapi assistants use 'custom-voice' provider pointing to this URL.
+   * When absent, assistants use Vapi native 'Naina V2' voice instead.
+   */
+  SARVAM_BRIDGE_URL: z.string().optional(),
+  /** Sarvam TTS model — default: 'bulbul:v3' */
+  TTS_MODEL: z.string().default('bulbul:v3'),
+  /** Sarvam TTS language code — default: 'hi-IN' */
+  TTS_LANGUAGE_CODE: z.string().default('hi-IN'),
+  /** Sarvam TTS speaker name — default: 'shubh' */
+  TTS_SPEAKER: z.string().default('shubh'),
+
+  // ── Vobiz SIP Trunk (primary telephony) ──────────────────────────────
+  VOBIZ_SIP_DOMAIN: z.string().optional(),
+  VOBIZ_AUTH_USERNAME: z.string().optional(),
+  VOBIZ_AUTH_PASSWORD: z.string().optional(),
+  VOBIZ_GATEWAY_IP: z.string().optional(),
+  VOBIZ_PHONE_NUMBER: z.string().optional(),  // E.164 format
+
+  // ── Exotel (fallback telephony) ───────────────────────────────────────
   EXOTEL_API_KEY: z.string().optional(),
   EXOTEL_API_TOKEN: z.string().optional(),
   EXOTEL_SID: z.string().optional(),
+  /** URL of the deployed Exotel-to-Vapi connector bridge service */
+  EXOTEL_CONNECTOR_URL: z.string().optional(),
 
   // ── Stripe ───────────────────────────────────────────────────────────
-  STRIPE_SECRET_KEY:      z.string().optional(), // sk_live_... or sk_test_...
-  STRIPE_WEBHOOK_SECRET:  z.string().optional(), // whsec_...
-  STRIPE_STARTER_PRICE_ID: z.string().optional(), // price_... for Starter plan
-  STRIPE_GROWTH_PRICE_ID:  z.string().optional(), // price_... for Growth plan
+  STRIPE_SECRET_KEY:          z.string().optional(), // sk_live_... or sk_test_...
+  STRIPE_WEBHOOK_SECRET:      z.string().optional(), // whsec_...
+  // Primary price IDs (used as fallback if INR variants are not set)
+  STRIPE_STARTER_PRICE_ID:    z.string().optional(), // price_... for Starter plan
+  STRIPE_GROWTH_PRICE_ID:     z.string().optional(), // price_... for Growth plan
+  // INR-denominated price IDs — set these to charge Indian customers in ₹
+  // Create them in your Stripe dashboard with currency = INR, then paste the IDs here.
+  // When set, these take priority over the primary price IDs above.
+  STRIPE_STARTER_PRICE_ID_INR: z.string().optional(), // price_... Starter plan (INR)
+  STRIPE_GROWTH_PRICE_ID_INR:  z.string().optional(), // price_... Growth plan (INR)
 });
 
 const parsed = envSchema.safeParse(process.env);

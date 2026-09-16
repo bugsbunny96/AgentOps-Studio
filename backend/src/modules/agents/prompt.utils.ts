@@ -12,6 +12,11 @@
  */
 
 import type { IOrganization } from '../organization/organization.model';
+import type { ICatalogItem } from '../catalog/catalog.model';
+import { formatCatalogForPrompt, getOrderSafetyRules } from '../catalog/catalog.service';
+
+// Re-export so callers don't need to import catalog module directly
+export { formatCatalogForPrompt, getOrderSafetyRules };
 
 // ─── System Prompt Generator ───────────────────────────────────────────────────
 
@@ -19,11 +24,22 @@ import type { IOrganization } from '../organization/organization.model';
  * Produces a comprehensive system prompt from the org's onboarding data.
  * Used as the Vapi assistant's system-level instruction that governs all calls.
  *
- * @param org        - The org document (Mongoose Document or plain object).
- * @param kbContext  - Optional formatted KB string from getKbContext(). Injected
- *                     verbatim after core org sections. Pass '' or undefined to omit.
+ * @param org           - The org document (Mongoose Document or plain object).
+ * @param kbContext     - Optional formatted KB string from getKbContext(). Injected
+ *                        verbatim after core org sections. Pass '' or undefined to omit.
+ * @param catalogItems  - Optional catalog items to inject as a product table.
+ *                        When provided, the formatted table is added before the KB context
+ *                        so the agent can answer "do you have X?" accurately.
+ * @param includeOrderSafetyRules - When true (default: false), appends the critical
+ *                        order safety rules block. Set to true for electrical-shop agents
+ *                        that use the submit_order Vapi tool.
  */
-export function generateSystemPrompt(org: IOrganization, kbContext?: string): string {
+export function generateSystemPrompt(
+  org: IOrganization,
+  kbContext?: string,
+  catalogItems?: ICatalogItem[],
+  includeOrderSafetyRules?: boolean,
+): string {
   const agentName = org.agentName || 'your AI receptionist';
   const bizName   = org.name;
 
@@ -76,6 +92,12 @@ export function generateSystemPrompt(org: IOrganization, kbContext?: string): st
       .map((f) => `Q: ${f.question}\nA: ${f.answer}`)
       .join('\n\n');
     parts.push(`\n## Frequently Asked Questions\n${faqBlock}`);
+  }
+
+  // Product Catalog (injected from catalog service when catalogItems are provided)
+  // Placed before KB context so catalog prices/stock are the authoritative source
+  if (catalogItems && catalogItems.length > 0) {
+    parts.push(`\n${formatCatalogForPrompt(catalogItems)}`);
   }
 
   // Knowledge Base context (injected from KB service)
@@ -131,8 +153,13 @@ Examples:
 2. Be warm, professional, and efficient.
 3. Never make up information not provided above.
 4. If asked something you cannot answer, offer to take their name and callback number.
-5. Do not discuss pricing unless it is listed in the services above.
+5. Do not discuss pricing unless it is listed in the catalog or services above.
 6. End every call with a friendly sign-off (e.g., "Have a great day!").`);
+
+  // Order safety rules (for electrical-shop agents with submit_order tool)
+  if (includeOrderSafetyRules) {
+    parts.push(getOrderSafetyRules());
+  }
 
   return parts.join('\n');
 }

@@ -6,7 +6,13 @@ import { RouterProvider } from 'react-router-dom';
 
 import { store } from '@/store';
 import { router } from '@/routes';
+import { initSentry } from '@/lib/sentry';
+import { SentryErrorBoundary } from '@/components/SentryErrorBoundary';
 import '@/styles/index.css';
+
+// Initialise Sentry before the React tree is rendered.
+// No-ops in development (DEV guard is inside initSentry).
+initSentry();
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -32,10 +38,12 @@ if (!rootEl) throw new Error('Root element #root not found');
 
 createRoot(rootEl).render(
   <StrictMode>
-    <Provider store={store}>
-      <QueryClientProvider client={queryClient}>
-        <RouterProvider router={router} />
-      </QueryClientProvider>
-    </Provider>
+    <SentryErrorBoundary>
+      <Provider store={store}>
+        <QueryClientProvider client={queryClient}>
+          <RouterProvider router={router} />
+        </QueryClientProvider>
+      </Provider>
+    </SentryErrorBoundary>
   </StrictMode>,
 );

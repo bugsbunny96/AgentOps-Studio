@@ -17,6 +17,18 @@ import { analyticsRouter } from './modules/analytics/analytics.routes';
 import { kbRouter }        from './modules/knowledge-base/kb.routes';
 import teamRouter          from './modules/team/team.routes';
 import { billingRouter }   from './modules/billing/billing.routes';
+import { superadminRouter }   from './modules/superadmin/superadmin.routes';
+import { blogRouter }          from './modules/blog/blog.routes';
+import { publicValidatePromoHandler } from './modules/promo/promo.controller';
+import { announcementRouter }  from './modules/announcement/announcement.routes';
+import { changelogRouter }     from './modules/changelog/changelog.routes';
+import { catalogRouter }       from './modules/catalog/catalog.routes';
+import { ordersRouter }        from './modules/orders/order.routes';
+import { ttsBridgeRouter }     from './modules/tts-bridge/tts-bridge.routes';
+import {
+  publicEnterpriseLinkHandler,
+  publicOrgBrandingHandler,
+} from './modules/superadmin/superadmin.controller';
 
 const app = express();
 
@@ -87,13 +99,18 @@ app.use(['/api/v1/onboarding/website/crawl', '/api/v1/knowledge-base/re-sync'], 
 }));
 
 // ─── Health Check ────────────────────────────────────────────────────
-app.get('/health', (_req, res) => {
+// Exposed on two paths:
+//   GET /health           — legacy / Docker HEALTHCHECK / Kubernetes liveness probe
+//   GET /api/v1/health    — versioned URL; use this one for UptimeRobot & external monitors
+// Both return identical payloads. Never add auth middleware to these routes.
+function healthHandler(_req: express.Request, res: express.Response) {
   const mongoState = mongoose.connection.readyState;
   // 0=disconnected 1=connected 2=connecting 3=disconnecting
   const mongoStatus = ['disconnected', 'connected', 'connecting', 'disconnecting'][mongoState] ?? 'unknown';
+  const healthy = mongoState === 1; // MongoDB must be connected to be truly healthy
 
-  res.status(200).json({
-    status: 'ok',
+  res.status(healthy ? 200 : 503).json({
+    status: healthy ? 'ok' : 'degraded',
     service: 'agentops-studio-backend',
     version: process.env.npm_package_version ?? '0.1.0',
     environment: env.NODE_ENV,
@@ -101,7 +118,10 @@ app.get('/health', (_req, res) => {
     uptime: Math.floor(process.uptime()),
     timestamp: new Date().toISOString(),
   });
-});
+}
+
+app.get('/health',        healthHandler);   // Docker / K8s probes
+app.get('/api/v1/health', healthHandler);   // UptimeRobot / external monitors
 
 // ─── API v1 Routes (registered as layers are built) ──────────────────
 // Layer 2 — Identity & Onboarding
@@ -119,10 +139,37 @@ app.use('/api/v1/webhooks/vapi', vapiWebhookRouter);
 
 // Layer 4 — Intelligence
 app.use('/api/v1/calls', callsRouter);
+app.use('/api/v1/catalog', catalogRouter);
+app.use('/api/v1/orders', ordersRouter);
+
+// TTS Bridge — Vapi custom-voice protocol endpoint (NOT behind auth; Vapi calls it directly)
+// Only active when SARVAM_BRIDGE_URL points back here (opt-in via env)
+app.use('/api/tts', ttsBridgeRouter);
 
 // Layer 5 — Observability
 app.use('/api/v1/analytics', analyticsRouter);
 // app.use('/api/v1/audit', auditRouter);
+
+// Public blog (no auth)
+app.use('/api/v1/blog', blogRouter);
+
+// Public promo validate (no auth — called at checkout)
+app.post('/api/v1/promo/validate', publicValidatePromoHandler);
+
+// Public announcements — authenticate middleware reads JWT, falls back to 'free' plan if no session
+app.use('/api/v1/announcements', announcementRouter);
+
+// Public changelog — no auth required
+app.use('/api/v1/changelog', changelogRouter);
+
+// Public enterprise link validator — 19.3 (no auth needed, link carries its own token)
+app.get('/api/v1/enterprise-link/:token', publicEnterpriseLinkHandler);
+
+// Public org branding — 19.7 (allows frontend to read white-label config for its own org)
+app.get('/api/v1/org-branding/:orgId', publicOrgBrandingHandler);
+
+// Super Admin (isolated prefix, own auth cookies)
+app.use('/api/v1/superadmin', superadminRouter);
 
 // ─── 404 Catch-all ───────────────────────────────────────────────────
 app.use(notFound);

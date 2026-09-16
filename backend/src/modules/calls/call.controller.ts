@@ -6,9 +6,11 @@ import {
   initiateCall,
   getCallStats,
   getCallsByDay,
+  searchTranscripts,
   type ListCallsQuery,
   type ExportCallsQuery,
   type InitiateCallPayload,
+  type SearchTranscriptsQuery,
 } from './call.service';
 
 /**
@@ -136,6 +138,45 @@ export async function getCallByIdHandler(
     const callId = Array.isArray(req.params['id']) ? req.params['id'][0] : req.params['id'];
     const result = await getCallById(req.userId!, callId);
     res.status(200).json({ success: true, data: result });
+  } catch (err) {
+    next(err);
+  }
+}
+
+/**
+ * GET /api/v1/calls/search
+ *
+ * Full-text search across transcript content for the authenticated org.
+ *
+ * Query params:
+ *   q      (required) — search string, min 2 chars
+ *                       supports MongoDB $text operators: "phrase", -exclude
+ *   page   (optional) — page number, default 1
+ *   limit  (optional) — results per page, default 10, max 50
+ *
+ * Response:
+ *   { success, results: [{ call, transcript: { id, callId, snippet, turns } }],
+ *     total, page, pageSize, totalPages }
+ *
+ * Notes:
+ *   • Only transcripts processed after the search feature deployment appear
+ *     (pre-deployment transcripts lack the fullText field and organizationId).
+ *   • Results are ordered by MongoDB textScore (relevance) descending.
+ *   • snippet is a ±160-character window centred on the first matched term.
+ */
+export async function searchTranscriptsHandler(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
+  try {
+    const query: SearchTranscriptsQuery = {
+      q:     (req.query['q']     as string) ?? '',
+      page:  req.query['page']  ? Number(req.query['page'])  : undefined,
+      limit: req.query['limit'] ? Number(req.query['limit']) : undefined,
+    };
+    const result = await searchTranscripts(req.userId!, query);
+    res.status(200).json({ success: true, ...result });
   } catch (err) {
     next(err);
   }

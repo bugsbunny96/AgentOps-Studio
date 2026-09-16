@@ -37,6 +37,7 @@ import { env } from '../../config/env';
 import { NotFound, BadRequest, Forbidden } from '../../middleware/errorHandler';
 import { logger } from '../../utils/logger';
 import { PLAN_LIMITS } from '../billing/billing.service';
+import { computeTrialState } from '../billing/trial.service';
 
 // ─── Internal helpers ─────────────────────────────────────────────────────────
 
@@ -242,21 +243,24 @@ export async function inviteMember(
   }).lean();
   if (existingInvite) throw BadRequest('A pending invitation for this email already exists');
 
-  // ── Plan limit check ────────────────────────────────────────────────
-  const orgDoc        = await OrganizationModel.findById(orgId, { plan: 1 }).lean();
-  const plan: Plan    = (orgDoc?.plan as Plan | undefined) ?? 'free';
-  const memberLimit   = PLAN_LIMITS[plan].teamMembers;
+  // ── Plan limit check (trial-aware) ──────────────────────────────────
+  const orgDoc = await OrganizationModel
+    .findById(orgId, { plan: 1, trialUsed: 1, trialEndsAt: 1 })
+    .lean() as { plan?: Plan; trialUsed?: boolean; trialEndsAt?: Date } | null;
+  const plan: Plan = orgDoc?.plan ?? 'free';
+  const trial      = computeTrialState(plan, orgDoc?.trialUsed ?? false, orgDoc?.trialEndsAt);
+  const effectivePlan: Plan = trial.isInTrial ? 'growth' : plan;
+  const memberLimit   = PLAN_LIMITS[effectivePlan].teamMembers;
   if (memberLimit !== Infinity) {
     const [membersCount, pendingCount] = await Promise.all([
       MembershipModel.countDocuments({ organizationId: orgId, role: 'Member' }),
       InvitationModel.countDocuments({ organizationId: orgId, expiresAt: { $gt: new Date() } }),
     ]);
     if (membersCount + pendingCount >= memberLimit) {
-      throw Forbidden(
-        `Your ${plan} plan allows up to ${memberLimit} additional team member${memberLimit === 1 ? '' : 's'}. ` +
-        'Upgrade your plan to invite more.',
-        'TEAM_PLAN_LIMIT_REACHED',
-      );
+      const upgradeMsg = trial.isTrialExpired
+        ? 'Your free trial has ended. Upgrade to invite additional team members.'
+        : `Your ${effectivePlan} plan allows up to ${memberLimit} additional team member${memberLimit === 1 ? '' : 's'}. Upgrade your plan to invite more.`;
+      throw Forbidden(upgradeMsg, 'TEAM_PLAN_LIMIT_REACHED');
     }
   }
 

@@ -17,6 +17,7 @@ import {
   createCheckoutSessionHandler,
   stripeWebhookHandler,
   getBillingStatusHandler,
+  createPortalSessionHandler,
 } from './billing.controller';
 
 export const billingRouter = Router();
@@ -42,6 +43,19 @@ billingRouter.post(
   express.json(),
   authenticate,
   createCheckoutSessionHandler,
+);
+
+/**
+ * POST /api/v1/billing/portal
+ * Create a Stripe Customer Portal session. Owner-only.
+ * Org must have an existing Stripe customer ID (paid plan).
+ * Returns { url } — redirect the browser to this one-time portal URL.
+ */
+billingRouter.post(
+  '/portal',
+  express.json(),
+  authenticate,
+  createPortalSessionHandler,
 );
 
 /**

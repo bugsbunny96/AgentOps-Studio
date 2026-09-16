@@ -10,6 +10,7 @@ import {
   acceptInvitationHandler,
   inviteInfoHandler,
 } from './team.controller';
+import { orgAdminAccessLogHandler } from '../superadmin/superadmin.controller';
 
 const router = Router();
 
@@ -36,5 +37,9 @@ router.delete('/invitations/:id',     revokeInvitationHandler);
 
 // ── Accept (user must be logged in to bind the invite to their account) ───────
 router.post('/accept/:token',         acceptInvitationHandler);
+
+// ── SA Access Log — recent super-admin sessions for this org (transparency) ──
+// Returns timestamps + action labels only; SA email is intentionally omitted.
+router.get('/admin-access-log',       orgAdminAccessLogHandler);
 
 export default router;

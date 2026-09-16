@@ -6,6 +6,99 @@
 
 ---
 
+## v1.7.0 — 2026-07-29 Session 3 — Legal Pages (T&C + Privacy Policy)
+
+[2026-07-29 Session 3] v1.7 — Engineering R&D Worker
+Type: Research Note
+Trigger: on-demand (legal pages task)
+Finding: Stripe's merchant review process requires a publicly accessible Terms of Service and Privacy Policy before approving a live mode account. Without these, Stripe can hold payouts or reject the account.
+Opportunity: Legal pages created this session directly unblock Stripe live-mode approval.
+Proposed artifact: None — implemented directly.
+Affects: frontend/src/features/public/TermsPage.tsx, PrivacyPolicyPage.tsx
+Founder decision needed: Yes — review + fill in [LEGAL ENTITY NAME], [REGISTERED ADDRESS], [GSTIN], designate grievance email addresses, and have Indian advocate review before publishing.
+
+[2026-07-29 Session 3] v1.7 — Product R&D Worker
+Type: Research Note
+Trigger: post-task-review
+Finding: SPDI Rules 2011 Rule 5(9) mandates a named Grievance Officer with postal address and response time. The PrivacyPolicyPage includes this in Section 14. The Grievance Officer must be an actual human, contactable by email and post. Using founder's name (Rishabh Sharma) as placeholder is valid for early stage.
+Opportunity: Once the DPDPA 2023 is fully notified, the Data Protection Board of India will be the appeals body — the policy already references this future path.
+Proposed artifact: None — built into the PrivacyPolicyPage.
+Affects: frontend/src/features/public/PrivacyPolicyPage.tsx
+Founder decision needed: No (logged)
+
+[2026-07-29 Session 3] v1.7 — CS R&D Worker
+Type: Research Note
+Trigger: post-task-review
+Finding: Section 9 of the Privacy Policy (Call Recording Notice) and Section 10 of the Terms of Service (Voice AI Services & Call Recording) clearly assign call recording consent obligations to the Organisation — not to AgentOps Studio. This is legally significant: it removes our platform from liability for customer non-compliance with TRAI telemarketing regulations.
+Opportunity: Proactively educating users about TRAI compliance during onboarding could reduce support tickets about "why is my number getting flagged?" and reduce churn from compliance failures.
+Proposed artifact: BL-NNN (backlog item) — Add a TRAI compliance checklist to the onboarding flow (step after "Activate" page).
+Affects: Sprint Backlog (future), Onboarding UX
+Founder decision needed: No (logged as backlog candidate)
+
+[2026-07-29 Session 3] v1.7 — Growth R&D Worker
+Type: Research Note
+Trigger: post-task-review
+Finding: All footer link columns (Product, Company, Legal) previously linked to href="#" — dead links. These are now wired to real routes. Correct internal linking improves crawlability and Google's ability to index all public pages. Privacy Policy and Terms of Service pages themselves will be indexed and can appear in search results for brand trust queries.
+Opportunity: Add a sitemap.xml that includes /terms and /privacy to ensure Googlebot discovers these pages promptly.
+Proposed artifact: BL-NNN — Add sitemap.xml generation to the public site build (list all public routes including /terms and /privacy).
+Affects: Public site SEO, Stripe merchant review
+Founder decision needed: No (logged as backlog candidate)
+
+---
+
+## v1.6.0 — 2026-07-29 Session 2 — Stripe Customer Portal
+
+### 🟣 CS R&D — Self-Serve Subscription Management
+
+**[2026-07-29 01:00] v1.6 — CS R&D Worker**
+Type: Research Note
+Trigger: post-implementation review — Stripe Customer Portal
+Finding: The Stripe Customer Portal is the fastest path to self-serve subscription management. A single `stripe.billingPortal.sessions.create()` call generates a one-time URL valid for ~5 minutes. The portal lets customers: update payment method, download/view invoices, cancel subscription, or upgrade/downgrade (if configured). Cancellations still trigger the `customer.subscription.deleted` webhook which our handler already processes (downgrades org to free). No additional webhook handling needed.
+Opportunity: Configure the portal to allow downgrade (starter ↔ growth) as a self-serve action in the Stripe Dashboard. This eliminates 100% of plan-management support tickets.
+Proposed artifact: None — implemented. Founder needs to activate portal in Stripe Dashboard.
+Affects: `billing.service.ts`, `billing.controller.ts`, `billing.routes.ts`, `BillingPage.tsx`, `billing.test.ts`
+Founder decision needed: Operational — activate portal in Stripe Dashboard (no code change).
+
+---
+
+## v1.5.0 — 2026-07-29 — Session: INR Pricing + Call Minutes + Rate Limiting
+
+### 🟡 Growth R&D — INR Stripe Checkout Architecture
+
+**[2026-07-29 00:00] v1.5 — Growth R&D Worker**
+Type: Research Note
+Trigger: on-demand — INR pricing implementation
+Finding: Stripe Price objects are currency-bound at creation time. You cannot charge in INR using a USD price ID. Separate INR-denominated Price objects must be created in the Stripe Dashboard (Products → Edit → Add price → Currency: INR). The checkout session inherits currency from the Price — no `currency` param needed on the session object.
+Opportunity: Zero-friction INR checkout for Indian SMB customers. Eliminates any FX friction at Stripe checkout.
+Implementation: Added `STRIPE_STARTER_PRICE_ID_INR` + `STRIPE_GROWTH_PRICE_ID_INR` env vars. `getPlanPriceId()` prefers INR variants when set; falls back to primary IDs. `getPlanFromPriceId()` checks both variants so subscription webhook events from either price ID correctly identify the plan.
+Proposed artifact: None — implemented directly (T3 backend change, no T1 decision needed).
+Affects: `backend/src/config/env.ts`, `backend/src/modules/billing/billing.service.ts`, `backend/.env.example`, `backend/src/__tests__/billing.test.ts`
+Founder decision needed: Yes (operational) — create INR prices in Stripe Dashboard and set the two new env vars in production `.env`.
+
+### 🟠 AI R&D — Call Minutes Cost Gate Design
+
+**[2026-07-29 00:01] v1.5 — AI R&D Worker**
+Type: Research Note
+Trigger: post-task-review — call minutes gate implementation
+Finding: Vapi `assistant-request` webhook must return a synchronous assistant config (not an HTTP error). Blocking calls via HTTP 4xx causes Vapi to play a generic error tone rather than a graceful message. Implemented as inline `assistant:` object with `maxDurationSeconds: 45` cap — ensures Vapi plays a branded "limit reached" message and terminates cleanly. Self-healing aggregation-pipeline reset on `end-of-call-report` means per-org accuracy is maintained even if the BullMQ monthly cron fires late.
+Opportunity: Pattern reusable for other call-gate scenarios (e.g., invalid phone, suspended org, feature flag gate).
+Proposed artifact: ADR-005 (Draft) — Standard pattern for synchronous Vapi webhook gates.
+Affects: `backend/src/modules/calls/webhook.service.ts`
+Founder decision needed: No (logged).
+
+### 🟢 Engineering R&D — Rate Limiting Audit
+
+**[2026-07-29 00:02] v1.5 — Engineering R&D Worker**
+Type: Research Note
+Trigger: on-demand — founder requested 5 req/min on auth endpoints
+Finding: Auth endpoints already protected at 10 req/15min (≈ 0.011 req/sec) vs. requested 5 req/min (0.083 req/sec). Existing limit is 7.5× more restrictive. `express-rate-limit` already installed and applied in `backend/src/app.ts` with `skip: skipInTest` guard for integration tests. No change warranted — existing config exceeds request.
+Opportunity: Consider adding IP-level blocking (fail2ban / Cloudflare WAF rule) for repeat offenders above the threshold.
+Proposed artifact: None — no change made.
+Affects: `backend/src/app.ts` (read-only audit)
+Founder decision needed: No (logged).
+
+---
+
 ## v1.4.0 — 2026-07-14 — Session: CS R&D Competitor Support Ticket Analysis
 
 ### 🟣 CS R&D — Ticket Theme Research: Voice AI / AI Receptionist SaaS

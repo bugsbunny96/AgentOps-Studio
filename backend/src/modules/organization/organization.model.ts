@@ -36,6 +36,24 @@ export interface IOrganization extends Document {
   vapiPhoneNumberId?: string;
   preferredVoiceProvider?: string;
   preferredVoiceId?: string;
+  // ── Telephony ─────────────────────────────────────────────────────────
+  /**
+   * Active telephony provider for SIP trunk integration.
+   * 'vobiz'  — native Vapi byo-sip-trunk, ~80ms latency (recommended).
+   * 'exotel' — Exotel-Vapi-Connector bridge, ~300ms latency (fallback).
+   * undefined — not yet configured (inbound calls not active).
+   */
+  telephonyProvider?: 'vobiz' | 'exotel';
+  /**
+   * Vapi credential ID returned after POST /credential with the SIP trunk config.
+   * Required to link the phone number to the assistant via POST /phone-number.
+   */
+  vapiCredentialId?: string;
+  /**
+   * Vapi structured-output schema ID for this org's call summary.
+   * Override for orgs that use a custom schema; falls back to env.VAPI_STRUCTURED_OUTPUT_ID.
+   */
+  vapiStructuredOutputId?: string;
   // ── Crawl tracking ───────────────────────────────────────────────────
   /** Timestamp of the last successfully completed crawl — enforces 30-day re-sync cooldown. */
   lastCrawledAt?: Date;
@@ -44,6 +62,55 @@ export interface IOrganization extends Document {
   stripeCustomerId?: string;
   stripeSubscriptionId?: string;
   stripePriceId?: string;
+  // ── Super-admin plan override ─────────────────────────────────────────
+  /** When set, the SA has directly overridden the plan outside of Stripe. */
+  planOverride?: Plan;
+  /** Date when the override expires and `plan` reverts to Stripe-confirmed value. null = perpetual. */
+  planOverrideExpiry?: Date | null;
+  /** SA email who applied the override. */
+  planOverrideBy?: string;
+  /** Timestamp when the override was applied. */
+  planOverrideAt?: Date;
+  // ── White-label config ─────────────────────────────────────────────────
+  whiteLabel?: {
+    enabled:      boolean;
+    appName?:     string;
+    logoUrl?:     string;
+    brandColor?:  string;   // hex, e.g. '#6366f1'
+    supportEmail?:string;
+    setBy?:       string;
+    setAt?:       Date;
+  };
+  // ── Referral tracking ─────────────────────────────────────────────────
+  /** Unique referral code auto-generated on org creation. Shared by owner to attract new signups. */
+  referralCode?: string;
+  /** The referral code used by the founding user of this org when they signed up. */
+  referredByCode?: string;
+  // ── Free trial ────────────────────────────────────────────────────────
+  /**
+   * When the 7-day free trial ends. Set on org creation.
+   * Undefined = org pre-dates the trial system (treat as expired for gate logic).
+   */
+  trialEndsAt?: Date;
+  /** True once the trial has been granted — prevents re-issuing a trial on plan downgrade. */
+  trialUsed: boolean;
+  /** Whether the Day-5 trial reminder email has been sent (idempotency guard). */
+  trialEmailSentDay5: boolean;
+  /** Whether the Day-7 trial expiry email has been sent (idempotency guard). */
+  trialEmailSentDay7: boolean;
+  // ── Call minutes quota ────────────────────────────────────────────────
+  /**
+   * Cumulative call minutes consumed in the current billing month.
+   * Incremented by Math.ceil(durationSeconds / 60) on every end-of-call-report.
+   * Reset to 0 by the monthly BullMQ cron (0 0 1 * * UTC) + self-healing guard.
+   */
+  callMinutesUsed: number;
+  /**
+   * UTC start of the month for which callMinutesUsed is counted.
+   * The end-of-call-report handler compares this with the current month's
+   * start and resets callMinutesUsed if the month has rolled over (self-healing).
+   */
+  callMinutesResetAt: Date;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -111,6 +178,10 @@ const OrganizationSchema = new Schema<IOrganization>(
      * Set by founder via Settings → Phone Number Setup.
      */
     vapiPhoneNumberId: { type: String, index: true, sparse: true },
+    // ── Telephony ──────────────────────────────────────────────────────────
+    telephonyProvider:      { type: String, enum: ['vobiz', 'exotel'] },
+    vapiCredentialId:       { type: String, index: true, sparse: true },
+    vapiStructuredOutputId: { type: String },
     // ── Crawl tracking ─────────────────────────────────────────────────
     lastCrawledAt: { type: Date },
     // ── Billing ────────────────────────────────────────────────────────
@@ -122,6 +193,38 @@ const OrganizationSchema = new Schema<IOrganization>(
     stripeCustomerId:     { type: String, index: true, sparse: true },
     stripeSubscriptionId: { type: String, index: true, sparse: true },
     stripePriceId:        { type: String },
+    // ── Plan override ──────────────────────────────────────────────────
+    planOverride:         { type: String, enum: ['free', 'starter', 'growth', 'enterprise'], default: undefined },
+    planOverrideExpiry:   { type: Date, default: null },
+    planOverrideBy:       { type: String },
+    planOverrideAt:       { type: Date },
+    // ── White-label ───────────────────────────────────────────────────
+    whiteLabel: {
+      enabled:      { type: Boolean, default: false },
+      appName:      { type: String },
+      logoUrl:      { type: String },
+      brandColor:   { type: String },
+      supportEmail: { type: String },
+      setBy:        { type: String },
+      setAt:        { type: Date },
+    },
+    // ── Referral ──────────────────────────────────────────────────────
+    referralCode:   { type: String, unique: true, sparse: true, index: true },
+    referredByCode: { type: String, index: true, sparse: true },
+    // ── Free trial ────────────────────────────────────────────────────
+    trialEndsAt:         { type: Date },
+    trialUsed:           { type: Boolean, default: false },
+    trialEmailSentDay5:  { type: Boolean, default: false },
+    trialEmailSentDay7:  { type: Boolean, default: false },
+    // ── Call minutes quota ────────────────────────────────────────────────
+    callMinutesUsed:    { type: Number, default: 0, min: 0 },
+    callMinutesResetAt: {
+      type:    Date,
+      default: () => {
+        const now = new Date();
+        return new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1));
+      },
+    },
   },
   { timestamps: true }
 );

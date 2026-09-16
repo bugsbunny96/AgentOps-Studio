@@ -7,6 +7,7 @@ import {
   initiateCallHandler,
   getCallStatsHandler,
   getCallsByDayHandler,
+  searchTranscriptsHandler,
 } from './call.controller';
 
 export const callsRouter = Router();
@@ -49,6 +50,17 @@ callsRouter.get('/stats', getCallStatsHandler);
  * MUST be registered before /:id.
  */
 callsRouter.get('/stats/by-day', getCallsByDayHandler);
+
+/**
+ * GET /api/v1/calls/search
+ * Full-text search across transcript content for the authenticated org.
+ * Query: q (required, min 2 chars), page, limit (max 50)
+ * MUST be registered before /:id to prevent "search" being treated as an ObjectId.
+ *
+ * Example: GET /api/v1/calls/search?q=appointment+booking&page=1&limit=10
+ * Example: GET /api/v1/calls/search?q="I want to cancel"&limit=5
+ */
+callsRouter.get('/search', searchTranscriptsHandler);
 
 /**
  * GET /api/v1/calls/:id

@@ -1,5 +1,5 @@
 import type { Request, Response, NextFunction } from 'express';
-import { createCheckoutSession, handleStripeWebhook, getBillingStatus } from './billing.service';
+import { createCheckoutSession, handleStripeWebhook, getBillingStatus, createPortalSession } from './billing.service';
 import { BadRequest } from '../../middleware/errorHandler';
 
 /**
@@ -41,6 +41,25 @@ export async function stripeWebhookHandler(
     const rawBody = req.body as Buffer;
     const result  = await handleStripeWebhook(rawBody, sig);
     res.status(200).json(result);
+  } catch (err) {
+    next(err);
+  }
+}
+
+/**
+ * POST /api/v1/billing/portal
+ * Creates a Stripe Customer Portal session and returns a one-time redirect URL.
+ * The org must already have a Stripe customer ID (i.e., be on a paid plan).
+ * The portal lets the owner manage payment methods, invoices, and cancellation.
+ */
+export async function createPortalSessionHandler(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
+  try {
+    const result = await createPortalSession(req.userId!);
+    res.status(200).json({ success: true, data: result });
   } catch (err) {
     next(err);
   }

@@ -1,0 +1,154 @@
+/**
+ * Landing page motion + surface effects.
+ * Scoped under `.landing-page` so importing this file never leaks styles
+ * onto other routes.
+ */
+
+.landing-page {
+  position: relative;
+  isolation: isolate;
+}
+
+/* ── Film grain — breaks the flatness of large dark sections ────────── */
+.landing-page::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  opacity: 0.035;
+  mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+/* ── Scroll progress bar ─────────────────────────────────────────────── */
+.landing-scroll-progress {
+  position: fixed;
+  top: 0;
+  left: 0;
+  height: 2px;
+  z-index: 200;
+  background: linear-gradient(90deg, #3b82f6, #8b5cf6);
+  box-shadow: 0 0 8px rgba(139, 92, 246, 0.6);
+  transform-origin: left;
+  transition: transform 0.1s linear;
+}
+
+/* ── Spotlight border — illuminates a card's edge under the cursor ──── */
+.spotlight-card {
+  --sx: 50%;
+  --sy: 50%;
+  position: relative;
+}
+.spotlight-card::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  background: radial-gradient(
+    220px circle at var(--sx) var(--sy),
+    rgba(96, 165, 250, 0.55),
+    rgba(139, 92, 246, 0.25) 45%,
+    transparent 70%
+  );
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  opacity: 0;
+  transition: opacity 0.35s ease;
+  pointer-events: none;
+}
+.spotlight-card:hover::after {
+  opacity: 1;
+}
+
+@keyframes floatA {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  33% { transform: translate(25px, -18px) scale(1.04); }
+  66% { transform: translate(-12px, 20px) scale(0.97); }
+}
+@keyframes pulseGlow {
+  0%, 100% { box-shadow: 0 0 8px #10b981, 0 0 0 0 rgba(16, 185, 129, 0.4); }
+  50% { box-shadow: 0 0 12px #10b981, 0 0 0 5px rgba(16, 185, 129, 0); }
+}
+@keyframes waveBar {
+  0% { height: 4px; opacity: 0.4; }
+  100% { height: 100%; opacity: 1; }
+}
+@keyframes waveBarL {
+  0% { transform: scaleY(0.12); opacity: 0.5; }
+  100% { transform: scaleY(1); opacity: 1; }
+}
+@keyframes blinkCursor {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+@keyframes marquee {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+@keyframes floatBadge {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-5px); }
+}
+@keyframes pulseDot {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.5; transform: scale(0.8); }
+}
+@keyframes revealUp {
+  from { opacity: 0; transform: translateY(24px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes landingSpin {
+  to { transform: rotate(360deg); }
+}
+.landing-spin {
+  animation: landingSpin 0.8s linear infinite;
+}
+
+/* ── Responsive grids — inline styles keep gap/alignItems/etc, these
+   classes own only the column-count so a media query can win ─────────── */
+.landing-hero-grid { grid-template-columns: 1fr 1fr; }
+@media (max-width: 860px) {
+  .landing-hero-grid { grid-template-columns: 1fr; }
+}
+
+.landing-grid-3 { grid-template-columns: repeat(3, 1fr); }
+@media (max-width: 760px) {
+  .landing-grid-3 { grid-template-columns: 1fr; }
+}
+
+.landing-bento { grid-template-columns: repeat(12, 1fr); }
+@media (max-width: 760px) {
+  .landing-bento { grid-template-columns: 1fr; }
+  .landing-bento > * { grid-column: auto !important; grid-row: auto !important; }
+}
+
+.landing-how-connector {
+  display: block;
+}
+@media (max-width: 760px) {
+  .landing-how-connector { display: none; }
+}
+
+/* Hero mockup shrinks as a whole unit below the breakpoint where the
+   hero grid stacks, instead of letting its fixed 3D layout overflow. */
+.hero-mockup-scale { transform-origin: center; }
+@media (max-width: 860px) {
+  .hero-mockup-scale { transform: scale(0.82); margin: -30px 0; }
+}
+@media (max-width: 480px) {
+  .hero-mockup-scale { transform: scale(0.64); margin: -60px 0; }
+}
+
+/* ── Respect user motion preference ──────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  .landing-page *,
+  .landing-page *::before,
+  .landing-page *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

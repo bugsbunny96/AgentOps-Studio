@@ -15,13 +15,19 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useSelector } from 'react-redux';
 import {
   UserPlus, Shield, Mail,
-  Trash2, RefreshCw, X, Clock, Pencil, Check,
+  Trash2, RefreshCw, X, Clock, Pencil, Check, AlertCircle,
 } from 'lucide-react';
 import type { RootState } from '../../store';
 import api from '../../utils/api';
 import type { MemberPermissions } from '../../types';
 import { DEFAULT_MEMBER_PERMISSIONS } from '../../types';
 import { useCanWrite } from '../../hooks/usePermission';
+
+interface BillingStatus {
+  effectivePlan: string;
+  isInTrial:     boolean;
+  teamMembers:   { used: number; limit: number | null };
+}
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -472,6 +478,12 @@ export default function TeamPage() {
     staleTime: 30_000,
   });
 
+  const { data: billingStatus } = useQuery<BillingStatus>({
+    queryKey: ['billing', 'status'],
+    queryFn: () => api.get('/billing/status').then((r: { data: { data?: BillingStatus; [key: string]: unknown } }) => r.data?.data ?? r.data),
+    staleTime: 5 * 60_000,
+  });
+
   const resendMutation = useMutation({
     mutationFn: postResend,
     onSuccess:  () => qc.invalidateQueries({ queryKey: ['team'] }),
@@ -519,6 +531,15 @@ export default function TeamPage() {
           <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Team</h1>
           <p className="mt-1 text-sm text-slate-500">
             {members.length} member{members.length !== 1 ? 's' : ''}
+            {billingStatus?.teamMembers?.limit != null && billingStatus.teamMembers.limit > 0 && (
+              <span className={`ml-1 font-medium ${
+                (members.length - 1) >= billingStatus.teamMembers.limit
+                  ? 'text-red-500'
+                  : 'text-slate-400'
+              }`}>
+                · {members.length - 1} of {billingStatus.teamMembers.limit} additional seat{billingStatus.teamMembers.limit !== 1 ? 's' : ''} used
+              </span>
+            )}
             {invitations.length > 0 && ` · ${invitations.length} pending invitation${invitations.length !== 1 ? 's' : ''}`}
           </p>
         </div>
@@ -533,6 +554,20 @@ export default function TeamPage() {
           </button>
         )}
       </div>
+
+      {/* Member limit warning */}
+      {billingStatus?.teamMembers?.limit != null &&
+       billingStatus.teamMembers.limit > 0 &&
+       (members.length - 1) >= billingStatus.teamMembers.limit && (
+        <div className="flex items-center gap-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3">
+          <AlertCircle size={15} className="flex-shrink-0 text-amber-600" />
+          <p className="text-sm text-amber-800">
+            You've reached your {billingStatus.teamMembers.limit}-member limit on the{' '}
+            <strong>{billingStatus.isInTrial ? 'Growth (Trial)' : billingStatus.effectivePlan}</strong> plan.{' '}
+            <a href="/billing" className="font-semibold underline hover:text-amber-900">Upgrade</a> to add more members.
+          </p>
+        </div>
+      )}
 
       {/* Members table */}
       <div className="rounded-2xl border border-slate-200 bg-white overflow-hidden">
