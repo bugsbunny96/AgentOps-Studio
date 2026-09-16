@@ -18,30 +18,37 @@
  *   18 total (well under the 30-connection limit)
  */
 
-import Redis from 'ioredis';
+import Redis, { type RedisOptions } from 'ioredis';
 import type { ConnectionOptions } from 'bullmq';
 import { env } from './env';
 
 // ── Worker connection options (each Worker must create its own IORedis client) ─
 
-function parseWorkerOptions(): ConnectionOptions {
+function parseRedisUrl(): RedisOptions {
   try {
     const url = new URL(env.REDIS_URL);
-    const opts: ConnectionOptions = {
-      host:                 url.hostname || 'localhost',
-      port:                 url.port ? parseInt(url.port, 10) : 6379,
-      maxRetriesPerRequest: null,   // required by BullMQ workers
-      enableOfflineQueue:   false,  // don't queue commands during disconnects (prevents pile-up)
-      connectTimeout:       10_000,
+    const opts: RedisOptions = {
+      host:            url.hostname || 'localhost',
+      port:            url.port ? parseInt(url.port, 10) : 6379,
+      connectTimeout:  10_000,
     };
     if (url.password) opts.password = decodeURIComponent(url.password);
     if (url.username && url.username !== 'default') opts.username = decodeURIComponent(url.username);
     const dbNum = parseInt(url.pathname?.replace('/', '') ?? '0', 10);
-    if (!isNaN(dbNum) && dbNum > 0) (opts as Record<string, unknown>).db = dbNum;
+    if (!isNaN(dbNum) && dbNum > 0) opts.db = dbNum;
     return opts;
   } catch {
-    return { host: 'localhost', port: 6379, maxRetriesPerRequest: null };
+    return { host: 'localhost', port: 6379 };
   }
+}
+
+function parseWorkerOptions(): ConnectionOptions {
+  const base = parseRedisUrl();
+  return {
+    ...base,
+    maxRetriesPerRequest: null,   // required by BullMQ workers
+    enableOfflineQueue:   false,  // don't queue commands during disconnects (prevents pile-up)
+  };
 }
 
 /** Pass to every Worker constructor — each Worker creates its own IORedis from these options. */
@@ -58,25 +65,15 @@ let _sharedQueueClient: Redis | null = null;
  */
 export function getSharedQueueClient(): Redis {
   if (!_sharedQueueClient) {
-    try {
-      const url   = new URL(env.REDIS_URL);
-      const opts: ConstructorParameters<typeof Redis>[0] = {
-        host:                url.hostname || 'localhost',
-        port:                url.port ? parseInt(url.port, 10) : 6379,
-        maxRetriesPerRequest: 3,
-        enableReadyCheck:    false,
-        enableOfflineQueue:  true,
-        connectTimeout:      10_000,
-        lazyConnect:         true,
-      };
-      if (url.password) (opts as Record<string, unknown>).password = decodeURIComponent(url.password);
-      if (url.username && url.username !== 'default') {
-        (opts as Record<string, unknown>).username = decodeURIComponent(url.username);
-      }
-      _sharedQueueClient = new Redis(opts as never);
-    } catch {
-      _sharedQueueClient = new Redis({ host: 'localhost', port: 6379 });
-    }
+    const base = parseRedisUrl();
+    const opts: RedisOptions = {
+      ...base,
+      maxRetriesPerRequest: 3,
+      enableReadyCheck:     false,
+      enableOfflineQueue:   true,
+      lazyConnect:          true,
+    };
+    _sharedQueueClient = new Redis(opts);
   }
   return _sharedQueueClient;
 }

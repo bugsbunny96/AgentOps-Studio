@@ -12,7 +12,7 @@
  * Jobs are retained (100 completed, 50 failed) for observability.
  */
 
-import { Queue } from 'bullmq';
+import { Queue, type ConnectionOptions } from 'bullmq';
 import { getSharedQueueClient } from '../config/bullmq-connection';
 
 // ─── Job Data ─────────────────────────────────────────────────────────────────
@@ -38,10 +38,10 @@ export type FollowUpAlertJobName = 'send-follow-up-alert';
 
 // ─── Queue ───────────────────────────────────────────────────────────────────
 
-export const followUpAlertQueue = new Queue<FollowUpAlertJobData, void, FollowUpAlertJobName>(
+export const followUpAlertQueue = new Queue<FollowUpAlertJobData, void, string>(
   'follow-up-alert',
   {
-    connection: getSharedQueueClient(),
+    connection: getSharedQueueClient() as unknown as ConnectionOptions,
     defaultJobOptions: {
       attempts:    3,
       backoff: {

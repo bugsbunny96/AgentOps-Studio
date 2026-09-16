@@ -9,7 +9,7 @@
  * Jobs are retained (200 completed, 100 failed) for observability.
  */
 
-import { Queue } from 'bullmq';
+import { Queue, type ConnectionOptions } from 'bullmq';
 import { getSharedQueueClient } from '../config/bullmq-connection';
 
 // Mirrors the relevant fields of VapiEndOfCallReportEvent without
@@ -35,10 +35,10 @@ export interface CallReportJobData {
 
 export type CallReportJobName = 'process-end-of-call';
 
-export const callReportQueue = new Queue<CallReportJobData, void, CallReportJobName>(
+export const callReportQueue = new Queue<CallReportJobData, void, string>(
   'call-report',
   {
-    connection: getSharedQueueClient(),
+    connection: getSharedQueueClient() as unknown as ConnectionOptions,
     defaultJobOptions: {
       attempts:         3,
       backoff:          { type: 'exponential', delay: 5_000 },

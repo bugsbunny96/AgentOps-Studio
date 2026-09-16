@@ -11,7 +11,7 @@
  * correct even if the monthly job is missed (e.g. server was down on the 1st).
  */
 
-import { Queue } from 'bullmq';
+import { Queue, type ConnectionOptions } from 'bullmq';
 import { getSharedQueueClient } from '../config/bullmq-connection';
 
 export type CallMinutesResetJobName = 'monthly-minutes-reset';
@@ -22,9 +22,9 @@ export interface CallMinutesResetJobData {}
 export const callMinutesResetQueue = new Queue<
   CallMinutesResetJobData,
   void,
-  CallMinutesResetJobName
+  string
 >('call-minutes-reset', {
-  connection: getSharedQueueClient(),
+  connection: getSharedQueueClient() as unknown as ConnectionOptions,
   defaultJobOptions: {
     attempts:         3,
     backoff:          { type: 'exponential', delay: 60_000 }, // 1 min → 2 min → 4 min

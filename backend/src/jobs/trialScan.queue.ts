@@ -6,15 +6,15 @@
  * trial expiry and adds Day-5 / Day-7 jobs to the trial-email queue.
  */
 
-import { Queue } from 'bullmq';
+import { Queue, type ConnectionOptions } from 'bullmq';
 import { getSharedQueueClient } from '../config/bullmq-connection';
 
 export type TrialScanJobName = 'daily-trial-scan';
 
-export const trialScanQueue = new Queue<Record<string, never>, void, TrialScanJobName>(
+export const trialScanQueue = new Queue<Record<string, never>, void, string>(
   'trial-scan',
   {
-    connection: getSharedQueueClient(),
+    connection: getSharedQueueClient() as unknown as ConnectionOptions,
     defaultJobOptions: {
       attempts:         3,
       backoff:          { type: 'exponential', delay: 60_000 },

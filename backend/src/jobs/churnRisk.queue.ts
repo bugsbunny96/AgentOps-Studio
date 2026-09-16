@@ -7,7 +7,7 @@
  * SA can also trigger an on-demand scan via POST /superadmin/churn-risk/scan.
  */
 
-import { Queue } from 'bullmq';
+import { Queue, type ConnectionOptions } from 'bullmq';
 import { getSharedQueueClient } from '../config/bullmq-connection';
 
 export interface ChurnRiskJobData {
@@ -17,10 +17,10 @@ export interface ChurnRiskJobData {
 
 export type ChurnRiskJobName = 'daily-churn-scan' | 'single-org-scan';
 
-export const churnRiskQueue = new Queue<ChurnRiskJobData, void, ChurnRiskJobName>(
+export const churnRiskQueue = new Queue<ChurnRiskJobData, void, string>(
   'churn-risk',
   {
-    connection: getSharedQueueClient(),
+    connection: getSharedQueueClient() as unknown as ConnectionOptions,
     defaultJobOptions: {
       attempts:         3,
       backoff:          { type: 'exponential', delay: 10_000 },

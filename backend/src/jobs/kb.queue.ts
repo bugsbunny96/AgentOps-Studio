@@ -6,7 +6,7 @@
  * Future: worker will chunk + embed + store vectors in MongoDB Atlas.
  */
 
-import { Queue } from 'bullmq';
+import { Queue, type ConnectionOptions } from 'bullmq';
 import { getSharedQueueClient } from '../config/bullmq-connection';
 
 export interface KbIngestJobData {
@@ -16,8 +16,8 @@ export interface KbIngestJobData {
 
 export type KbIngestJobName = 'ingest';
 
-export const kbQueue = new Queue<KbIngestJobData, void, KbIngestJobName>('kb-ingest', {
-  connection: getSharedQueueClient(),
+export const kbQueue = new Queue<KbIngestJobData, void, string>('kb-ingest', {
+  connection: getSharedQueueClient() as unknown as ConnectionOptions,
   defaultJobOptions: {
     attempts:          3,
     backoff:           { type: 'exponential', delay: 3_000 },
