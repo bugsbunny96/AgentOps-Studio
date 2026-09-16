@@ -10,7 +10,7 @@
  */
 
 import { Queue } from 'bullmq';
-import { bullmqConnection } from '../config/bullmq-connection';
+import { getSharedQueueClient } from '../config/bullmq-connection';
 
 // Mirrors the relevant fields of VapiEndOfCallReportEvent without
 // creating a cross-package import (avoids circular dep through webhook.service).
@@ -38,7 +38,7 @@ export type CallReportJobName = 'process-end-of-call';
 export const callReportQueue = new Queue<CallReportJobData, void, CallReportJobName>(
   'call-report',
   {
-    connection: bullmqConnection,
+    connection: getSharedQueueClient(),
     defaultJobOptions: {
       attempts:         3,
       backoff:          { type: 'exponential', delay: 5_000 },

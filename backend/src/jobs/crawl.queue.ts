@@ -1,5 +1,5 @@
 import { Queue } from 'bullmq';
-import { bullmqConnection } from '../config/bullmq-connection';
+import { getSharedQueueClient } from '../config/bullmq-connection';
 
 export interface CrawlJobData {
   orgId: string;
@@ -9,7 +9,7 @@ export interface CrawlJobData {
 export type CrawlJobName = 'crawl';
 
 export const crawlQueue = new Queue<CrawlJobData, void, CrawlJobName>('website-crawl', {
-  connection: bullmqConnection,
+  connection: getSharedQueueClient(),
   defaultJobOptions: {
     attempts: 2,
     backoff: { type: 'exponential', delay: 5_000 },

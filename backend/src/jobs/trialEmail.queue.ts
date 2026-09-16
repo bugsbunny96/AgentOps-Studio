@@ -10,7 +10,7 @@
  */
 
 import { Queue } from 'bullmq';
-import { bullmqConnection } from '../config/bullmq-connection';
+import { getSharedQueueClient } from '../config/bullmq-connection';
 
 export interface TrialEmailJobData {
   orgId:    string;
@@ -26,7 +26,7 @@ export type TrialEmailJobName = 'send-trial-day5' | 'send-trial-day7';
 export const trialEmailQueue = new Queue<TrialEmailJobData, void, TrialEmailJobName>(
   'trial-email',
   {
-    connection: bullmqConnection,
+    connection: getSharedQueueClient(),
     defaultJobOptions: {
       attempts:         3,
       backoff:          { type: 'exponential', delay: 30_000 },

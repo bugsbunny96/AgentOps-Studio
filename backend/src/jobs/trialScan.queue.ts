@@ -7,14 +7,14 @@
  */
 
 import { Queue } from 'bullmq';
-import { bullmqConnection } from '../config/bullmq-connection';
+import { getSharedQueueClient } from '../config/bullmq-connection';
 
 export type TrialScanJobName = 'daily-trial-scan';
 
 export const trialScanQueue = new Queue<Record<string, never>, void, TrialScanJobName>(
   'trial-scan',
   {
-    connection: bullmqConnection,
+    connection: getSharedQueueClient(),
     defaultJobOptions: {
       attempts:         3,
       backoff:          { type: 'exponential', delay: 60_000 },

@@ -13,7 +13,7 @@
  */
 
 import { Queue } from 'bullmq';
-import { bullmqConnection } from '../config/bullmq-connection';
+import { getSharedQueueClient } from '../config/bullmq-connection';
 
 // ─── Job Data ─────────────────────────────────────────────────────────────────
 
@@ -41,7 +41,7 @@ export type FollowUpAlertJobName = 'send-follow-up-alert';
 export const followUpAlertQueue = new Queue<FollowUpAlertJobData, void, FollowUpAlertJobName>(
   'follow-up-alert',
   {
-    connection: bullmqConnection,
+    connection: getSharedQueueClient(),
     defaultJobOptions: {
       attempts:    3,
       backoff: {

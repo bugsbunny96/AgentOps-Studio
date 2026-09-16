@@ -12,7 +12,7 @@
  */
 
 import { Queue } from 'bullmq';
-import { bullmqConnection } from '../config/bullmq-connection';
+import { getSharedQueueClient } from '../config/bullmq-connection';
 
 export type CallMinutesResetJobName = 'monthly-minutes-reset';
 
@@ -24,7 +24,7 @@ export const callMinutesResetQueue = new Queue<
   void,
   CallMinutesResetJobName
 >('call-minutes-reset', {
-  connection: bullmqConnection,
+  connection: getSharedQueueClient(),
   defaultJobOptions: {
     attempts:         3,
     backoff:          { type: 'exponential', delay: 60_000 }, // 1 min → 2 min → 4 min

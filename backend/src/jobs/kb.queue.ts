@@ -7,7 +7,7 @@
  */
 
 import { Queue } from 'bullmq';
-import { bullmqConnection } from '../config/bullmq-connection';
+import { getSharedQueueClient } from '../config/bullmq-connection';
 
 export interface KbIngestJobData {
   docId:  string;
@@ -17,7 +17,7 @@ export interface KbIngestJobData {
 export type KbIngestJobName = 'ingest';
 
 export const kbQueue = new Queue<KbIngestJobData, void, KbIngestJobName>('kb-ingest', {
-  connection: bullmqConnection,
+  connection: getSharedQueueClient(),
   defaultJobOptions: {
     attempts:          3,
     backoff:           { type: 'exponential', delay: 3_000 },

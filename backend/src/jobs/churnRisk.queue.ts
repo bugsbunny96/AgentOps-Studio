@@ -8,7 +8,7 @@
  */
 
 import { Queue } from 'bullmq';
-import { bullmqConnection } from '../config/bullmq-connection';
+import { getSharedQueueClient } from '../config/bullmq-connection';
 
 export interface ChurnRiskJobData {
   /** undefined = score all orgs; present = score a single org on demand */
@@ -20,7 +20,7 @@ export type ChurnRiskJobName = 'daily-churn-scan' | 'single-org-scan';
 export const churnRiskQueue = new Queue<ChurnRiskJobData, void, ChurnRiskJobName>(
   'churn-risk',
   {
-    connection: bullmqConnection,
+    connection: getSharedQueueClient(),
     defaultJobOptions: {
       attempts:         3,
       backoff:          { type: 'exponential', delay: 10_000 },
