@@ -126,6 +126,7 @@ describe('POST /api/v1/auth/register', () => {
       VALID_USER.email,
       VALID_USER.name,
       expect.any(String), // verification token (32-byte hex)
+      expect.objectContaining({ next: undefined, emailHint: undefined }),
     );
   });
 
