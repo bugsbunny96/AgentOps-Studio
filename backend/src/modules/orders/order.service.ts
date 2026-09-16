@@ -14,6 +14,7 @@ import mongoose from 'mongoose';
 import { OrderModel, type IOrder } from './order.model';
 import { SubmitOrderSchema, type SubmitOrderDto } from './order.validation';
 import { OrganizationModel } from '../organization/organization.model';
+import { VoiceAgentModel } from '../agents/agent.model';
 import { logger } from '../../utils/logger';
 
 // ── Order ID Generator ─────────────────────────────────────────────────────────
@@ -154,6 +155,12 @@ export async function updateOrderStatus(
 export async function resolveOrgByAssistantId(
   vapiAssistantId: string,
 ): Promise<mongoose.Types.ObjectId | null> {
+  // vapiAssistantId is stored on the Agent model, not Organization.
+  // Look up the agent first, then return its organizationId.
+  const agent = await VoiceAgentModel.findOne({ vapiAssistantId }).select('organizationId');
+  if (agent) return agent.organizationId as mongoose.Types.ObjectId;
+
+  // Fallback: check Organization model in case some orgs have it there too
   const org = await OrganizationModel.findOne({ vapiAssistantId });
   return org ? org._id as mongoose.Types.ObjectId : null;
 }
