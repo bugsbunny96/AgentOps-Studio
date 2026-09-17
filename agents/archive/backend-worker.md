@@ -14,7 +14,7 @@ You are the **Backend Worker** for AgentOps Studio. You specialize exclusively i
 ## Directory Ownership
 ```
 src/
-├── config/         ← DB connections, env vars, Vapi/Exotel setup
+├── config/         ← DB connections, env vars, Vapi/Vobiz setup
 ├── middleware/     ← Auth verification, RBAC check, multi-tenant gating
 └── modules/
     ├── auth/       ← Login, register, token refresh

@@ -107,7 +107,7 @@ async function seedCall(
   }> = {},
 ) {
   const vapiCallId = new mongoose.Types.ObjectId().toString();
-  return CallModel.create({
+  const doc = await CallModel.create({
     organizationId: orgId,
     agentId,
     vapiCallId,
@@ -116,8 +116,12 @@ async function seedCall(
     status: overrides.status ?? 'completed',
     callerNumber: overrides.callerNumber ?? '+919999999999',
     cost: 0.05,
-    createdAt: overrides.createdAt ?? new Date(),
   });
+  if (overrides.createdAt) {
+    // Use native driver to bypass mongoose's timestamp immutability
+    await CallModel.collection.updateOne({ _id: doc._id }, { $set: { createdAt: overrides.createdAt } });
+  }
+  return doc;
 }
 
 // ── Tests ─────────────────────────────────────────────────────────────────────

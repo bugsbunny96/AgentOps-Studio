@@ -131,7 +131,7 @@ A linear, focused layout used during the user registration and workspace setup w
 *   **BusinessNicheSelect**: Dropdown-driven niche selector used during Learn and Configure steps.
 *   **DynamicConfigForm**: Step 3 and Step 4 dynamic form loader. Fetches a schema mapping the user's selected industry (e.g. Healthcare, Real Estate) to specific input fields (e.g. clinic specialties, property details) and binds hooks.
 *   **VapiSandbox**: Activate-step test sandbox widget. Incorporates:
-    *   **Initiate Test Call Button**: Triggers a Vapi outbound test call to the user's registered phone number via Exotel SIP trunk, replicating the real production call path.
+    *   **Initiate Test Call Button**: Triggers a Vapi outbound test call to the user's registered phone number via Vobiz SIP trunk, replicating the real production call path.
     *   **Call Status Indicator**: Live badge showing call state (Idle / Connecting / In Progress / Completed).
     *   **Language Indicator**: Real-time display of the active conversation language (English / Hindi / Punjabi), updating as the agent detects language switches mid-call.
     *   **Sandbox Configuration Panel**: Sliders modifying Voice model settings (speed, pitch), prompt overrides, and supported languages in real-time; re-provisions the Vapi assistant on save.

@@ -1,5 +1,5 @@
 🔴 Week 1 — Launch Blockers (do nothing else)
-Build Exotel phone number provisioning — Onboarding Step 5 (Activate) should let users pick an Indian DID or toll-free number. Wire Exotel API → Vapi phone number registration → store on org. This is the single most important feature for actual product-market fit.
+Build Vobiz phone number provisioning — Onboarding Step 5 (Activate) should let users pick an Indian DID or toll-free number. Wire Vobiz API → Vapi phone number registration → store on org. This is the single most important feature for actual product-market fit.
 Verify test call in Activate step — Manually test the onboarding Activate step end-to-end. If the WebRTC/web call isn't working, this is a 1-day fix with Vapi's web call SDK.
 🟡 Week 2 — Pre-Launch Polish
 Create INR prices in Stripe Dashboard → set STRIPE_STARTER_PRICE_ID_INR + STRIPE_GROWTH_PRICE_ID_INR in production .env

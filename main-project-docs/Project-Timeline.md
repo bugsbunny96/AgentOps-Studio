@@ -23,7 +23,7 @@ Layer 2: Identity & Onboarding [Days 8 - 14]
   └── Onboarding State & Middleware Guards
 
 Layer 3: Voice AI              [Days 15 - 22]
-  ├── Vapi + Exotel voice orchestration
+  ├── Vapi + Vobiz voice orchestration
   └── Agent prompt configuration
 
 Layer 4: Intelligence          [Days 23 - 29]
@@ -94,8 +94,8 @@ Layer 5: Observability         [Days 30 - 35]
     *   **T3.1: Voice Agent Profile Management** (Duration: 3 Days)
         *   Build Mongoose `voice_agents` configuration collection.
         *   Implement agent creation forms, system prompt editors, and voice selectors.
-    *   **T3.2: Vapi + Exotel SIP Integration** (Duration: 3 Days)
-        *   Configure Exotel SIP trunk to route Indian virtual/toll-free numbers to Vapi.
+    *   **T3.2: Vapi + Vobiz SIP Integration** (Duration: 3 Days)
+        *   Configure Vobiz SIP trunk to route Indian virtual/toll-free numbers to Vapi.
         *   Integrate Vapi Server SDK to provision assistants and manage call sessions.
         *   Build webhook receiver endpoints for `call.started` and `call.completed` events.
     *   **T3.3: Vapi Agent Configuration & Multi-lingual Implementation** (Duration: 4 Days)

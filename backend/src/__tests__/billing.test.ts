@@ -50,21 +50,26 @@ const {
 }));
 
 vi.mock('stripe', () => {
-  const MockStripe = vi.fn().mockImplementation(() => ({
-    checkout: {
-      sessions: {
-        create: mockCheckoutCreate,
+  // Use a regular function (not arrow) so `new MockStripe()` works in Vitest 4.
+  // When a constructor function explicitly returns an object, JavaScript uses
+  // that object as the result of `new` — this is required by Vitest 4.
+  const MockStripe = vi.fn().mockImplementation(function MockStripeImpl() {
+    return {
+      checkout: {
+        sessions: {
+          create: mockCheckoutCreate,
+        },
       },
-    },
-    billingPortal: {
-      sessions: {
-        create: mockPortalCreate,
+      billingPortal: {
+        sessions: {
+          create: mockPortalCreate,
+        },
       },
-    },
-    webhooks: {
-      constructEvent: mockWebhooksConstructEvent,
-    },
-  }));
+      webhooks: {
+        constructEvent: mockWebhooksConstructEvent,
+      },
+    };
+  });
   return { default: MockStripe };
 });
 

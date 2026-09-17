@@ -77,7 +77,7 @@ All routes are under the same domain, separated by auth guard — no subdomain s
 │   ├── /settings/general               Org name, timezone, industry
 │   ├── /settings/team                  Team members & roles
 │   ├── /settings/billing               Subscription, invoices
-│   ├── /settings/integrations          Exotel, Vapi, Deepgram, ElevenLabs
+│   ├── /settings/integrations          Vobiz, Vapi, Deepgram, ElevenLabs
 │   └── /settings/security              2FA, session management
 /onboarding                     Onboarding wizard (guarded: COMPLETED blocks entry)
 │   ├── /onboarding/connect
@@ -370,7 +370,7 @@ When a session cookie expires while the user is actively using the app:
    - **Voice Agent** (`/services/voice-agent`) — Vapi, Deepgram STT, ElevenLabs TTS, GPT-4o, latency specs
    - **Knowledge Base** (`/services/knowledge-base`) — website crawl, manual articles, FAQ editor
    - **Call Analytics** (`/services/analytics`) — call volume, completion rate, fallback rate, transcripts
-   - **Integrations** (`/services/integrations`) — Exotel SIP, Vapi, REST webhooks, future CRM connectors
+   - **Integrations** (`/services/integrations`) — Vobiz SIP, Vapi, REST webhooks, future CRM connectors
 
 **SEO**: Each sub-page targets a specific long-tail keyword. Internal links between sub-pages.
 

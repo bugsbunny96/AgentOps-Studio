@@ -79,11 +79,11 @@ const SERVICES = [
 const STEPS = [
   { n: '01', title: 'Connect', desc: 'Add your business details, hours, and website. We crawl and build your knowledge base automatically — no manual entry needed.' },
   { n: '02', title: 'Train', desc: 'Review what the AI learned. Add FAQs, custom scripts, and fallback behaviours in plain English. No prompt engineering required.' },
-  { n: '03', title: 'Activate', desc: 'Connect your Exotel or Vapi phone number. Your agent goes live in under 5 minutes and handles calls immediately.' },
+  { n: '03', title: 'Activate', desc: 'Connect your Vobiz phone number. Your agent goes live in under 5 minutes and handles calls immediately.' },
   { n: '04', title: 'Optimise', desc: 'Review real transcripts, tweak scripts based on actual calls, and watch your cost-per-call drop week over week.' },
 ];
 
-const STACK = ['Vapi AI', 'Deepgram STT', 'GPT-4o', 'ElevenLabs TTS', 'Exotel SIP', 'MongoDB Atlas'];
+const STACK = ['Vapi AI', 'Deepgram STT', 'GPT-4o', 'ElevenLabs TTS', 'Vobiz SIP', 'MongoDB Atlas'];
 
 export default function ServicesPage() {
   useKF();

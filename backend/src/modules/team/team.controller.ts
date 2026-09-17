@@ -82,7 +82,7 @@ export async function updateMemberPermissionsHandler(
 ): Promise<void> {
   try {
     const id = Array.isArray(req.params['id']) ? req.params['id'][0] : req.params['id'];
-    const member = await updateMemberPermissions(req.userId!, id, { permissions: req.body });
+    const member = await updateMemberPermissions(req.userId!, id, req.body);
     res.json({ success: true, data: member });
   } catch (err) {
     next(err);

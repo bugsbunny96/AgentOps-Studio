@@ -34,7 +34,7 @@ export async function listCallsHandler(
     };
 
     const result = await listCalls(req.userId!, query);
-    res.status(200).json({ success: true, ...result });
+    res.status(200).json({ success: true, data: result });
   } catch (err) {
     next(err);
   }
@@ -176,7 +176,7 @@ export async function searchTranscriptsHandler(
       limit: req.query['limit'] ? Number(req.query['limit']) : undefined,
     };
     const result = await searchTranscripts(req.userId!, query);
-    res.status(200).json({ success: true, ...result });
+    res.status(200).json({ success: true, data: result });
   } catch (err) {
     next(err);
   }

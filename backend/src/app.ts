@@ -50,6 +50,11 @@ app.use(cors({
   exposedHeaders: ['X-Total-Count'],
 }));
 
+// ─── Cookie Parsing ─────────────────────────────────────────────────
+// Must come before the billing router so that req.cookies is populated
+// when authenticate middleware runs inside billing routes.
+app.use(cookieParser());
+
 // ─── Billing routes BEFORE express.json() ────────────────────────────
 // The Stripe webhook route requires raw bytes for signature verification.
 // The billing router handles its own body parsing per-route (raw for webhook,
@@ -59,7 +64,6 @@ app.use('/api/v1/billing', billingRouter);
 // ─── Body Parsing ────────────────────────────────────────────────────
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
-app.use(cookieParser());
 
 // ─── Request Logging ─────────────────────────────────────────────────
 app.use(requestLogger);

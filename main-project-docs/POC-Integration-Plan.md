@@ -235,15 +235,15 @@ vapiStructuredOutputId?: string; // '5367c2b7-...' (electrical-shop-call-summary
 | `VOBIZ_AUTH_PASSWORD` | Vobiz SIP auth password |
 | `VOBIZ_GATEWAY_IP` | Vobiz gateway IP (from Vobiz console) |
 | `VOBIZ_PHONE_NUMBER` | E.164 phone number from Vobiz |
-| `EXOTEL_ACCOUNT_SID` | Exotel account SID (fallback telephony) |
-| `EXOTEL_AUTH_TOKEN` | Exotel auth token |
-| `EXOTEL_CONNECTOR_URL` | URL of deployed Exotel-Vapi-Connector bridge |
+| `VOBIZ_SIP_DOMAIN` | Vobiz account SID (fallback telephony) |
+| `VOBIZ_AUTH_PASSWORD` | Vobiz auth token |
+| `VOBIZ_SIP_DOMAIN` | URL of deployed Vobiz-Vapi-Connector bridge |
 
 ---
 
 ### 11. NEW UTILITY — `backend/src/modules/telephony/telephony.service.ts`
 
-**What POC has:** Full `TelephonyService` with `buildVobizConfig()`, `buildExotelConfig()`, `buildVapiCredentialPayload()`, `buildVapiPhoneNumberPayload()`.
+**What POC has:** Full `TelephonyService` with `buildVobizConfig()`, `buildVobizConfig()`, `buildVapiCredentialPayload()`, `buildVapiPhoneNumberPayload()`.
 
 **What to build:** Port the POC service as-is, replacing NestJS decorators with plain TypeScript class. Wire into onboarding step where the org's phone number is linked to their Vapi assistant.
 
@@ -258,7 +258,7 @@ vapiStructuredOutputId?: string; // '5367c2b7-...' (electrical-shop-call-summary
 
 **Add fields:**
 ```typescript
-telephonyProvider?:   'vobiz' | 'exotel';
+telephonyProvider?:   'vobiz' | 'vobiz';
 vapiCredentialId?:    string;   // from POST /credential
 vapiPhoneNumberId?:   string;   // already exists — keep, now also set by telephony service
 vapiStructuredOutputId?: string; // per-org override of the structured output schema ID
@@ -356,7 +356,7 @@ Phase 2 — New Modules (additive, no breaking changes)
 
 Phase 3 — Infrastructure
   10. Change 3  → TTS bridge (Sarvam) module
-  11. Change 11 → Telephony service (Vobiz / Exotel)
+  11. Change 11 → Telephony service (Vobiz / Vobiz)
   12. Change 12 → Expand Organization model
   13. Change 13 → followUpAlert BullMQ job
 

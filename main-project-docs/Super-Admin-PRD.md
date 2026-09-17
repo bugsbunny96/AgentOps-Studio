@@ -110,7 +110,7 @@ Quick visual: MongoDB ping, Redis ping, BullMQ queue depth, Vapi API reachabilit
 ### 4.2 Org detail view
 
 Full org record including:
-- All settings (Exotel phone, Vapi IDs, industry, language)
+- All settings (Vobiz phone, Vapi IDs, industry, language)
 - Plan and billing state
 - Usage meters: KB docs, team members, minutes used
 - Member list with roles
@@ -141,7 +141,7 @@ The most important super-admin capability.
 6. Every action taken during impersonation is attributed to the original super admin in the audit log, NOT the org owner
 
 **What impersonation unlocks inside the normal dashboard:**
-- Full org settings, including resetting Vapi/Exotel config
+- Full org settings, including resetting Vapi/Vobiz config
 - Adding or removing any team member
 - Editing or deleting any agent
 - Downloading call exports
@@ -495,7 +495,7 @@ Table of all flags with description, scope (global/org), current value (on/off),
 | Redis ping | `client.ping()` |
 | BullMQ queues | Job counts: active, waiting, completed (24h), failed (24h) |
 | Vapi API | `GET https://api.vapi.ai/assistant` with org's key |
-| Exotel API | Ping Exotel health endpoint |
+| Vobiz API | Ping Vobiz health endpoint |
 
 ### 15.2 Error log viewer
 

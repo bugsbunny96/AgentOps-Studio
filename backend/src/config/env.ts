@@ -64,19 +64,27 @@ const envSchema = z.object({
   /** Sarvam TTS speaker name — default: 'shubh' */
   TTS_SPEAKER: z.string().default('shubh'),
 
-  // ── Vobiz SIP Trunk (primary telephony) ──────────────────────────────
+  // ── Vobiz SIP Trunk (sole telephony provider — https://vobiz.ai) ────────
+  /**
+   * Unique SIP domain for your outbound trunk.
+   * Found in Vobiz Console → SIP Trunk → Outbound Trunks → your trunk
+   * → Authentication & Linking → SIP Domain.
+   * Format: <unique_id>.sip.vobiz.ai
+   */
   VOBIZ_SIP_DOMAIN: z.string().optional(),
+  /**
+   * SIP trunk username (trunk-level, not the account Auth ID).
+   * Found in the same Authentication & Linking section as VOBIZ_SIP_DOMAIN.
+   */
   VOBIZ_AUTH_USERNAME: z.string().optional(),
+  /** SIP trunk password — from Authentication & Linking section. */
   VOBIZ_AUTH_PASSWORD: z.string().optional(),
-  VOBIZ_GATEWAY_IP: z.string().optional(),
-  VOBIZ_PHONE_NUMBER: z.string().optional(),  // E.164 format
-
-  // ── Exotel (fallback telephony) ───────────────────────────────────────
-  EXOTEL_API_KEY: z.string().optional(),
-  EXOTEL_API_TOKEN: z.string().optional(),
-  EXOTEL_SID: z.string().optional(),
-  /** URL of the deployed Exotel-to-Vapi connector bridge service */
-  EXOTEL_CONNECTOR_URL: z.string().optional(),
+  /**
+   * Vapi credential ID returned after POST https://api.vapi.ai/credential
+   * with the byo-sip-trunk payload. Stored here as a shared outbound credential
+   * (per-org inbound credential IDs are stored on the Organization document).
+   */
+  VOBIZ_VAPI_CREDENTIAL_ID: z.string().optional(),
 
   // ── Stripe ───────────────────────────────────────────────────────────
   STRIPE_SECRET_KEY:          z.string().optional(), // sk_live_... or sk_test_...

@@ -405,17 +405,17 @@ describe('Knowledge Base Module', () => {
       expect(result).toContain('We ship in 3–5 days.');
     });
 
-    it('truncates content at 600 characters per doc', async () => {
+    it('truncates content at MAX_CHARS_PER_DOC (1200) characters per doc', async () => {
       const ts = Date.now() + 17;
       const { org } = await createOwnerWithOrg(ts);
-      const longContent = 'x'.repeat(1200);
+      const longContent = 'x'.repeat(2400);
       await createReadyDoc(org._id, { title: 'Long Doc', content: longContent });
 
       const result = await getKbContext(org._id);
-      // The section content should be at most 600 'x' chars
+      // The section content should be at most 1200 'x' chars (MAX_CHARS_PER_DOC)
       const match = result.match(/### Long Doc\n(x+)/);
       expect(match).not.toBeNull();
-      expect(match![1].length).toBeLessThanOrEqual(600);
+      expect(match![1].length).toBeLessThanOrEqual(1200);
     });
 
     it('excludes docs from other orgs', async () => {

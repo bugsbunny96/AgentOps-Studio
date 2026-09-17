@@ -79,6 +79,7 @@ async function createOwnerWithOrg(suffix: string | number = Date.now()) {
     timezone: 'Asia/Kolkata',
     onboardingStatus: 'COMPLETED',
     businessHours: { start: '09:00', end: '18:00' },
+    plan: 'starter', // free plan has teamMembers: 0 which blocks all invites
   });
   await MembershipModel.create({
     userId: user._id,
@@ -158,7 +159,7 @@ describe('Team Module', () => {
         .set('Cookie', cookie)
         .send({ email: `newmember-${ts}@example.com` });
 
-      expect(res.status).toBe(200);
+      expect(res.status).toBe(201);
       expect(res.body.success).toBe(true);
       expect(mockSendEmail).toHaveBeenCalledOnce();
 
@@ -397,7 +398,7 @@ describe('Team Module', () => {
       expect(res.status).toBe(403);
     });
 
-    it('returns 404 for invalid or expired token', async () => {
+    it('returns 400 for invalid or expired token', async () => {
       const ts = Date.now();
       const { cookie } = await createOwnerWithOrg(ts);
 
@@ -405,7 +406,9 @@ describe('Team Module', () => {
         .post('/api/v1/team/accept/nonexistent-token-xyz')
         .set('Cookie', cookie);
 
-      expect(res.status).toBe(404);
+      // Service throws BadRequest (400) for invalid/unknown tokens — intentional
+      // security decision to avoid distinguishing "not found" vs "expired".
+      expect(res.status).toBe(400);
     });
   });
 
@@ -424,11 +427,13 @@ describe('Team Module', () => {
       expect(res.body.data.role).toBe('Member');
     });
 
-    it('returns 404 for unknown token', async () => {
+    it('returns 400 for unknown token', async () => {
       const res = await request(app)
         .get('/api/v1/team/invite-info/bad-token-xyz');
 
-      expect(res.status).toBe(404);
+      // Service throws BadRequest (400) for unknown tokens — same anti-enumeration
+      // pattern as accept: don't distinguish "not found" vs "invalid".
+      expect(res.status).toBe(400);
     });
   });
 });

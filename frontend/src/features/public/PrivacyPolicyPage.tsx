@@ -293,7 +293,7 @@ export default function PrivacyPolicyPage() {
                 ['Deepgram, Inc.', 'Speech-to-text transcription', 'USA'],
                 ['ElevenLabs, Inc.', 'Text-to-speech audio synthesis', 'USA'],
                 ['Vapi AI', 'Voice orchestration layer', 'USA'],
-                ['Exotel Techcom Pvt. Ltd.', 'Telephony routing and SIP', 'India'],
+                ['Ilaimitado Private Limited (Vobiz)', 'Telephony routing and SIP', 'India'],
                 ['MongoDB Atlas (AWS)', 'Database hosting', 'USA / India'],
                 ['Amazon Web Services', 'Cloud infrastructure & storage', 'USA / India'],
                 ['Resend, Inc.', 'Transactional email delivery', 'USA'],

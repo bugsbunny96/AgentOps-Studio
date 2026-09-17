@@ -23,19 +23,25 @@ import { computeTrialState } from './trial.service';
 
 // ─── Plan Limits (shared with kb.service + team.service + webhook.service) ────
 //
+// Source of truth: AgentOps Studio — SaaS Pricing & Stripe Setup (2026-09-17)
+//
 // callMinutes: max cumulative call-minutes per calendar month.
-//   - Matches the minute allocations shown on the pricing/billing page.
-//   - Enforced at the assistant-request webhook BEFORE Vapi connects the call,
-//     preventing cost exposure when an org is over-limit.
-//   - free=60  (1 hr — enough for demos/testing without Vapi cost exposure)
-//   - starter=500   (matches "500 minutes / month" on pricing page)
-//   - growth=2000   (matches "2,000 minutes / month" on pricing page)
-//   - enterprise=∞  (direct contract; no per-minute cap)
+//   - Enforced at assistant-request webhook BEFORE Vapi connects the call.
+//   - free=60       (1 hr — enough for demos/testing without Vapi cost exposure)
+//   - starter=500   (Basic plan: ₹9,999/mo, 500 min, ~125 calls/month @ 4 min avg)
+//   - growth=1000   (Standard plan: ₹17,999/mo, 1,000 min, ~250 calls/month)
+//   - enterprise=∞  (Pro/custom contract; no per-minute cap — billed via overage or custom)
+//
+// kbDocs: max knowledge-base documents (not KB size in bytes — each doc ≤50KB).
+//   - free=5, starter=50 (≈50KB), growth=200 (≈200KB), enterprise=∞ (≈500KB+)
+//
+// teamMembers: max additional Members (non-Owner). Owners excluded from count.
+//   - free=0 (solo), starter=1, growth=5, enterprise=∞
 
 export const PLAN_LIMITS: Record<Plan, { kbDocs: number; teamMembers: number; callMinutes: number }> = {
   free:       { kbDocs: 5,        teamMembers: 0,        callMinutes: 60       },
-  starter:    { kbDocs: 5,        teamMembers: 1,        callMinutes: 500      },
-  growth:     { kbDocs: 50,       teamMembers: 5,        callMinutes: 2_000    },
+  starter:    { kbDocs: 50,       teamMembers: 1,        callMinutes: 500      },
+  growth:     { kbDocs: 200,      teamMembers: 5,        callMinutes: 1_000    },
   enterprise: { kbDocs: Infinity, teamMembers: Infinity, callMinutes: Infinity },
 };
 
@@ -64,17 +70,15 @@ function getPlanFromPriceId(priceId: string): Plan | null {
   return null;
 }
 
-// ─── Stripe client (lazy — only initialised when needed) ──────────────────────
-
-let _stripe: Stripe | null = null;
+// ─── Stripe client ────────────────────────────────────────────────────────────
+// No module-level singleton — a fresh instance is created on each call so that
+// Vitest's vi.mock('stripe', ...) properly intercepts every new Stripe(...).
 
 function getStripe(): Stripe {
-  if (_stripe) return _stripe;
   if (!env.STRIPE_SECRET_KEY) {
     throw BadRequest('Stripe is not configured. Set STRIPE_SECRET_KEY in your environment.');
   }
-  _stripe = new Stripe(env.STRIPE_SECRET_KEY, { apiVersion: '2026-06-24.dahlia' });
-  return _stripe;
+  return new Stripe(env.STRIPE_SECRET_KEY, { apiVersion: '2026-06-24.dahlia' });
 }
 
 // ─── Internal helper ──────────────────────────────────────────────────────────
@@ -265,7 +269,6 @@ export async function handleStripeWebhook(
  * The URL is valid for a short window (~5 minutes) and is single-use.
  */
 export async function createPortalSession(userId: string): Promise<{ url: string }> {
-  const stripe = getStripe();
   const { org, orgId } = await resolveOwnerOrgForBilling(userId);
 
   const orgData = org as unknown as { stripeCustomerId?: string };
@@ -277,6 +280,7 @@ export async function createPortalSession(userId: string): Promise<{ url: string
     );
   }
 
+  const stripe = getStripe();
   const returnUrl = `${env.CLIENT_URL}/billing`;
 
   const portalSession = await stripe.billingPortal.sessions.create({

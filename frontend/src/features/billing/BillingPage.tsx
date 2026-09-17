@@ -2,10 +2,12 @@
  * BillingPage — plan overview, usage meters, upgrade flow.
  * Redesigned to match the dark futuristic theme of DashboardLayout.
  *
- * Prices aligned with landing page:
- *   Starter  → ₹2,999 / month
- *   Growth   → ₹7,999 / month  (Most Popular)
+ * Prices aligned with AgentOps Studio SaaS Pricing & Stripe Setup doc (2026-09-17):
+ *   Starter  → ₹9,999 / month  (500 min, 1 agent)   [maps to "Basic" in pricing doc]
+ *   Growth   → ₹17,999 / month (1,000 min, 3 agents) [maps to "Standard" in pricing doc]
  *   Enterprise → Custom
+ *
+ * All prices are + 18% GST (tax_exclusive in Stripe).
  *
  * Routes:
  *   GET  /api/v1/billing/status   → current plan + usage
@@ -92,20 +94,22 @@ const PLANS: Array<{
   {
     id:          'starter',
     name:        'Starter',
-    price:       '₹2,999',
-    annualPrice: '₹1,999',
+    price:       '₹9,999',
+    annualPrice: '₹7,999',
     period:      '/ month',
-    description: 'For solopreneurs & micro-teams up to 500 calls/month',
+    description: 'For solo shops & businesses up to ~125 calls/month',
     features:    [
       '1 AI voice agent',
       '500 minutes / month',
-      'English language',
-      'Basic analytics (call count + duration)',
-      '5 KB documents',
+      'Hindi + English',
+      'Call logs & basic analytics',
+      '50 KB knowledge base',
       '1 team member',
-      'Email support',
+      'Google Sheets integration',
+      'WhatsApp alerts',
+      'Email support (business hours)',
     ],
-    notIncluded: ['Hindi / Punjabi', 'Custom agent persona', 'Website crawler', 'Call transcripts'],
+    notIncluded: ['Custom agent persona', 'Order capture workflow', 'Call transcripts & summaries', 'CRM integration'],
     highlight:   false,
     targetPlan:  'starter',
     accentRgb:   '100,116,139',
@@ -116,21 +120,21 @@ const PLANS: Array<{
   {
     id:          'growth',
     name:        'Growth',
-    price:       '₹7,999',
-    annualPrice: '₹5,999',
+    price:       '₹17,999',
+    annualPrice: '₹14,999',
     period:      '/ month',
-    description: 'Full multi-language support and deep analytics for growing teams',
+    description: 'For active businesses with 10–30 calls/day',
     features:    [
       '3 AI voice agents',
-      '2,000 minutes / month',
+      '1,000 minutes / month',
       'Hindi + English + Punjabi',
-      'Full analytics dashboard',
-      'Custom agent name & persona',
-      'Website crawler + 50 KB docs',
-      'Call transcripts & AI summaries',
-      'Fallback transfer number',
+      'Call trends, sentiment analysis',
+      '200 KB knowledge base',
       'Up to 5 team members',
-      'Priority email support',
+      'Order capture & appointment booking',
+      'CRM + n8n workflows + Razorpay',
+      'Call transcripts & AI summaries',
+      'Priority email + WhatsApp support',
     ],
     notIncluded: [],
     highlight:   true,

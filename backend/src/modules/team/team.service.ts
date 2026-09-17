@@ -34,7 +34,7 @@ import {
 import { UserModel } from '../auth/auth.model';
 import { sendEmail } from '../../utils/email';
 import { env } from '../../config/env';
-import { NotFound, BadRequest, Forbidden } from '../../middleware/errorHandler';
+import { NotFound, BadRequest, Forbidden, Conflict } from '../../middleware/errorHandler';
 import { logger } from '../../utils/logger';
 import { PLAN_LIMITS } from '../billing/billing.service';
 import { computeTrialState } from '../billing/trial.service';
@@ -232,7 +232,7 @@ export async function inviteMember(
       userId:         existingUser._id,
       organizationId: orgId,
     }).lean();
-    if (existingMembership) throw BadRequest('This user is already a team member');
+    if (existingMembership) throw Conflict('This user is already a team member');
   }
 
   // Check existing non-expired invitation
@@ -241,7 +241,7 @@ export async function inviteMember(
     organizationId: orgId,
     expiresAt:      { $gt: new Date() },
   }).lean();
-  if (existingInvite) throw BadRequest('A pending invitation for this email already exists');
+  if (existingInvite) throw Conflict('A pending invitation for this email already exists');
 
   // ── Plan limit check (trial-aware) ──────────────────────────────────
   const orgDoc = await OrganizationModel
@@ -420,7 +420,7 @@ export async function removeMember(userId: string, membershipId: string): Promis
   }
 
   if (target.role === 'Owner') {
-    throw BadRequest('The Owner cannot be removed from the team');
+    throw Forbidden('The Owner cannot be removed from the team');
   }
 
   await MembershipModel.deleteOne({ _id: membershipId });

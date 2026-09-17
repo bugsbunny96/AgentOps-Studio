@@ -17,7 +17,7 @@
  *   STT: ~$0.002 / min  (Deepgram)
  *   LLM: ~$0.004 / min  (GPT-4o ~8k output tpm avg)
  *   TTS: ~$0.002 / min  (ElevenLabs)
- *   Telephony: ~$0.004 / min (Exotel/Twilio PSTN inbound)
+ *   Telephony: ~$0.004 / min (Vobiz SIP inbound)
  *   ──────────────────────────────────────────────────────
  *   Total: ~$0.012 / min  (stored as VAPI_COST_PER_MIN_USD)
  *

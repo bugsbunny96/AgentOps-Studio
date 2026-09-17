@@ -145,7 +145,7 @@ The onboarding module guides a new user from account creation to a fully activat
 * Website crawling workflow validates the URL, crawls allowed pages, extracts text, and queues enrichment jobs.
 * Knowledge base generation pipeline converts extracted content to structured documents and stores version history.
 * Agent provisioning workflow creates a draft agent with baseline prompt, language, and routing settings.
-* Vapi + Exotel integration flow provisions the AI assistant, initiates a test call via SIP trunk, and validates agent connectivity and multi-lingual response quality.
+* Vapi + Vobiz integration flow provisions the AI assistant, initiates a test call via SIP trunk, and validates agent connectivity and multi-lingual response quality.
 * Activation workflow runs final readiness checks, persists activation status, and publishes the workspace as live.
 * Audit logging records every major mutation, failed validation, and activation event.
 

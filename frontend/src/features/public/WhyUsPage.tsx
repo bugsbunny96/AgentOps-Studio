@@ -56,7 +56,7 @@ const STATS = [
 
 const DIFFS = [
   { icon: '🇮🇳', title: 'Built for Indian SMBs', color: T.amber,
-    body: 'Not a Western tool retrofitted for India. AgentOps Studio is designed around Indian phone behaviour: Hindi-first callers, Exotel SIP infrastructure, INR pricing, and verticals that matter here — logistics, real estate, healthcare.' },
+    body: 'Not a Western tool retrofitted for India. AgentOps Studio is designed around Indian phone behaviour: Hindi-first callers, Vobiz SIP infrastructure, INR pricing, and verticals that matter here — logistics, real estate, healthcare.' },
   { icon: '⚡', title: 'Live in 30 minutes, not 3 months', color: T.em,
     body: 'No enterprise sales cycle. No 6-month implementation. Sign up, paste your website URL, connect your number — your agent handles real calls before your next team standup.' },
   { icon: '🔒', title: 'Your data, your org', color: T.blue,
@@ -109,7 +109,7 @@ export default function WhyUsPage() {
             <span style={{ background: `linear-gradient(135deg, ${T.em}, ${T.blue})`, WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>for India</span>
           </h1>
           <p style={{ color: T.t2, fontSize: 'clamp(15px,2vw,18px)', lineHeight: 1.7, margin: '0 0 36px' }}>
-            Most voice AI tools are built for US enterprise budgets. We built one for Indian SMBs who need 24/7 Hindi and English coverage, Exotel infrastructure, and flat-rate pricing their finance team can actually approve.
+            Most voice AI tools are built for US enterprise budgets. We built one for Indian SMBs who need 24/7 Hindi and English coverage, Vobiz SIP infrastructure, and flat-rate pricing their finance team can actually approve.
           </p>
           <Link to="/register" style={{ display: 'inline-flex', alignItems: 'center', padding: '13px 32px', borderRadius: 10, background: T.em, color: '#fff', fontWeight: 700, fontSize: 15, textDecoration: 'none', gap: 8 }}>Start free — live in 30 min →</Link>
         </div>

@@ -322,7 +322,7 @@ export default function TermsPage() {
                 ['Deepgram, Inc.', 'Speech-to-text transcription'],
                 ['OpenAI, LLC', 'Large language model inference'],
                 ['ElevenLabs, Inc.', 'Text-to-speech audio synthesis'],
-                ['Exotel Techcom Pvt. Ltd.', 'Telephony and SIP routing'],
+                ['Ilaimitado Private Limited (Vobiz)', 'Telephony and SIP routing'],
               ].map(([p, desc]) => (
                 <tr key={p}>
                   <td style={{ ...S.td, fontWeight: 600, color: T.t1 }}>{p}</td>

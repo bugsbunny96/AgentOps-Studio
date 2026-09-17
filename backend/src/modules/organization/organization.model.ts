@@ -39,11 +39,16 @@ export interface IOrganization extends Document {
   // ── Telephony ─────────────────────────────────────────────────────────
   /**
    * Active telephony provider for SIP trunk integration.
-   * 'vobiz'  — native Vapi byo-sip-trunk, ~80ms latency (recommended).
-   * 'exotel' — Exotel-Vapi-Connector bridge, ~300ms latency (fallback).
+   * 'vobiz'  — native Vapi byo-sip-trunk via Vobiz, ~80ms latency.
    * undefined — not yet configured (inbound calls not active).
    */
-  telephonyProvider?: 'vobiz' | 'exotel';
+  telephonyProvider?: 'vobiz';
+  /**
+   * The org's assigned Vobiz phone number in E.164 format (e.g. +918065354620).
+   * Stored per-org — each tenant has their own number purchased from the shared
+   * Vobiz account. Not stored in env vars.
+   */
+  phoneNumber?: string;
   /**
    * Vapi credential ID returned after POST /credential with the SIP trunk config.
    * Required to link the phone number to the assistant via POST /phone-number.
@@ -179,7 +184,8 @@ const OrganizationSchema = new Schema<IOrganization>(
      */
     vapiPhoneNumberId: { type: String, index: true, sparse: true },
     // ── Telephony ──────────────────────────────────────────────────────────
-    telephonyProvider:      { type: String, enum: ['vobiz', 'exotel'] },
+    telephonyProvider:      { type: String, enum: ['vobiz'] },
+    phoneNumber:            { type: String, trim: true, sparse: true },
     vapiCredentialId:       { type: String, index: true, sparse: true },
     vapiStructuredOutputId: { type: String },
     // ── Crawl tracking ─────────────────────────────────────────────────

@@ -1,134 +1,111 @@
 /**
  * Telephony Service — manages SIP trunk configuration for connecting
- * Indian PSTN phone numbers to Vapi assistants.
+ * Indian PSTN phone numbers to Vapi assistants via Vobiz SIP trunking.
  *
- * Two providers supported:
+ * Provider: Vobiz (https://vobiz.ai)
+ *   - Native Vapi byo-sip-trunk integration — no bridge service required.
+ *   - ~80ms latency, Indian regulated number series (140/1600/92).
+ *   - TRAI compliance: NDNC scrubbing documented, Tata DLT platform.
+ *   - Legal entity: Ilaimitado Private Limited (Bangalore, 2025).
  *
- * 1. Vobiz (RECOMMENDED for launch):
- *    - Native Vapi byo-sip-trunk integration — no bridge service required.
- *    - ~80ms latency, Indian regulated number series (140/1600/92).
- *    - Self-serve signup: https://vobiz.ai
- *    - KYC required for regulated number series.
- *    - Compliance: NDNC scrubbing documented, Tata DLT platform.
- *    - Legal entity: Ilaimitado Private Limited (Bangalore, 2025).
- *    - Set env vars: VOBIZ_SIP_DOMAIN, VOBIZ_AUTH_USERNAME,
- *                    VOBIZ_AUTH_PASSWORD, VOBIZ_GATEWAY_IP, VOBIZ_PHONE_NUMBER
+ * Architecture (multi-tenant):
+ *   - Shared Vobiz account → multiple phone numbers purchased under it.
+ *   - Shared SIP trunk credentials → stored in ENV (VOBIZ_SIP_DOMAIN etc.)
+ *   - Per-org phone number, vapiPhoneNumberId, vapiCredentialId → stored on
+ *     the Organization document in MongoDB (NOT in env vars).
  *
- * 2. Exotel (FALLBACK — proven compliance, higher latency):
- *    - Uses the Exotel-Vapi-Connector bridge (deploy separately).
- *    - ~300ms latency, decade-plus track record, explicit DND scrubbing.
- *    - Connector repo: https://github.com/exotel/Exotel-Vapi-Connector
- *    - Set env vars: EXOTEL_API_KEY, EXOTEL_API_TOKEN, EXOTEL_SID,
- *                    EXOTEL_CONNECTOR_URL, VOBIZ_PHONE_NUMBER (same number, different trunk)
+ * Vapi integration steps (per org):
+ *   1. POST https://api.vapi.ai/credential  → buildVapiOutboundCredentialPayload()
+ *      → store returned credentialId on org.vapiCredentialId
+ *   2. POST https://api.vapi.ai/phone-number → buildVapiPhoneNumberPayload()
+ *      → store returned phoneNumberId on org.vapiPhoneNumberId
  *
- * Number strategy:
- *   - Default: NEW virtual number from Vobiz/Exotel (don't port existing number).
- *   - Client's existing number can forward to the new virtual number.
- *   - MNP porting is a phase-2 upgrade (~2 extra weeks).
+ * Inbound call setup (one-time, in Vapi dashboard):
+ *   1. In Vapi: Integrations → SIP Trunk → Create New SIP Trunk ("Vobiz Inbound")
+ *      Add one gateway per Vobiz SIP signaling IP (port 5060, UDP, inbound only):
+ *        13.203.7.132 / 65.2.100.211 / 13.126.98.234 / 13.235.11.131 / 13.233.44.61
+ *        3.111.255.163 / 3.111.128.110 / 43.204.64.203 / 15.207.232.91 / 35.154.133.28
+ *   2. Fetch the Vapi trunk ID: GET https://api.vapi.ai/credential → find your trunk → copy `id`
+ *   3. In Vobiz Console → SIP Trunk → Inbound Trunks → Create New Trunk
+ *      Set Primary URI: <VAPI_TRUNK_ID>.sip.vapi.ai
+ *      Link your phone number(s) to this trunk.
+ *   4. In Vapi: Phone Numbers → your number → Inbound Settings → assign assistant.
  *
- * To register a SIP trunk in Vapi:
- *   1. POST https://api.vapi.ai/credential  with buildVapiCredentialPayload()
- *   2. Note the returned credentialId — store as org.vapiCredentialId
- *   3. POST https://api.vapi.ai/phone-number with buildVapiPhoneNumberPayload()
- *   4. Note the returned phoneNumberId — store as org.vapiPhoneNumberId
+ * Docs: https://www.vobiz.ai/docs/integrations/vapi-dashboard
  */
 
 import { env } from '../../config/env';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-export type TelephonyProvider = 'vobiz' | 'exotel' | 'none';
+export type TelephonyProvider = 'vobiz' | 'none';
 
 export interface SipTrunkConfig {
   provider: TelephonyProvider;
-  /** Vobiz: *.sip.vobiz.ai   Exotel: connector hostname */
-  sipDomain?: string;
+  /**
+   * Unique SIP domain for the outbound trunk.
+   * Format: <unique_id>.sip.vobiz.ai
+   * Source: Vobiz Console → SIP Trunk → Outbound Trunks → your trunk
+   *         → Authentication & Linking → SIP Domain
+   */
+  sipDomain: string;
+  /** SIP trunk username (from Authentication & Linking — trunk-level, not account Auth ID) */
   authUsername?: string;
+  /** SIP trunk password (from Authentication & Linking) */
   authPassword?: string;
-  /** SIP gateway IP — Vobiz resolves sipDomain to this */
-  gatewayIp?: string;
-  /** Phone number in E.164 format (e.g. +911XXXXXXXXXX) */
+  /** Phone number in E.164 format (e.g. +918065354620) — stored per-org in DB */
   phoneNumber: string;
-  /** Vapi assistant ID to assign this number to */
+  /** Vapi assistant ID to assign this number to — stored per-org in DB */
   assistantId: string;
-  /** Set after the Vapi credential is created — stored on org document */
+  /** Vapi credential ID returned after POST /credential — stored per-org in DB */
   vapiCredentialId?: string;
-  // Exotel-specific
-  exotelConnectorUrl?: string;
 }
 
-// ─── Config Builders ──────────────────────────────────────────────────────────
+// ─── Config Builder ───────────────────────────────────────────────────────────
 
 /**
- * Build the Vobiz SIP trunk config from env vars.
- * Mirrors telephony/vobiz-setup.md step 2 from the POC project.
+ * Build the Vobiz SIP trunk config from env vars + per-org values.
+ * Shared credentials come from ENV; phone number and assistant ID are per-org.
  */
-export function buildVobizConfig(assistantId: string): SipTrunkConfig {
+export function buildVobizConfig(phoneNumber: string, assistantId: string): SipTrunkConfig {
   return {
-    provider:      'vobiz',
-    sipDomain:     env.VOBIZ_SIP_DOMAIN,
-    authUsername:  env.VOBIZ_AUTH_USERNAME,
-    authPassword:  env.VOBIZ_AUTH_PASSWORD,
-    gatewayIp:     env.VOBIZ_GATEWAY_IP,
-    phoneNumber:   env.VOBIZ_PHONE_NUMBER ?? '',
+    provider:     'vobiz',
+    sipDomain:    env.VOBIZ_SIP_DOMAIN ?? '',
+    authUsername: env.VOBIZ_AUTH_USERNAME,
+    authPassword: env.VOBIZ_AUTH_PASSWORD,
+    phoneNumber,
     assistantId,
-  };
-}
-
-/**
- * Build the Exotel fallback config from env vars.
- * The EXOTEL_CONNECTOR_URL is the deployed Exotel-Vapi-Connector host.
- */
-export function buildExotelConfig(assistantId: string): SipTrunkConfig {
-  return {
-    provider:           'exotel',
-    authUsername:       env.EXOTEL_API_KEY,
-    gatewayIp:          env.EXOTEL_CONNECTOR_URL,
-    phoneNumber:        env.VOBIZ_PHONE_NUMBER ?? '',  // same number, different trunk
-    assistantId,
-    exotelConnectorUrl: env.EXOTEL_CONNECTOR_URL,
   };
 }
 
 // ─── Vapi Payload Builders ────────────────────────────────────────────────────
 
 /**
- * Returns the Vapi credential payload for a byo-sip-trunk.
+ * Returns the Vapi credential payload for a Vobiz byo-sip-trunk (outbound).
  * POST to: https://api.vapi.ai/credential
  * Authorization: Bearer VAPI_API_KEY
  *
- * For Vobiz: gateways[0].ip = Vobiz gateway IP; authUsername/Password from Vobiz console.
- * For Exotel: gatewayIp = Exotel-Vapi-Connector host; credentials from Exotel dashboard.
+ * The SIP domain (e.g. abc123.sip.vobiz.ai) is used as the gateway — Vapi
+ * accepts both IP addresses and domain names in the gateways[].ip field.
  */
-export function buildVapiCredentialPayload(config: SipTrunkConfig): Record<string, unknown> {
-  if (config.provider === 'vobiz') {
-    return {
-      provider:     'byo-sip-trunk',
-      gateways:     [{ ip: config.gatewayIp ?? config.sipDomain }],
-      authUsername: config.authUsername,
-      authPassword: config.authPassword ?? '[SET_VOBIZ_AUTH_PASSWORD]',
-      // For inbound calls: add inboundEnabled: true and Vobiz signaling IPs
-      // (request signaling IPs from Vobiz support)
-    };
-  }
-
-  // Exotel path — the connector handles SIP bridging
+export function buildVapiOutboundCredentialPayload(config: SipTrunkConfig): Record<string, unknown> {
   return {
     provider:     'byo-sip-trunk',
-    gateways:     [{ ip: config.gatewayIp }],
-    authUsername: config.authUsername ?? '[SET_EXOTEL_API_KEY]',
-    authPassword: env.EXOTEL_API_TOKEN ?? '[SET_EXOTEL_API_TOKEN]',
+    name:         `Vobiz Outbound — ${config.phoneNumber}`,
+    gateways:     [{ ip: config.sipDomain }],
+    authUsername: config.authUsername ?? '',
+    authPassword: config.authPassword ?? '',
+    outboundEnabled: true,
+    inboundEnabled:  false,
   };
 }
 
 /**
- * Returns the Vapi phone-number payload.
+ * Returns the Vapi phone-number payload (outbound caller ID / inbound routing).
  * POST to: https://api.vapi.ai/phone-number
  * Authorization: Bearer VAPI_API_KEY
  *
- * This links the SIP trunk credential to a phone number
- * and assigns the assistant to answer calls on that number.
- * The credential must already exist (buildVapiCredentialPayload + POST first).
+ * The credential must already exist (call buildVapiOutboundCredentialPayload first).
  */
 export function buildVapiPhoneNumberPayload(config: SipTrunkConfig): Record<string, unknown> {
   return {
@@ -139,6 +116,53 @@ export function buildVapiPhoneNumberPayload(config: SipTrunkConfig): Record<stri
   };
 }
 
+// ─── Vobiz Inbound SIP Signaling IPs ─────────────────────────────────────────
+
+/**
+ * Complete list of Vobiz SIP signaling IPs for inbound call setup.
+ * All 10 must be added as gateways in the Vapi inbound SIP trunk credential
+ * (port 5060, UDP, inbound only, outbound disabled).
+ *
+ * Source: https://www.vobiz.ai/docs/concepts/ip-whitelisting#sip-signaling
+ * ⚠ These IPs can change — verify against Vobiz docs before configuring.
+ */
+export const VOBIZ_SIGNALING_IPS = [
+  '13.203.7.132',
+  '65.2.100.211',
+  '13.126.98.234',
+  '13.235.11.131',
+  '13.233.44.61',
+  '3.111.255.163',
+  '3.111.128.110',
+  '43.204.64.203',
+  '15.207.232.91',
+  '35.154.133.28',
+] as const;
+
+/**
+ * Returns the Vapi inbound SIP trunk credential payload.
+ * This is a ONE-TIME shared setup (not per-org).
+ * POST to: https://api.vapi.ai/credential
+ *
+ * After creation, fetch the credential ID via GET /credential, then
+ * create the Vobiz inbound trunk pointing to <credentialId>.sip.vapi.ai
+ */
+export function buildVapiInboundCredentialPayload(): Record<string, unknown> {
+  return {
+    provider: 'byo-sip-trunk',
+    name:     'Vobiz Inbound',
+    gateways: VOBIZ_SIGNALING_IPS.map(ip => ({
+      ip,
+      port:            5060,
+      netmask:         32,
+      outboundEnabled: false,
+      inboundEnabled:  true,
+    })),
+    outboundEnabled: false,
+    inboundEnabled:  true,
+  };
+}
+
 // ─── Status Summary ───────────────────────────────────────────────────────────
 
 /**
@@ -146,35 +170,23 @@ export function buildVapiPhoneNumberPayload(config: SipTrunkConfig): Record<stri
  * Useful for the admin dashboard / health check / debugging.
  */
 export function getTelephonyStatus() {
-  const vobizConfigured  = !!env.VOBIZ_SIP_DOMAIN;
-  const exotelConfigured = !!env.EXOTEL_API_KEY;
-
-  const activeProvider: TelephonyProvider =
-    vobizConfigured  ? 'vobiz'  :
-    exotelConfigured ? 'exotel' :
-    'none';
+  const vobizConfigured = !!(env.VOBIZ_SIP_DOMAIN && env.VOBIZ_AUTH_USERNAME && env.VOBIZ_AUTH_PASSWORD);
 
   return {
-    activeProvider,
+    activeProvider: vobizConfigured ? 'vobiz' as const : 'none' as const,
     vobiz: {
-      configured:        vobizConfigured,
-      sipDomain:         env.VOBIZ_SIP_DOMAIN     ?? 'not set',
-      phoneNumber:       env.VOBIZ_PHONE_NUMBER    ?? 'not set',
-      latency:           '~80ms',
-      integration:       'Native Vapi byo-sip-trunk (no bridge service required)',
-      complianceStatus:  'Verify before go-live — DND scrubbing documented, carrier not fully disclosed',
+      configured:       vobizConfigured,
+      sipDomain:        env.VOBIZ_SIP_DOMAIN     ?? 'not set',
+      authUsername:     env.VOBIZ_AUTH_USERNAME   ?? 'not set',
+      latency:          '~80ms',
+      integration:      'Native Vapi byo-sip-trunk (no bridge service required)',
+      compliance:       'NDNC scrubbing documented, Tata DLT platform',
+      inboundSetup:     'See VOBIZ_SIGNALING_IPS in telephony.service.ts — whitelist all 10 IPs in Vapi',
+      docs:             'https://www.vobiz.ai/docs/integrations/vapi-dashboard',
     },
-    exotel: {
-      configured:        exotelConfigured,
-      latency:           '~300ms',
-      integration:       'Exotel-Vapi-Connector bridge (deploy separately)',
-      connectorRepo:     'https://github.com/exotel/Exotel-Vapi-Connector',
-      complianceStatus:  'Proven — decade-plus track record, explicit real-time DND scrubbing',
-    },
-    numberStrategy: {
-      recommendation: "New virtual number — don't port existing",
-      reasoning:      'MNP porting adds ~2 weeks, no functional benefit for launch',
-      alternative:    "Forward client's existing number to the new virtual number",
+    phoneNumbers: {
+      note:   'Per-org phone numbers are stored on the Organization document (not in env vars).',
+      fields: ['phoneNumber', 'vapiPhoneNumberId', 'vapiCredentialId', 'vapiAssistantId'],
     },
   };
 }

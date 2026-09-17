@@ -191,7 +191,7 @@ Every sprint task below has a row for ALL 5 agents. If an agent's primary work i
 | 🟡 Growth | R&D: competitors show phone setup in Go Live flow, not settings — RFC-005 queued | ✅ Background |
 | 🟣 Customer | Business hours default open on bad timezone = zero missed calls — logged | ✅ Background |
 
-**Active WBS Node**: `Week 1 Session 3` — Exotel SIP setup (founder manual) + end-to-end test call
+**Active WBS Node**: `Week 1 Session 3` — Vobiz SIP setup (founder manual) + end-to-end test call
 **Session 2 deliverables**:
 - `backend/src/utils/businessHours.ts` — timezone-aware hours check (Node built-in Intl)
 - `backend/src/modules/calls/webhook.service.ts` — `handleAssistantRequest()` with business hours gate + after-hours inline assistant
@@ -206,8 +206,8 @@ Every sprint task below has a row for ALL 5 agents. If an agent's primary work i
 
 | Step | Task | Done? |
 |---|---|---|
-| 1 | Exotel dashboard → buy DID number → SIP trunk → point SIP endpoint to `sip.vapi.ai` | ⬜ |
-| 2 | Vapi dashboard → Phone Numbers → import Exotel DID | ⬜ |
+| 1 | Vobiz console → buy DID number → SIP trunk → point SIP endpoint to `sip.vapi.ai` | ⬜ |
+| 2 | Vapi dashboard → Phone Numbers → import Vobiz number | ⬜ |
 | 3 | Vapi phone number settings → Server URL = `https://<your-api>/api/v1/webhooks/vapi` | ⬜ |
 | 4 | Vapi phone number settings → Secret = value from `VAPI_WEBHOOK_SECRET` in backend `.env` | ⬜ |
 | 5 | Copy phone number UUID from Vapi → paste into Settings → Phone Number Setup → Save | ⬜ |
@@ -375,7 +375,7 @@ Every sprint task below has a row for ALL 5 agents. If an agent's primary work i
 |---|---|---|---|---|
 | T3.1 | 🔵 Product | PM | Spec: voice agent CRUD, fields, AC | ⏳ |
 | T3.1 | 🟢 Engineering | Backend | `voice_agents` schema + CRUD endpoints | ⏳ |
-| T3.2 | 🟠 AI | Exotel | SIP trunk provisioning + Indian number setup | ⏳ |
+| T3.2 | 🟠 AI | Vobiz | SIP trunk provisioning + Indian number setup | ⏳ |
 | T3.2 | 🟠 AI | Vapi | Vapi Server SDK integration + assistant management | ⏳ |
 | T3.2 | 🟢 Engineering | Backend | Vapi webhook receiver: `call.started`, `call.completed`, `transcript.completed` | ⏳ |
 | T3.3 | 🟠 AI | Voice | Deepgram STT + GPT-4o LLM + ElevenLabs TTS configuration | ⏳ |
@@ -460,6 +460,6 @@ Every sprint task below has a row for ALL 5 agents. If an agent's primary work i
 | 🔴 P0 | L2.F2 auth tests | Need to write auth.test.ts | Send next message to start L2.F2.M1.AT1 |
 | 🔴 P0 | Login flow verification | Browser may have cached old JS | Hard refresh (Cmd+Shift+R) at localhost:5173/login |
 | 🔴 P0 | Pricing decision | Growth Agent recommends 3-tier pricing | Founder to approve or modify recommended tiers |
-| 🟡 P1 | L3 Voice AI | Exotel business verification | Founder to initiate Exotel account verification |
+| 🟡 P1 | L3 Voice AI | Vobiz account setup | Founder to initiate Vobiz account verification |
 | 🟡 P1 | L3 Vapi | Vapi API keys | Founder to provision Vapi account + share API key in .env |
 | 🟢 P2 | Git commit | All L2.1 + framework work uncommitted | Run: `git add . && git commit -m "feat: Layer 2 auth + execution framework" && git push origin dev` |

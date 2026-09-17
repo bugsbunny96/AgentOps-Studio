@@ -14,6 +14,8 @@ import {
   Bot,
   PhoneCall,
   Package,
+  Boxes,
+  BarChart3,
   BookOpen,
   Users,
   Settings,
@@ -121,7 +123,9 @@ const NAV = [
   { to: '/dashboard',      label: 'Dashboard',     icon: LayoutDashboard },
   { to: '/agents',         label: 'Agents',         icon: Bot             },
   { to: '/calls',          label: 'Calls',          icon: PhoneCall       },
+  { to: '/analytics',      label: 'Analytics',      icon: BarChart3       },
   { to: '/orders',         label: 'Orders',         icon: Package         },
+  { to: '/catalog',        label: 'Catalog',        icon: Boxes           },
   { to: '/knowledge-base', label: 'Knowledge Base', icon: BookOpen        },
   { to: '/team',           label: 'Team',           icon: Users,       permission: 'team' as keyof MemberPermissions },
   { to: '/billing',        label: 'Billing',        icon: CreditCard,  ownerOnly: true },
@@ -150,6 +154,8 @@ function usePageTitle() {
   if (pathname.startsWith('/calls/'))   return 'Call Details';
   if (pathname === '/calls')            return 'Calls';
   if (pathname === '/orders')           return 'Orders';
+  if (pathname === '/catalog')          return 'Catalog';
+  if (pathname === '/analytics')        return 'Analytics';
   if (pathname === '/knowledge-base')   return 'Knowledge Base';
   if (pathname === '/team')             return 'Team';
   if (pathname === '/billing')          return 'Billing';

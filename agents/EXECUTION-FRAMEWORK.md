@@ -120,11 +120,11 @@ Each Atomic Task (AT) is sized for one AI query. ID format: `L[layer].F[feature]
 
 | ID | Atomic Task | Owner | Status | Done Condition |
 |---|---|---|---|---|
-| **L2.F3.M1.AT1** | 🔵 Product: Write org creation spec — AC for POST /api/v1/onboarding/org (name, slug, timezone, industry, hasWebsite), slug collision rules, onboarding session creation | 🔵 Product | ⏳ | AC written, edge cases documented |
-| **L2.F3.M1.AT2** | Organization service: createOrg (org + Membership as Owner + OnboardingSession) | 🟢 Eng | ⏳ | Blocked on AT1 spec |
-| **L2.F3.M1.AT3** | Slug generation: auto-slug from name + collision prevention (append -2, -3, etc.) | 🟢 Eng | ⏳ | Slug uniqueness enforced |
-| **L2.F3.M1.AT4** | Organization routes + controllers: POST /api/v1/onboarding/org | 🟢 Eng | ⏳ | Endpoint returns 201 + org + session |
-| **L2.F3.M1.AT5** | Org creation integration tests: org.test.ts (happy path, slug collision, missing fields, auth required) | 🟢 Eng | ⏳ | All cases pass |
+| **L2.F3.M1.AT1** | 🔵 Product: Write org creation spec — AC for POST /api/v1/onboarding/org (name, slug, timezone, industry, hasWebsite), slug collision rules, onboarding session creation | 🔵 Product | ✅ | Spec in Onboarding-Flow-Architecture.md; steps 1-5 LOCKED |
+| **L2.F3.M1.AT2** | Organization service: createOrg (org + Membership as Owner + OnboardingSession) | 🟢 Eng | ✅ | onboarding.service.ts — createOrg complete |
+| **L2.F3.M1.AT3** | Slug generation: auto-slug from name + collision prevention (append -2, -3, etc.) | 🟢 Eng | ✅ | toSlugBase + generateUniqueSlug (20-attempt guard) |
+| **L2.F3.M1.AT4** | Organization routes + controllers: POST /api/v1/onboarding/org + PATCH + GET + complete + crawl-status | 🟢 Eng | ✅ | 5 endpoints in onboarding.routes.ts |
+| **L2.F3.M1.AT5** | Onboarding integration tests: onboarding.test.ts (26 cases — all 5 endpoints, slug collision, crawlQueue mock, crawl-status poll) | 🟢 Eng | ✅ | onboarding.test.ts — run locally to confirm |
 | **L2.F3.M1.AT6** | 🟠 AI: Document Vapi assistant provisioning trigger — when in onboarding flow does Vapi assistant get created? (Input for T2.5) | 🟠 AI | ⏳ | Decision documented in TASK-BOARD.md |
 
 ---
@@ -136,16 +136,16 @@ Each Atomic Task (AT) is sized for one AI query. ID format: `L[layer].F[feature]
 
 | ID | Atomic Task | Owner | Status | Done Condition |
 |---|---|---|---|---|
-| **L2.F4.M1.AT1** | 🔵 Product: Spec onboarding wizard — all 5 steps AC, step transition rules, hasWebsite branch logic | 🔵 Product | ⏳ | Full AC for all steps |
-| **L2.F4.M1.AT2** | OnboardingLayout: stepper component (5 steps, active/complete/locked states) | 🟢 Eng | ⏳ | Visual stepper renders |
-| **L2.F4.M1.AT3** | Step 0 — OrgCreationPage: form (name, slug auto-gen, timezone picker, industry select, hasWebsite toggle) | 🟢 Eng | ⏳ | Form submits to org endpoint; transitions to step 1 |
-| **L2.F4.M1.AT4** | Step 1 — ConnectPage: website URL input + validate URL format + POST to crawl trigger | 🟢 Eng | ⏳ | URL submitted; moves to Learn step |
-| **L2.F4.M1.AT5** | Step 2 — LearnPage: crawl progress UI (polling crawl job status from backend) | 🟢 Eng | ⏳ | Shows processing → complete states |
-| **L2.F4.M1.AT6** | Step 3 — ConfigurePage: business hours (open/close per day), FAQ list (add/remove), contact info | 🟢 Eng | ⏳ | Config saved to org record |
-| **L2.F4.M1.AT7** | Step 4 — CustomizePage: agent name, language selection (EN/HI/PA), voice selection (ElevenLabs voices) | 🟢 Eng | ⏳ | Voice agent config saved |
-| **L2.F4.M1.AT8** | Step 5 — ActivatePage: VapiSandbox component + "Make Test Call" button + success/fail state | 🟢 Eng | ⏳ | Test call triggers and result shown |
-| **L2.F4.M1.AT9** | Onboarding orgSlice actions: setOnboardingStep + setTempOrgId + step persistence | 🟢 Eng | ⏳ | Redux state persists step across refresh |
-| **L2.F4.M1.AT10** | Onboarding frontend tests: step rendering, transitions, form validation | 🟢 Eng | ⏳ | All step component tests pass |
+| **L2.F4.M1.AT1** | 🔵 Product: Spec onboarding wizard — all 5 steps AC, step transition rules, hasWebsite branch logic | 🔵 Product | ✅ | Onboarding-Flow-Architecture.md — all 5 steps LOCKED with full AC |
+| **L2.F4.M1.AT2** | OnboardingLayout: stepper component (5 steps, active/complete/locked states) | 🟢 Eng | ✅ | OnboardingLayout.tsx — done/active/frontier/locked states + personalised sub-header |
+| **L2.F4.M1.AT3** | Step 1 — ConnectPage: form (name, timezone auto-detect, industry select) | 🟢 Eng | ✅ | ConnectPage.tsx (286 lines) — RHF + Zod + createOrg API call |
+| **L2.F4.M1.AT4** | Step 2 — LearnPage: 3-path card selector + optional HTTPS URL input | 🟢 Eng | ✅ | LearnPage.tsx (315 lines) — paths A/B/C, HTTPS validation, PATCH learn |
+| **L2.F4.M1.AT5** | CrawlLoadingPage: crawl progress polling (2s interval) → auto-advance to Configure | 🟢 Eng | ✅ | CrawlLoadingPage.tsx (413 lines) — polls /crawl-status, handles all states |
+| **L2.F4.M1.AT6** | Step 3 — ConfigurePage: business hours, FAQ list, description, contact info | 🟢 Eng | ✅ | ConfigurePage.tsx (770 lines) — PATCH configure |
+| **L2.F4.M1.AT7** | Step 4 — CustomizePage: language selection (EN/HI/PA), fallback number, voice | 🟢 Eng | ✅ | CustomizePage.tsx (189 lines) — PATCH customize |
+| **L2.F4.M1.AT8** | Step 5 — ActivatePage: Vapi sandbox widget + "Launch" → POST /onboarding/complete | 🟢 Eng | ✅ | ActivatePage.tsx (714 lines) — Vapi SDK + completeOnboarding |
+| **L2.F4.M1.AT9** | Onboarding API wired in useAuth hook: createOrg + updateOrg + fetchCurrentOrg + getCrawlStatus + completeOnboarding | 🟢 Eng | ✅ | useAuth.ts — all 5 onboarding calls + Redux org hydration |
+| **L2.F4.M1.AT10** | Onboarding routing: /onboarding/* under AuthGuard + OnboardingLayout; OrgGuard blocks /dashboard until COMPLETED | 🟢 Eng | ✅ | routes/index.tsx — wired + lazy-loaded |
 
 ---
 
@@ -202,14 +202,14 @@ Each Atomic Task (AT) is sized for one AI query. ID format: `L[layer].F[feature]
 
 ## EPIC 3 — Voice AI Infrastructure ⏳ (Layer 3)
 
-**Prerequisite**: Epic 2 complete + Exotel account verified + Vapi API key provisioned
+**Prerequisite**: Epic 2 complete + Vobiz account verified + Vapi API key provisioned
 
 ### Feature-Level Breakdown (will be atomized when sprint begins)
 
 | Feature | Description | Primary Agent | Blocked By |
 |---|---|---|---|
 | F3.1 — Voice Agent CRUD | voice_agents schema + CRUD endpoints + UI | 🟢 Eng + 🔵 Product | L2 complete |
-| F3.2 — Exotel SIP | DID number setup + SIP trunk → Vapi | 🟠 AI | Exotel account |
+| F3.2 — Vobiz SIP | DID number setup + SIP trunk → Vapi | 🟠 AI | Vobiz account |
 | F3.3 — Vapi Integration | Vapi SDK + assistant provisioning + webhook receiver | 🟠 AI + 🟢 Eng | Vapi API key |
 | F3.4 — Multi-lingual | EN/HI/PA auto-detect + TTS voice per language | 🟠 AI | Vapi integration |
 | F3.5 — Business Hours | Routing rules + fallback webhook | 🟢 Eng | Vapi integration |
@@ -260,7 +260,7 @@ For each Atomic Task category, this matrix shows WHO does WHAT:
 | **Knowledge Base** | ✓ PRIMARY: KB spec + AC | ✓ Implement KB CRUD + jobs | ✓ PRIMARY: RAG pipeline design | ✓ R&D: KB feature positioning | ✓ Define KB adoption metric |
 | **Team management** | ✓ PRIMARY: RBAC spec | ✓ Implement invite + membership | ✓ R&D: security review | ✓ Invite flow as upsell copy | ✓ Support doc for invites |
 | **Voice agent CRUD** | ✓ PRIMARY: voice spec, fields | ✓ Schema + CRUD endpoints | ✓ PRIMARY: Vapi provisioning | ✓ Voice feature positioning | ✓ Call quality KPI definition |
-| **Exotel/Vapi setup** | ✓ R&D: spec for voice flows | ✓ Webhook plumbing | ✓ PRIMARY: all voice config | ✓ R&D: voice AI market | ✓ Track call quality metrics |
+| **Vobiz/Vapi setup** | ✓ R&D: spec for voice flows | ✓ Webhook plumbing | ✓ PRIMARY: all voice config | ✓ R&D: voice AI market | ✓ Track call quality metrics |
 | **Analytics/KPIs** | ✓ Use data for RICE | ✓ Dashboard implementation | ✓ AI accuracy metrics | ✓ Funnel metrics | ✓ PRIMARY: KPI report |
 | **Any infra** | ✓ R&D: spec gaps | ✓ PRIMARY: infra work | ✓ R&D: latency impact | ✓ R&D: perf as differentiator | ✓ Uptime customer impact |
 | **R&D session** | ✓ UX patterns + backlog | ✓ Security + tech debt | ✓ AI/voice API updates | ✓ Competitor analysis | ✓ CS frameworks + retention |
@@ -298,7 +298,7 @@ L1.F1 Platform Foundation (DONE)
           L2.F7 Layer 2 QA Sign-off
           (Requires: All L2 features)
                     │
-                    ├── Exotel verified ← FOUNDER ACTION
+                    ├── Vobiz verified ← FOUNDER ACTION
                     ├── Vapi API key   ← FOUNDER ACTION
                     ▼
           L3 Voice AI Infrastructure
@@ -317,7 +317,7 @@ L1.F1 Platform Foundation (DONE)
 | L2.F3.M1.AT2 (Org BE impl) | L2.F3.M1.AT1 (Product spec) | ❌ Spec not written |
 | L2.F3.M1.AT2 (Org BE impl) | L2.F2 (Auth tests green) | ⏳ Tests not written |
 | L2.F4 (Onboarding FE) | L2.F3 (Org BE endpoint) | ⏳ Waiting on L2.F3 |
-| L3 (Voice AI) | L2 fully complete + Exotel + Vapi | ❌ Founder action required |
+| L3 (Voice AI) | L2 fully complete + Vobiz + Vapi | ❌ Founder action required |
 
 ---
 

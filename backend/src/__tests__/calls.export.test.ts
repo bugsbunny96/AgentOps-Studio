@@ -120,7 +120,8 @@ async function seedCall(
     cost: opts.cost ?? 1.5,
   });
   if (opts.createdAt) {
-    await CallModel.updateOne({ _id: doc._id }, { createdAt: opts.createdAt });
+    // Use native driver to bypass mongoose's timestamp immutability
+    await CallModel.collection.updateOne({ _id: doc._id }, { $set: { createdAt: opts.createdAt } });
   }
   return doc;
 }

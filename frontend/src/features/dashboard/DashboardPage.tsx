@@ -475,7 +475,7 @@ export function DashboardPage() {
   const primaryAgent   = agents[0];
   const isAgentLive    = Boolean(currentOrg?.vapiAssistantId);
   const kbDocCount     = kbStatus?.total ?? (currentOrg as any)?.kbDocCount ?? 0;
-  const orgPhone       = currentOrg?.exotelPhoneNumber;
+  const orgPhone       = currentOrg?.phoneNumber;
   const totalCalls     = callStats?.total          ?? 0;
   const callsToday     = callStats?.today           ?? 0;
   const avgDuration    = callStats?.avgDuration     ?? 0;
@@ -494,7 +494,7 @@ export function DashboardPage() {
   const steps = [
     { label: 'Create AI Agent',     description: 'Configure your voice agent personality, language, and behaviour.', to: '/agents',         linkLabel: 'Create agent',    done: Boolean(primaryAgent) },
     { label: 'Add Knowledge Base',  description: 'Crawl your website or upload documents for the agent to reference.', to: '/knowledge-base', linkLabel: 'Add knowledge',   done: kbDocCount > 0 },
-    { label: 'Get a Phone Number',  description: 'Assign an Exotel number so your agent can receive inbound calls.', to: '/settings',       linkLabel: 'Configure number', done: Boolean(orgPhone) },
+    { label: 'Get a Phone Number',  description: 'Assign a Vobiz number so your agent can receive inbound calls.', to: '/settings',       linkLabel: 'Configure number', done: Boolean(orgPhone) },
     { label: 'Go Live',             description: 'Publish your agent and start receiving customer calls.',            to: '/agents',         linkLabel: 'Publish agent',    done: isAgentLive },
   ] as const;
 

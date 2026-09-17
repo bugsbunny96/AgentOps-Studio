@@ -319,7 +319,7 @@ const FAQS = [
   },
   {
     q: 'Can I use my existing phone number?',
-    a: 'Yes. You can route calls from your existing Exotel or similar SIP number through AgentOps Studio. Our provisioning wizard walks you through the one-time configuration.',
+    a: 'Yes. You can route calls from your existing Vobiz or similar SIP number through AgentOps Studio. Our provisioning wizard walks you through the one-time configuration.',
   },
   {
     q: 'How does the 30-day free trial work?',

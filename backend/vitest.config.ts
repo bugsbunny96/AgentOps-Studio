@@ -22,6 +22,7 @@ export default defineConfig({
       },
     },
     testTimeout: 15000,        // mongo-memory-server can be slow to start
+    exclude: ['dist/**', 'node_modules/**'],  // prevent picking up compiled JS as test files
   },
   resolve: {
     alias: {
