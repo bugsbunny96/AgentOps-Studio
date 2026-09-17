@@ -76,6 +76,9 @@ export async function createOrg(userId: string, dto: CreateOrgDto) {
 
   const slug = await generateUniqueSlug(dto.name);
 
+  // 7-day free trial — starts the moment the org is created
+  const trialEndsAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+
   // Create org with onboardingStatus defaulting to 'ORG_CREATION' (from schema)
   const org = await OrganizationModel.create({
     name: dto.name,
@@ -83,6 +86,8 @@ export async function createOrg(userId: string, dto: CreateOrgDto) {
     ownerId: userId,
     industry: dto.industry,
     timezone: dto.timezone,
+    trialEndsAt,
+    trialUsed: true,
   });
 
   // Create Owner membership
@@ -157,6 +162,8 @@ export async function updateOrgStep(userId: string, dto: UpdateOrgDto) {
   } else if (dto.step === 'customize') {
     updates.supportedLanguages = dto.supportedLanguages;
     if (dto.fallbackNumber) updates.fallbackNumber = dto.fallbackNumber;
+    if (dto.voiceProvider)  updates.preferredVoiceProvider = dto.voiceProvider;
+    if (dto.voiceId)        updates.preferredVoiceId = dto.voiceId;
     updates.onboardingStatus = 'VOICE_SETUP';
   }
 

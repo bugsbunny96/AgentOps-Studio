@@ -6,8 +6,35 @@ export interface IVoiceAgent extends Document {
   name: string;
   systemPrompt: string;
   vapiAssistantId: string;
-  voiceProvider: 'openai' | 'elevenlabs' | 'cartesia' | 'azure';
+
+  // ── Voice provider ────────────────────────────────────────────────────────────
+  /**
+   * TTS voice provider.
+   * 'vapi'         → Vapi native voices (e.g. Naina V2)
+   * 'custom-voice' → Custom TTS bridge (e.g. Sarvam Bulbul v3 via tts-bridge service)
+   */
+  voiceProvider: 'openai' | 'elevenlabs' | 'deepgram' | 'cartesia' | 'playht' | 'azure' | 'vapi' | 'custom-voice';
   voiceId: string;
+  /** Version string for Vapi native voices, e.g. '2' for Naina V2 */
+  voiceVersion?: string;
+
+  // ── Transcriber config ────────────────────────────────────────────────────────
+  /** STT provider — defaults to Deepgram */
+  transcriberProvider: 'deepgram' | 'assembly-ai';
+  /** Transcriber model, e.g. 'nova-3' */
+  transcriberModel: string;
+  /**
+   * Transcriber language code.
+   * Use 'multi' for Deepgram multi-language (English + Hindi detection).
+   */
+  transcriberLanguage: string;
+
+  // ── Vapi tool & schema IDs ────────────────────────────────────────────────────
+  /** Vapi pre-attached server tool IDs (e.g. end_call, submit_order) */
+  vapiToolIds: string[];
+  /** Vapi structured output schema ID for this agent's call summary */
+  vapiStructuredOutputId?: string;
+
   primaryLanguage: string;
   supportedLanguages: string[];
   status: 'Active' | 'Inactive';
@@ -27,12 +54,26 @@ const VoiceAgentSchema = new Schema<IVoiceAgent>(
     name: { type: String, required: true, trim: true },
     systemPrompt: { type: String, required: true },
     vapiAssistantId: { type: String, required: true, index: true },
+
     voiceProvider: {
       type: String,
-      enum: ['openai', 'elevenlabs', 'cartesia', 'azure'],
+      enum: ['openai', 'elevenlabs', 'deepgram', 'cartesia', 'playht', 'azure', 'vapi', 'custom-voice'],
       default: 'openai',
     },
     voiceId: { type: String, default: 'nova' },
+    voiceVersion: { type: String },
+
+    transcriberProvider: {
+      type: String,
+      enum: ['deepgram', 'assembly-ai'],
+      default: 'deepgram',
+    },
+    transcriberModel: { type: String, default: 'nova-3' },
+    transcriberLanguage: { type: String, default: 'multi' },
+
+    vapiToolIds: { type: [String], default: [] },
+    vapiStructuredOutputId: { type: String },
+
     primaryLanguage: { type: String, default: 'en-US' },
     supportedLanguages: { type: [String], default: ['en-US'] },
     status: { type: String, enum: ['Active', 'Inactive'], default: 'Active' },

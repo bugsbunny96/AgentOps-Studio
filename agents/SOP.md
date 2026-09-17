@@ -130,7 +130,7 @@ Next Action: [next atomic task ID]
 ─────────────────────────────────────────────────────────────
 🟠 AI AGENT — [YYYY-MM-DD]
 Lane       : Primary | Background
-Sub-domain : Vapi | Exotel | RAG | LLM | Evals | Prompt
+Sub-domain : Vapi | Vobiz | RAG | LLM | Evals | Prompt
 Task       : [task ID from WBS] — [description]
 Status     : ✅ Done | 🔄 In Progress | ❌ Blocked | 🔁 R&D
 Files      : [changed files]
@@ -281,7 +281,7 @@ When an agent has no primary implementation task, CEO auto-assigns R&D. Categori
 | 3 | Competitor feature releases | 🟡 Growth |
 | 4 | UX pattern improvements | 🔵 Product |
 | 5 | Infrastructure cost optimization | 🟢 Engineering |
-| 6 | API updates (Vapi, Exotel, Deepgram, OpenAI) | 🟠 AI |
+| 6 | API updates (Vapi, Vobiz, Deepgram, OpenAI) | 🟠 AI |
 | 7 | Customer retention tactics | 🟣 Customer |
 | 8 | Content marketing opportunities | 🟡 Growth |
 | 9 | Onboarding friction reduction | 🔵 Product |

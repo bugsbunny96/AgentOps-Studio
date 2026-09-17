@@ -1,5 +1,17 @@
 import type { Request, Response, NextFunction } from 'express';
-import { listCalls, getCallById, type ListCallsQuery } from './call.service';
+import {
+  listCalls,
+  getCallById,
+  exportCalls,
+  initiateCall,
+  getCallStats,
+  getCallsByDay,
+  searchTranscripts,
+  type ListCallsQuery,
+  type ExportCallsQuery,
+  type InitiateCallPayload,
+  type SearchTranscriptsQuery,
+} from './call.service';
 
 /**
  * GET /api/v1/calls
@@ -22,7 +34,93 @@ export async function listCallsHandler(
     };
 
     const result = await listCalls(req.userId!, query);
-    res.status(200).json({ success: true, ...result });
+    res.status(200).json({ success: true, data: result });
+  } catch (err) {
+    next(err);
+  }
+}
+
+/**
+ * GET /api/v1/calls/export
+ *
+ * Streams a CSV file containing all calls matching the filter params.
+ * Query params: status, direction, dateFrom, dateTo  (all optional)
+ */
+export async function exportCallsHandler(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
+  try {
+    const query: ExportCallsQuery = {
+      status:    req.query['status']    as ExportCallsQuery['status']    ?? undefined,
+      direction: req.query['direction'] as ExportCallsQuery['direction'] ?? undefined,
+      dateFrom:  req.query['dateFrom']  as string ?? undefined,
+      dateTo:    req.query['dateTo']    as string ?? undefined,
+    };
+
+    const csv = await exportCalls(req.userId!, query);
+
+    const timestamp = new Date().toISOString().slice(0, 10); // YYYY-MM-DD
+    res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+    res.setHeader('Content-Disposition', `attachment; filename="calls-export-${timestamp}.csv"`);
+    res.status(200).send(csv);
+  } catch (err) {
+    next(err);
+  }
+}
+
+/**
+ * POST /api/v1/calls/initiate
+ *
+ * Body: { phoneNumber: string, agentId: string }
+ */
+export async function initiateCallHandler(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
+  try {
+    const payload: InitiateCallPayload = {
+      phoneNumber: req.body.phoneNumber as string,
+      agentId:     req.body.agentId     as string,
+    };
+    const result = await initiateCall(req.userId!, payload);
+    res.status(200).json({ success: true, data: result });
+  } catch (err) {
+    next(err);
+  }
+}
+
+/**
+ * GET /api/v1/calls/stats
+ * Aggregate KPIs: total, today, avgDuration, completionRate
+ */
+export async function getCallStatsHandler(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
+  try {
+    const stats = await getCallStats(req.userId!);
+    res.status(200).json({ success: true, data: stats });
+  } catch (err) {
+    next(err);
+  }
+}
+
+/**
+ * GET /api/v1/calls/stats/by-day
+ * Last 14 days of call counts — oldest-first array with zero-filled gaps.
+ */
+export async function getCallsByDayHandler(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
+  try {
+    const days = await getCallsByDay(req.userId!);
+    res.status(200).json({ success: true, data: days });
   } catch (err) {
     next(err);
   }
@@ -39,6 +137,45 @@ export async function getCallByIdHandler(
   try {
     const callId = Array.isArray(req.params['id']) ? req.params['id'][0] : req.params['id'];
     const result = await getCallById(req.userId!, callId);
+    res.status(200).json({ success: true, data: result });
+  } catch (err) {
+    next(err);
+  }
+}
+
+/**
+ * GET /api/v1/calls/search
+ *
+ * Full-text search across transcript content for the authenticated org.
+ *
+ * Query params:
+ *   q      (required) — search string, min 2 chars
+ *                       supports MongoDB $text operators: "phrase", -exclude
+ *   page   (optional) — page number, default 1
+ *   limit  (optional) — results per page, default 10, max 50
+ *
+ * Response:
+ *   { success, results: [{ call, transcript: { id, callId, snippet, turns } }],
+ *     total, page, pageSize, totalPages }
+ *
+ * Notes:
+ *   • Only transcripts processed after the search feature deployment appear
+ *     (pre-deployment transcripts lack the fullText field and organizationId).
+ *   • Results are ordered by MongoDB textScore (relevance) descending.
+ *   • snippet is a ±160-character window centred on the first matched term.
+ */
+export async function searchTranscriptsHandler(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
+  try {
+    const query: SearchTranscriptsQuery = {
+      q:     (req.query['q']     as string) ?? '',
+      page:  req.query['page']  ? Number(req.query['page'])  : undefined,
+      limit: req.query['limit'] ? Number(req.query['limit']) : undefined,
+    };
+    const result = await searchTranscripts(req.userId!, query);
     res.status(200).json({ success: true, data: result });
   } catch (err) {
     next(err);

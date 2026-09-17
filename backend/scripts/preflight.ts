@@ -64,10 +64,11 @@ function checkEnvVars() {
   ];
 
   const optional: Array<[string, string]> = [
-    ['EXOTEL_API_KEY',    'Exotel API key — needed for Exotel SIP setup'],
-    ['EXOTEL_API_TOKEN',  'Exotel API token'],
-    ['EXOTEL_SID',        'Exotel SID (account sub-domain)'],
-    ['RESEND_API_KEY',    'Resend email API key'],
+    ['VOBIZ_SIP_DOMAIN',        'Vobiz SIP domain (e.g. df9ef9f9.sip.vobiz.ai) — needed for outbound calls'],
+    ['VOBIZ_AUTH_USERNAME',     'Vobiz SIP trunk username — from Vobiz Console → Authentication & Linking'],
+    ['VOBIZ_AUTH_PASSWORD',     'Vobiz SIP trunk password'],
+    ['VOBIZ_VAPI_CREDENTIAL_ID','Vapi credential ID after POST /credential with byo-sip-trunk payload'],
+    ['RESEND_API_KEY',          'Resend email API key'],
   ];
 
   for (const [key, desc] of required) {
@@ -191,27 +192,31 @@ async function checkWebhook() {
   const isLocal   = BASE_URL.includes('localhost') || BASE_URL.includes('127.0.0.1');
   if (isLocal) {
     console.log(`\n  ${C.yellow}⚠${C.reset}  Backend is running locally — Vapi cannot reach it.`);
-    hint('Expose your backend with ngrok: ngrok http 3001');
-    hint('Then update Vapi dashboard → Phone Number → Server URL to: https://<ngrok-url>/api/v1/webhooks/vapi');
+    hint('Preferred: deploy to Render — set Vapi Server URL to https://agentops-studio-backend-o2jx.onrender.com/api/v1/webhooks/vapi');
+    hint('Local dev fallback: expose with ngrok → ngrok http 3001 → use the HTTPS URL instead');
     hint('Also update VAPI_WEBHOOK_SECRET in Vapi → Phone Number → Secret');
   } else {
     check('Backend URL is public', true, BASE_URL);
   }
 }
 
-// ─── 5. Exotel SIP checklist ─────────────────────────────────────────────────
+// ─── 5. Vobiz + Vapi SIP checklist ───────────────────────────────────────────
 
-function checkExotelChecklist() {
-  section('5. Exotel & Vapi Dashboard Checklist (manual)');
+function checkVobizChecklist() {
+  section('5. Vobiz + Vapi Dashboard Checklist (manual)');
   const steps = [
-    ['Exotel account created',                      'exotel.com → Sign up → verify KYC'],
-    ['DID number purchased in Exotel',              'Exotel → Numbers → Buy Number (Indian DID)'],
-    ['SIP endpoint created → sip.vapi.ai',          'Exotel → Developer → SIP Endpoint → URI: sip.vapi.ai'],
-    ['DID connected to SIP endpoint',               'Exotel → Numbers → your DID → Connect to SIP endpoint'],
-    ['Vapi phone number imported',                  'Vapi → Phone Numbers → Import → Exotel SIP'],
-    ['Vapi server URL set',                         'Vapi → Phone Number → Server URL = https://<ngrok>/api/v1/webhooks/vapi'],
-    ['Vapi webhook secret set',                     'Vapi → Phone Number → Secret = VAPI_WEBHOOK_SECRET value'],
-    ['Phone number UUID pasted in Settings page',   'App → Settings → Phone Number Setup → Save'],
+    ['Vobiz account funded (≥ ₹20)',                'console.vobiz.ai → Billing → Add Funds (trial has ₹20.50)'],
+    ['Vobiz outbound trunk credentials in .env',    '.env: VOBIZ_SIP_DOMAIN + VOBIZ_AUTH_USERNAME + VOBIZ_AUTH_PASSWORD'],
+    ['Vapi outbound credential created',            'Vapi → Integrations → SIP Trunk Credentials → Add (use VOBIZ_SIP_DOMAIN as gateway URL)'],
+    ['VOBIZ_VAPI_CREDENTIAL_ID set in .env',        'Paste the credential UUID returned by Vapi into backend/.env'],
+    ['Phone number imported in Vapi (outbound)',    'Vapi → Phone Numbers → BYO SIP Trunk Number → enter +918065354620'],
+    ['Vapi inbound SIP trunk created (10 IPs)',     'Vapi → Integrations → SIP Trunk → Create → add all 10 Vobiz signaling IPs (see telephony.service.ts)'],
+    ['Vobiz inbound trunk created',                 'Vobiz Console → SIP Trunk → Inbound Trunks → Create → Primary URI: <VAPI_TRUNK_ID>.sip.vapi.ai'],
+    ['Vobiz number linked to inbound trunk',        'Vobiz Console → Numbers → +918065354620 → assign to inbound trunk'],
+    ['Vapi server URL set on phone number',         'Vapi → Phone Number → Server URL = https://<your-domain>/api/v1/webhooks/vapi'],
+    ['Vapi webhook secret set on phone number',     'Vapi → Phone Number → Secret = VAPI_WEBHOOK_SECRET value'],
+    ['vapiPhoneNumberId saved on org in DB',        'MongoDB → organizations → your org → vapiPhoneNumberId = UUID from Vapi'],
+    ['vapiAssistantId saved on org in DB',          'MongoDB → organizations → your org → vapiAssistantId = 100b3bd9-5038-4f11-b487-7ced98d8a3dd'],
   ];
 
   steps.forEach(([step, hint], i) => {
@@ -232,14 +237,14 @@ async function main() {
   const backendUp = await checkBackendHealth();
   if (backendUp) await checkDatabase();
   await checkWebhook();
-  checkExotelChecklist();
+  checkVobizChecklist();
 
   section('Result');
   if (failures === 0) {
     console.log(`  ${C.green}${C.bold}✓ All checks passed — you're ready to make a test call!${C.reset}`);
     console.log(`\n  Next steps:`);
     console.log(`  1. Run the webhook simulator: npm run simulate`);
-    console.log(`  2. Make a real call to your Exotel DID`);
+    console.log(`  2. Make a real call to your Vobiz number +918065354620`);
     console.log(`  3. Check the Calls page in the dashboard\n`);
   } else {
     console.log(`  ${C.red}${C.bold}✗ ${failures} check(s) failed — fix these before making a real call.${C.reset}\n`);

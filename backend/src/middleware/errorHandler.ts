@@ -34,6 +34,9 @@ export const NotFound = (resource: string): AppError =>
 export const Conflict = (msg: string, code?: string): AppError =>
   new AppError(409, msg, code ?? 'CONFLICT');
 
+export const UnprocessableEntity = (msg: string, code?: string): AppError =>
+  new AppError(422, msg, code ?? 'UNPROCESSABLE_ENTITY');
+
 // ─── Global Error Handler ────────────────────────────────────────────────────
 export function errorHandler(
   err: Error,
@@ -92,6 +95,25 @@ export function errorHandler(
     method: req.method,
     url: req.originalUrl,
   });
+
+  // Fire-and-forget write to ErrorLog collection (never throws)
+  void (async () => {
+    try {
+      const { writeErrorLog } = await import('../modules/error-log/error-log.service');
+      await writeErrorLog({
+        message:    err.message,
+        code:       'INTERNAL_SERVER_ERROR',
+        statusCode: 500,
+        stack:      err.stack,
+        path:       req.originalUrl,
+        method:     req.method,
+        orgId:      (req as { orgId?: string }).orgId,
+        userId:     (req as { userId?: string }).userId,
+      });
+    } catch {
+      // Silently swallow — must never throw inside an error handler
+    }
+  })();
 
   res.status(500).json({
     success: false,

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -17,6 +17,9 @@ type LoginFormValues = z.infer<typeof LoginSchema>;
 // ─── Component ────────────────────────────────────────────────────────────
 export default function LoginPage() {
   const { login } = useAuth();
+  const [searchParams]  = useSearchParams();
+  const nextPath        = searchParams.get('next')  ?? undefined;
+  const prefilledEmail  = searchParams.get('email') ?? '';
   const [showPassword, setShowPassword] = useState(false);
   const [serverError, setServerError] = useState<string | null>(null);
 
@@ -26,13 +29,13 @@ export default function LoginPage() {
     formState: { errors, isSubmitting },
   } = useForm<LoginFormValues>({
     resolver: zodResolver(LoginSchema),
-    defaultValues: { email: '', password: '' },
+    defaultValues: { email: prefilledEmail, password: '' },
   });
 
   async function onSubmit(values: LoginFormValues) {
     setServerError(null);
     try {
-      await login(values.email, values.password);
+      await login(values.email, values.password, nextPath);
     } catch (err) {
       const axiosErr = err as AxiosError<{ message?: string; code?: string }>;
       // Network error — server unreachable (ERR_CONNECTION_REFUSED, timeout, etc.)

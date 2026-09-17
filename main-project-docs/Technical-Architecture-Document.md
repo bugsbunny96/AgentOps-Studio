@@ -30,7 +30,7 @@ AgentOps Studio is a multi-tenant SaaS application built on a modern distributed
                                               |        | Job Pull
                                               v        v
              +--------------------------------+--------+--------+
-             |           Exotel Telephony Platform              |
+             |           Vobiz SIP Platform              |
              |   (Indian Virtual / Toll-free / City Numbers)    |
              +-----------------------+-------------------------+
                                      |
@@ -79,7 +79,7 @@ The backend is built as a modular monolithic Express application written in Type
 ### Code Organization Structure
 ```text
 src/
-├── config/             # Database connection, environment variables, Vapi/Exotel setup
+├── config/             # Database connection, environment variables, Vapi/Vobiz setup
 ├── middleware/         # Auth verification, RBAC check, multi-tenant gating
 └── modules/
     ├── auth/           # Login, registration, token refresh
@@ -216,7 +216,7 @@ const VoiceAgentSchema = new Schema({
   },
   // Vapi-specific configuration
   vapiAssistantId: { type: String }, // Vapi assistant ID once provisioned
-  exotelPhoneNumber: { type: String }, // Exotel Indian number assigned to this agent
+  phoneNumber: { type: String }, // Vobiz Indian number assigned to this agent
   status: { type: String, enum: ['Active', 'Inactive'], default: 'Inactive' }
 }, { timestamps: true });
 ```
@@ -373,7 +373,7 @@ const DocumentModel = model('Document', DocumentSchema);
     *   *Body*: `{ "businessDescription": "...", "services": [...], "faqs": [...], "supportedLanguages": [...], "industrySpecificFields": {...} }`
 *   `POST /onboarding/voice-agent/setup`: Automatically provision initial voice agent config (Step 5).
     *   *Body*: `{ "name": "...", "voiceId": "...", "provider": "..." }`
-*   `POST /onboarding/voice-agent/test-call`: Initiates a Vapi test call via the Exotel SIP trunk for sandbox testing of the provisioned agent.
+*   `POST /onboarding/voice-agent/test-call`: Initiates a Vapi test call via the Vobiz SIP trunk for sandbox testing of the provisioned agent.
 *   `POST /onboarding/complete`: Finalizes onboarding, creates default workspace, marks organization status as complete, and assigns Owner role (Step 6).
 *   `POST /onboarding/save-progress`: Persist current onboarding step and draft data.
 *   `GET /onboarding/resume`: Restore onboarding session state for the active user and organization.
@@ -425,9 +425,9 @@ const DocumentModel = model('Document', DocumentSchema);
 5. **Knowledge Base Storage**: Indivdual web pages are saved as documents in the `documents` collection with `contentType: 'crawled'`.
 6. **Attachment**: The generated documents are linked to the organization workspace context and are made editable from the dashboard.
 
-### Vapi + Exotel Voice Agent Runtime Pipeline
-1.  **Call Ingress**: An inbound call hits the customer's assigned Exotel Indian virtual number (virtual, toll-free, or local city number).
-2.  **SIP Routing**: Exotel routes the call via SIP Trunk to the Vapi AI platform.
+### Vapi + Vobiz Voice Agent Runtime Pipeline
+1.  **Call Ingress**: An inbound call hits the customer's assigned Vobiz Indian virtual number (virtual, toll-free, or local city number).
+2.  **SIP Routing**: Vobiz routes the call via SIP Trunk to the Vapi AI platform.
 3.  **Vapi Call Initialization**: Vapi receives the SIP call, looks up the active assistant configuration, and begins the conversational session.
 4.  **Webhook Trigger**: Vapi issues `call.started` webhook notifications to the Express Backend.
 5.  **Agent Config Fetch**: The Backend receives the webhook, fetches the active agent configuration, and reads associated Markdown pages in the `documents` collection to use as the agent's knowledge base context (injected into the system prompt).
@@ -438,7 +438,7 @@ const DocumentModel = model('Document', DocumentSchema);
     *   **TTS**: ElevenLabs / Cartesia converts response tokens back to natural speech in the detected language.
 7.  **Pipeline Events**:
     *   `call.started`: Logged in database via Vapi webhook.
-    *   `call.completed`: Telephony session closes; Exotel SIP session terminates.
+    *   `call.completed`: Telephony session closes; Vobiz SIP session terminates.
     *   `transcript.completed`: Vapi aggregates turn-by-turn transcript and pushes to Redis/BullMQ.
     *   `summary.generated`: A background BullMQ worker feeds the transcript to GPT-4o, saving the resulting summary, action items, and outcome badges to Mongoose.
 

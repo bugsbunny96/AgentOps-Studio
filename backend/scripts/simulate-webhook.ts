@@ -344,7 +344,7 @@ async function main() {
     console.log(`  ${warn}  Most tests were skipped — complete onboarding + phone number setup first.\n`);
   } else {
     console.log(`  ${pass}  Webhook simulation finished. Check the Calls page to confirm.\n`);
-    console.log(`  ${info}  Next: Make a real call to your Exotel DID number.\n`);
+    console.log(`  ${info}  Next: Make a real call to your Vobiz number +918065354620.\n`);
   }
 
   await mongoose.disconnect();

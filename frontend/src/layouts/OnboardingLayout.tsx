@@ -16,7 +16,7 @@
  *   COMPLETED     → 5
  */
 
-import { useEffect, Fragment } from 'react';
+import { useEffect, useRef, Fragment } from 'react';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import type { OnboardingStatus } from '@/types';
@@ -61,10 +61,43 @@ export function OnboardingLayout() {
   const navigate = useNavigate();
   const { logout, currentOrg, fetchCurrentOrg } = useAuth();
 
-  // Hydrate Redux with full org data on mount (covers page-refresh case where
-  // auth/me only returns the lean org shape without configure/customize fields).
+  // On mount (covers page-refresh):
+  //   1. Hydrate Redux with full org data — auth/me only returns the lean shape.
+  //   2. Redirect to the correct step if the user is behind their progress.
+  //      e.g. user refreshes on /onboarding/connect after org creation →
+  //      redirected to /onboarding/learn automatically.
+  //
+  // Guard: `redirected` ref ensures we only navigate once per mount, so a user
+  // who deliberately navigated back to review a completed step is not
+  // immediately bounced forward again on subsequent renders.
+  const redirectedOnMount = useRef(false);
+
   useEffect(() => {
-    fetchCurrentOrg();
+    let cancelled = false;
+
+    fetchCurrentOrg().then((org) => {
+      if (cancelled || redirectedOnMount.current || !org) return;
+
+      const correctPath = statusToNextPath(org.onboardingStatus);
+
+      if (correctPath === '/dashboard') {
+        // Onboarding is fully complete — send to dashboard
+        redirectedOnMount.current = true;
+        navigate('/dashboard', { replace: true });
+        return;
+      }
+
+      // Only redirect *forward* — don't push user away from a step they
+      // intentionally navigated back to review.
+      const currentIdx = STEP_PATHS.indexOf(pathname);
+      const correctIdx = STEP_PATHS.indexOf(correctPath);
+      if (correctIdx > currentIdx) {
+        redirectedOnMount.current = true;
+        navigate(correctPath, { replace: true });
+      }
+    });
+
+    return () => { cancelled = true; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 

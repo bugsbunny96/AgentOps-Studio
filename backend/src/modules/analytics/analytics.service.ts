@@ -17,7 +17,7 @@ import { NotFound }                from '../../middleware/errorHandler';
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
 async function resolveOrgId(userId: string): Promise<mongoose.Types.ObjectId> {
-  const membership = await MembershipModel.findOne({ userId, role: 'Owner' }).populate<{
+  const membership = await MembershipModel.findOne({ userId }).populate<{
     organizationId: IOrganization;
   }>('organizationId');
   if (!membership) throw NotFound('Organization');

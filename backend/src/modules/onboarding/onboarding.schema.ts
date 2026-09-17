@@ -108,6 +108,10 @@ const ConfigureStepSchema = z.object({
     .default([]),
 });
 
+// ─── Supported voice providers ─────────────────────────────────────────────
+export const SUPPORTED_VOICE_PROVIDERS = ['openai', 'elevenlabs', 'deepgram', 'cartesia', 'playht', 'azure'] as const;
+export type VoiceProvider = (typeof SUPPORTED_VOICE_PROVIDERS)[number];
+
 // ─── Step 4: Customize — voice and language ────────────────────────────────
 const CustomizeStepSchema = z.object({
   step: z.literal('customize'),
@@ -115,6 +119,9 @@ const CustomizeStepSchema = z.object({
     .array(z.enum(SUPPORTED_LANGUAGE_CODES))
     .min(1, 'Select at least one language'),
   fallbackNumber: z.string().optional(),
+  // Voice selection — optional so existing callers without voice params still work
+  voiceProvider: z.enum(SUPPORTED_VOICE_PROVIDERS).optional(),
+  voiceId: z.string().max(200).optional(),
 });
 
 // ─── Union ─────────────────────────────────────────────────────────────────

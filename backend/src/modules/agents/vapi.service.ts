@@ -21,18 +21,56 @@ export interface VapiModel {
   messages: Array<{ role: 'system' | 'user' | 'assistant'; content: string }>;
   temperature?: number;
   maxTokens?: number;
+  /** Vapi pre-attached server tool IDs (e.g. end_call, submit_order) */
+  toolIds?: string[];
 }
 
 export interface VapiTranscriber {
   provider: 'deepgram' | 'assembly-ai';
+  /**
+   * STT language code or 'multi' for Deepgram multi-language detection.
+   * Use 'multi' for English + Hindi support via Deepgram nova-3.
+   */
   language?: string;
   model?: string;
 }
 
 export interface VapiVoice {
-  provider: 'openai' | '11labs' | 'azure' | 'cartesia';
-  voiceId: string;
+  provider: 'openai' | '11labs' | 'azure' | 'cartesia' | 'deepgram' | 'playht' | 'vapi' | 'custom-voice';
+  voiceId?: string;
   speed?: number;
+  /** Provider-specific TTS model. Required for ElevenLabs multilingual: 'eleven_multilingual_v2' */
+  model?: string;
+  /** Vapi native voice version, e.g. '2' for Naina V2 */
+  version?: string;
+  /** Auto-language detection mode for Vapi native voices */
+  language?: string;
+  /** For 'custom-voice' provider: the bridge server that handles TTS synthesis */
+  server?: {
+    url: string;
+    timeoutSeconds?: number;
+  };
+}
+
+export interface VapiAnalysisPlan {
+  summaryPlan?: {
+    /** When false, Vapi skips auto-summary generation (we use structuredDataOutput instead) */
+    enabled: boolean;
+  };
+  successEvaluationPlan?: {
+    /** When false, Vapi skips the success/failure rating */
+    enabled: boolean;
+  };
+}
+
+export interface VapiArtifactPlan {
+  /** Whether Vapi should record the call and provide a recording URL */
+  recordingEnabled?: boolean;
+  /**
+   * IDs of structured output schemas to populate from the call transcript.
+   * e.g. ['5367c2b7-ae61-4ec2-ac6a-3c7f43ae907f'] for electrical-shop-call-summary
+   */
+  structuredOutputIds?: string[];
 }
 
 export interface VapiCreateAssistantPayload {
@@ -45,8 +83,22 @@ export interface VapiCreateAssistantPayload {
   endCallMessage?: string;
   endCallPhrases?: string[];
   maxDurationSeconds?: number;
+  /**
+   * Seconds of silence before Vapi ends the call.
+   * Live assistant v11 uses 20s.
+   */
+  silenceTimeoutSeconds?: number;
   backgroundSound?: 'office' | 'off';
   metadata?: Record<string, unknown>;
+  /**
+   * Controls Vapi's post-call AI analysis (summary, success evaluation).
+   * Set summaryPlan.enabled: false when using structuredDataOutput instead.
+   */
+  analysisPlan?: VapiAnalysisPlan;
+  /**
+   * Controls call recording and structured output schema population.
+   */
+  artifactPlan?: VapiArtifactPlan;
 }
 
 export interface VapiAssistant {
@@ -63,6 +115,25 @@ export interface VapiWebCall {
   webCallUrl: string;
   status: string;
   assistantId: string;
+}
+
+export interface VapiOutboundCallPayload {
+  /** Vapi assistant ID to use for the call */
+  assistantId: string;
+  /** Vapi phone number ID that will appear as caller ID */
+  phoneNumberId: string;
+  /** Destination number in E.164 format */
+  customer: { number: string };
+}
+
+export interface VapiOutboundCall {
+  id: string;
+  type: 'outboundPhoneCall';
+  status: string;
+  assistantId: string;
+  phoneNumberId: string;
+  customer: { number: string };
+  createdAt?: string;
 }
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -147,4 +218,23 @@ export async function vapiCreateWebCall(assistantId: string): Promise<VapiWebCal
     type: 'webCall',
     assistantId,
   });
+}
+
+/**
+ * Initiate an outbound phone call via Vapi.
+ * Vapi dials the customer number using the specified Vapi phone number as caller ID.
+ *
+ * Docs: POST https://api.vapi.ai/call/phone
+ */
+export async function vapiInitiateOutboundCall(
+  payload: VapiOutboundCallPayload,
+): Promise<VapiOutboundCall> {
+  logger.info('Initiating Vapi outbound call', {
+    assistantId:  payload.assistantId,
+    phoneNumberId: payload.phoneNumberId,
+    to:           payload.customer.number,
+  });
+  const call = await vapiRequest<VapiOutboundCall>('POST', '/call/phone', payload);
+  logger.info('Vapi outbound call initiated', { vapiCallId: call.id });
+  return call;
 }

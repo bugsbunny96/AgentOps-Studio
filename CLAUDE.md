@@ -360,7 +360,7 @@ Promote sub-role to its own agent when:
 |---|---|
 | Frontend | React 19 · Vite · TailwindCSS 4 · shadcn/ui · Redux Toolkit · TanStack Query · React Router · RHF + Zod |
 | Backend | Express.js · Node.js 20 · TypeScript (strict) · MongoDB Atlas · Redis Cloud · BullMQ |
-| Voice | Exotel SIP → Vapi AI → Deepgram STT → GPT-4o → ElevenLabs TTS |
+| Voice | Vobiz SIP → Vapi AI → Deepgram STT → GPT-4o → ElevenLabs TTS |
 | Languages | English · Hindi (auto-detect) · Punjabi (auto-detect) |
 | Infra | Docker · AWS ECS/Fargate · GitHub Actions · Vercel · Cloudflare DNS |
 | Docs | `main-project-docs/` — PRD, TAD, Feature Tickets, Timeline, Roadmap |

@@ -103,12 +103,12 @@ This document contains detailed Jira-style development tickets for all 15 core f
 
 ---
 
-### A-008: Vapi + Exotel Voice Gateway Integration
+### A-008: Vapi + Vobiz Voice Gateway Integration
 *   **Priority**: P0
 *   **Estimated Effort**: 7 Days
 *   **Dependencies**: A-007
 *   **Description**:
-    Integrate backend with Vapi and Exotel APIs to handle inbound SIP call connections, provision AI agents, and manage voice agent runs. Exotel provides Indian virtual/toll-free/city numbers with SIP trunking; Vapi handles the AI agent runtime (STT → LLM → TTS pipeline).
+    Integrate backend with Vapi and Vobiz APIs to handle inbound SIP call connections, provision AI agents, and manage voice agent runs. Vobiz provides Indian virtual/toll-free/city numbers with SIP trunking; Vapi handles the AI agent runtime (STT → LLM → TTS pipeline).
 *   **Acceptance Criteria**:
     1. Inbound Vapi webhooks are verified using cryptographic signatures.
     2. Validates operational hours and fallback paths before starting a call session.
@@ -279,7 +279,7 @@ This document contains detailed Jira-style development tickets for all 15 core f
 *   **Estimated Effort**: 4 Days
 *   **Dependencies**: A-008, A-016
 *   **Description**:
-    Build Step 5 testing sandbox. Allow users to initiate a Vapi test call to speak with the auto-provisioned AI agent. The test call is routed via Exotel SIP trunk so it replicates the real production call path.
+    Build Step 5 testing sandbox. Allow users to initiate a Vapi test call to speak with the auto-provisioned AI agent. The test call is routed via Vobiz SIP trunk so it replicates the real production call path.
 *   **Acceptance Criteria**:
     1. Auto-provisions an initial Vapi assistant config using the extracted business configuration and knowledge base documents.
     2. Backend endpoint `POST /onboarding/voice-agent/test-call` triggers a Vapi outbound test call to the user's registered phone number.

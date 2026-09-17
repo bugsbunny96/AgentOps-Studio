@@ -28,10 +28,12 @@ import {
   Volume2,
   Zap,
   Plus,
+  Lock,
 } from 'lucide-react';
 import Vapi from '@vapi-ai/web';
 import { api } from '@/utils/api';
 import type { VoiceAgent } from '@/types';
+import { useCanWrite } from '@/hooks/usePermission';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -204,10 +206,12 @@ function AgentCard({
   agent,
   vapiPublicKey,
   vapiAssistantId,
+  canWrite,
 }: {
   agent: VoiceAgent;
   vapiPublicKey: string | null;
   vapiAssistantId: string | null;
+  canWrite: boolean;
 }) {
   const [showPrompt, setShowPrompt] = useState(false);
 
@@ -324,7 +328,11 @@ function AgentCard({
         {/* Actions row */}
         <div className="flex items-center justify-between pt-1">
           <div>
-            {vapiPublicKey ? (
+            {!canWrite ? (
+              <p className="text-xs text-slate-400 flex items-center gap-1">
+                <Lock size={11} /> Read-only access
+              </p>
+            ) : vapiPublicKey ? (
               <TestCallButton
                 vapiPublicKey={vapiPublicKey}
                 vapiAssistantId={vapiId}
@@ -385,6 +393,7 @@ function EmptyState() {
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function AgentsPage() {
+  const canWrite = useCanWrite('agents');
   const [agents, setAgents]               = useState<VoiceAgent[]>([]);
   const [vapiPublicKey, setVapiPublicKey] = useState<string | null>(null);
   const [vapiAssistantId, setVapiAssistantId] = useState<string | null>(null);
@@ -466,6 +475,7 @@ export default function AgentsPage() {
               agent={agent}
               vapiPublicKey={vapiPublicKey}
               vapiAssistantId={vapiAssistantId}
+              canWrite={canWrite}
             />
           ))}
         </div>

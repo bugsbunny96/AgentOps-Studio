@@ -1,0 +1,137 @@
+# render.yaml — Infrastructure-as-Code for Render.com
+#
+# HOW TO USE:
+#   1. Push this repo to GitHub (must be public or you've connected a private repo in Render).
+#   2. Go to render.com → New → Blueprint → point at this repo.
+#   3. Render reads this file and creates the service automatically.
+#   4. Fill in all env vars marked "sync: false" in the Render dashboard
+#      (these are secrets — never commit real values to this file).
+#
+# Docs: https://render.com/docs/blueprint-spec
+
+services:
+  - type: web
+    name: agentops-studio-backend
+    runtime: node
+    region: singapore           # closest to India; change to oregon/ohio if latency is better
+    plan: free                  # change to starter ($7/mo) for always-on (no cold starts)
+
+    # ── Build ────────────────────────────────────────────────────────────────
+    rootDir: backend
+    buildCommand: npm ci --include=dev && npm run build
+    startCommand: node dist/index.js
+
+    # ── Health check (Render uses this to confirm service is up) ─────────────
+    healthCheckPath: /health
+
+    # ── Auto-deploy on push to main ──────────────────────────────────────────
+    autoDeploy: true
+
+    # ── Environment variables ─────────────────────────────────────────────────
+    # sync: false  = secret — set value in Render dashboard, never committed here
+    # sync: true   = non-secret — value is committed in this file
+    envVars:
+
+      # ── Node ──────────────────────────────────────────────────────────────
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: "3001"
+
+      # ── Database (set in Render dashboard) ────────────────────────────────
+      - key: MONGODB_URI
+        sync: false               # MongoDB Atlas connection string
+      - key: REDIS_URL
+        sync: false               # Redis Cloud URL (redis://:<pass>@<host>:<port>)
+
+      # ── Auth secrets (set in Render dashboard) ────────────────────────────
+      - key: JWT_ACCESS_SECRET
+        sync: false               # min 32 random chars — generate: openssl rand -hex 32
+      - key: JWT_REFRESH_SECRET
+        sync: false               # different from JWT_ACCESS_SECRET
+      - key: JWT_ACCESS_EXPIRES_IN
+        value: "15m"
+      - key: JWT_REFRESH_EXPIRES_IN
+        value: "7d"
+
+      # ── Frontend URL (update once your frontend is deployed) ──────────────
+      - key: CLIENT_URL
+        value: https://agentops-studio.vercel.app   # change to your real Vercel URL
+
+      # ── Email — Resend (set in Render dashboard) ──────────────────────────
+      - key: RESEND_API_KEY
+        sync: false
+      - key: EMAIL_FROM
+        value: noreply@agentops.studio              # change to your verified sender domain
+
+      # ── AI providers (set in Render dashboard) ────────────────────────────
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: DEEPGRAM_API_KEY
+        sync: false
+      - key: ELEVENLABS_API_KEY
+        sync: false
+
+      # ── Vapi (set in Render dashboard) ────────────────────────────────────
+      - key: VAPI_API_KEY
+        sync: false
+      - key: VAPI_PUBLIC_KEY
+        sync: false
+      - key: VAPI_WEBHOOK_SECRET
+        sync: false               # from Vapi Dashboard → Webhooks → secret
+      - key: VAPI_TOOL_WEBHOOK_SECRET
+        sync: false               # the shared secret for x-webhook-secret header on tool calls
+      - key: VAPI_TOOL_ID_END_CALL
+        sync: false               # populate after creating the tool in Vapi
+      - key: VAPI_TOOL_ID_SUBMIT_ORDER
+        sync: false               # populate after Composer creates the submit_order tool
+      - key: VAPI_STRUCTURED_OUTPUT_ID
+        sync: false               # electrical-shop-call-summary schema ID
+
+      # ── TTS / Sarvam (optional — leave blank to use silence fallback) ──────
+      - key: SARVAM_API_KEY
+        sync: false
+      - key: SARVAM_BRIDGE_URL
+        sync: false               # set to https://agentops-studio-backend.onrender.com if self-hosting
+      - key: TTS_MODEL
+        value: "bulbul:v3"
+      - key: TTS_LANGUAGE_CODE
+        value: "hi-IN"
+      - key: TTS_SPEAKER
+        value: "shubh"
+
+      # ── Telephony — Vobiz (optional, set when ready) ──────────────────────
+      - key: VOBIZ_SIP_DOMAIN
+        sync: false
+      - key: VOBIZ_AUTH_USERNAME
+        sync: false
+      - key: VOBIZ_AUTH_PASSWORD
+        sync: false
+      - key: VOBIZ_GATEWAY_IP
+        sync: false
+      - key: VOBIZ_PHONE_NUMBER
+        sync: false
+
+      # ── Telephony — Exotel fallback (optional) ────────────────────────────
+      - key: EXOTEL_API_KEY
+        sync: false
+      - key: EXOTEL_API_TOKEN
+        sync: false
+      - key: EXOTEL_SID
+        sync: false
+      - key: EXOTEL_CONNECTOR_URL
+        sync: false
+
+      # ── Stripe (leave blank until billing is wired for prod) ─────────────
+      - key: STRIPE_SECRET_KEY
+        sync: false
+      - key: STRIPE_WEBHOOK_SECRET
+        sync: false
+      - key: STRIPE_STARTER_PRICE_ID
+        sync: false
+      - key: STRIPE_GROWTH_PRICE_ID
+        sync: false
+      - key: STRIPE_STARTER_PRICE_ID_INR
+        sync: false
+      - key: STRIPE_GROWTH_PRICE_ID_INR
+        sync: false

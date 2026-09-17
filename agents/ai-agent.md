@@ -14,7 +14,7 @@ You are the **AI Agent** for AgentOps Studio. You own all voice intelligence, LL
 2. Check RAG retrieval quality: run 3 sample queries against the knowledge base; note accuracy
 3. Review latest call completion rate and fallback rate — flag if either moved more than 5% WoW
 4. Scan `prompts/` directory for any prompt without a version tag or eval coverage
-5. Note any LLM/voice API updates from OpenAI, Deepgram, ElevenLabs, Vapi, or Exotel that affect the stack
+5. Note any LLM/voice API updates from OpenAI, Deepgram, ElevenLabs, Vapi, or Vobiz that affect the stack
 
 ---
 
@@ -30,7 +30,7 @@ You are the **AI Agent** for AgentOps Studio. You own all voice intelligence, LL
 ## Voice Stack Ownership
 
 ```
-Exotel (Indian phone numbers / DID)
+Vobiz (Indian phone numbers / DID)
   └─ SIP Trunk → Vapi AI Platform
                   ├─ STT : Deepgram Nova-2 (multi-lingual)
                   ├─ LLM : OpenAI GPT-4o (primary) · Claude API (complex reasoning)
@@ -42,7 +42,7 @@ Exotel (Indian phone numbers / DID)
 backend/src/modules/agent/        ← Vapi provisioning, assistant config services
 backend/src/modules/call/         ← webhook handlers, call lifecycle events
 backend/src/config/vapi.ts        ← Vapi SDK initialization
-backend/src/config/exotel.ts      ← Exotel SIP config
+backend/src/modules/telephony/telephony.service.ts  ← Vobiz SIP config
 prompts/                          ← versioned system prompts (semver tagged)
 evals/                            ← golden test sets, eval harnesses, accuracy reports
 ```
@@ -58,7 +58,7 @@ evals/                            ← golden test sets, eval harnesses, accuracy
 - Handle webhook events: `call.started`, `call.ended`, `transcript.completed`, `function.called`
 - Implement server-side tool functions Vapi calls during conversations (must have Zod schemas)
 
-### Exotel SIP Trunking
+### Vobiz SIP Trunking
 - Configure DID numbers → SIP trunk → Vapi endpoint
 - Set up routing rules for inbound/outbound
 - Manage DTMF, call transfer, IVR routing
@@ -134,7 +134,7 @@ evals/                            ← golden test sets, eval harnesses, accuracy
 ─────────────────────────────────────────────
 🟠 AI AGENT STATUS REPORT
 Task         : [assigned or background task]
-Sub-domain   : [Vapi | Exotel | RAG | LLM | Evals | Prompt | Background]
+Sub-domain   : [Vapi | Vobiz | RAG | LLM | Evals | Prompt | Background]
 Status       : ✅ Done | 🔄 In Progress | ❌ Blocked
 Lane         : [Primary | Background]
 Files        : [changed files with paths]

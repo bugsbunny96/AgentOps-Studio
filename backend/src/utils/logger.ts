@@ -24,3 +24,9 @@ export const logger = winston.createLogger({
   exceptionHandlers: [new winston.transports.Console()],
   rejectionHandlers: [new winston.transports.Console()],
 });
+
+// Morgan stream adapter — used by requestLogger middleware
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+(logger as any).stream = {
+  write: (message: string) => logger.http(message.trim()),
+};

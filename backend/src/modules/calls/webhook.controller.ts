@@ -1,11 +1,13 @@
 import type { Request, Response, NextFunction } from 'express';
 import {
   verifyVapiSecret,
-  dispatchWebhookEvent,
   handleAssistantRequest,
+  handleCallStarted,
   type VapiWebhookEvent,
   type VapiAssistantRequestEvent,
+  type VapiEndOfCallReportEvent,
 } from './webhook.service';
+import { callReportQueue } from '../../jobs/callReport.queue';
 import { logger } from '../../utils/logger';
 
 /**
@@ -65,15 +67,51 @@ export async function vapiWebhookHandler(
       return;
     }
 
-    // ── 2b. All other events — fire-and-forget ──────────────────────────────
-    res.status(200).json({ success: true });
+    // ── 2b. call-started — lightweight, fire-and-forget inline ──────────────
+    // Creating the Call record is a fast single-document upsert; inline is fine.
+    if (msgType === 'call-started') {
+      res.status(200).json({ success: true });
+      handleCallStarted((body.message as Parameters<typeof handleCallStarted>[0])).catch(
+        (err: unknown) => {
+          logger.error('call-started handler error', {
+            error: err instanceof Error ? err.message : String(err),
+          });
+        },
+      );
+      return;
+    }
 
-    dispatchWebhookEvent(body).catch((err: unknown) => {
-      logger.error('Vapi webhook dispatch error', {
-        error: err instanceof Error ? err.message : String(err),
-        eventType: msgType,
+    // ── 2c. end-of-call-report — push to BullMQ for reliable async processing ─
+    // Transcript parsing + summary writes can be slow or fail under load.
+    // BullMQ gives us retry-with-backoff, persistence across restarts,
+    // and dead-letter visibility — none of which exist in a plain fire-and-forget.
+    if (msgType === 'end-of-call-report') {
+      res.status(200).json({ success: true });
+      const ev = body.message as VapiEndOfCallReportEvent;
+      callReportQueue.add('process-end-of-call', {
+        vapiCallId:     ev.call.id,
+        assistantId:    ev.call.assistantId,
+        callType:       ev.call.type,
+        callerNumber:   ev.call.customer?.number,
+        endedReason:    ev.call.endedReason,
+        durationSeconds: ev.durationSeconds,
+        recordingUrl:   ev.recordingUrl,
+        transcript:     ev.transcript,
+        messages:       ev.messages,
+        summary:        ev.summary,
+        cost:           ev.cost,
+      }).catch((err: unknown) => {
+        logger.error('Failed to enqueue call report job', {
+          vapiCallId: ev.call.id,
+          error: err instanceof Error ? err.message : String(err),
+        });
       });
-    });
+      return;
+    }
+
+    // ── 2d. Unknown event types — acknowledge and ignore ────────────────────
+    res.status(200).json({ success: true });
+    logger.debug('Unhandled Vapi event type acknowledged', { type: msgType });
   } catch (err) {
     next(err);
   }

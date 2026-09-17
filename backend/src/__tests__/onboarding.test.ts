@@ -1,14 +1,17 @@
 /**
  * L2.F3 — Onboarding Integration Tests
- * Atomic Task: L2.F3.M1.AT6
+ * Atomic Task: L2.F3.M1.AT5
  *
  * Tests:
- *   POST   /api/v1/onboarding/org      — create organization (Steps 1)
- *   PATCH  /api/v1/onboarding/org      — update org per wizard step (Steps 2-4)
- *   POST   /api/v1/onboarding/complete — complete onboarding (Step 5)
+ *   POST   /api/v1/onboarding/org          — create organization (Step 1)
+ *   GET    /api/v1/onboarding/org          — fetch full org for form pre-population
+ *   PATCH  /api/v1/onboarding/org          — update org per wizard step (Steps 2-4)
+ *   GET    /api/v1/onboarding/crawl-status — poll crawl progress
+ *   POST   /api/v1/onboarding/complete     — complete onboarding (Step 5)
  *
  * Auth strategy: create users directly via UserModel + signAccessToken (no HTTP round-trip).
  * Redis mock: required because authenticate middleware resolves to full app which imports redis.
+ * CrawlQueue mock: prevents BullMQ from attempting real Redis connections in test.
  */
 
 import { describe, it, expect, beforeEach, vi } from 'vitest';
@@ -22,6 +25,15 @@ import {
 } from '@/modules/organization/organization.model';
 import { signAccessToken } from '@/utils/jwt';
 import { toSlugBase } from '@/modules/onboarding/onboarding.service';
+
+// ── CrawlQueue mock — prevents BullMQ from connecting to Redis in test ──────
+const { mockCrawlQueueAdd } = vi.hoisted(() => ({
+  mockCrawlQueueAdd: vi.fn().mockResolvedValue({ id: 'crawl-job-test' }),
+}));
+
+vi.mock('@/jobs/crawl.queue', () => ({
+  crawlQueue: { add: mockCrawlQueueAdd },
+}));
 
 // ── Redis mock ──────────────────────────────────────────────────────────────
 const redisStore = new Map<string, string>();
@@ -70,6 +82,7 @@ const VALID_ORG = {
 beforeEach(() => {
   redisStore.clear();
   vi.clearAllMocks();
+  mockCrawlQueueAdd.mockResolvedValue({ id: 'crawl-job-test' });
 });
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -220,6 +233,107 @@ describe('POST /api/v1/onboarding/org', () => {
 });
 
 // ═══════════════════════════════════════════════════════════════════════════
+// GET /api/v1/onboarding/org
+// ═══════════════════════════════════════════════════════════════════════════
+
+describe('GET /api/v1/onboarding/org', () => {
+  it('AT6.G1 — 200: returns full org document for the authenticated Owner', async () => {
+    const { cookie } = await createUserAndToken();
+    // Create org first
+    const createRes = await request(app)
+      .post('/api/v1/onboarding/org')
+      .set('Cookie', cookie)
+      .send(VALID_ORG);
+    expect(createRes.status).toBe(201);
+
+    const res = await request(app)
+      .get('/api/v1/onboarding/org')
+      .set('Cookie', cookie);
+
+    expect(res.status).toBe(200);
+    expect(res.body.success).toBe(true);
+    const org = res.body.data.organization;
+    expect(org.name).toBe('Acme Corp');
+    expect(org.industry).toBe('Technology');
+    expect(org.timezone).toBe('Asia/Kolkata');
+    expect(org.slug).toBe('acme-corp');
+    expect(org.onboardingStatus).toBe('ORG_CREATION');
+  });
+
+  it('AT6.G2 — 404: user has no org yet', async () => {
+    const { cookie } = await createUserAndToken();
+
+    const res = await request(app)
+      .get('/api/v1/onboarding/org')
+      .set('Cookie', cookie);
+
+    expect(res.status).toBe(404);
+  });
+
+  it('AT6.G3 — 401 UNAUTHORIZED: no cookie', async () => {
+    const res = await request(app).get('/api/v1/onboarding/org');
+    expect(res.status).toBe(401);
+  });
+});
+
+// ═══════════════════════════════════════════════════════════════════════════
+// GET /api/v1/onboarding/crawl-status
+// ═══════════════════════════════════════════════════════════════════════════
+
+describe('GET /api/v1/onboarding/crawl-status', () => {
+  it('AT6.CS1 — 200: returns crawlStatus and organization', async () => {
+    const { cookie } = await createUserAndToken();
+    await request(app)
+      .post('/api/v1/onboarding/org')
+      .set('Cookie', cookie)
+      .send(VALID_ORG);
+
+    const res = await request(app)
+      .get('/api/v1/onboarding/crawl-status')
+      .set('Cookie', cookie);
+
+    expect(res.status).toBe(200);
+    expect(res.body.success).toBe(true);
+    expect(res.body.data).toHaveProperty('crawlStatus');
+    expect(res.body.data).toHaveProperty('organization');
+    // Default crawlStatus before any learn step is 'idle'
+    expect(res.body.data.crawlStatus).toBe('idle');
+  });
+
+  it('AT6.CS2 — 200: crawlStatus reflects what was set during learn step', async () => {
+    const { cookie } = await createUserAndToken();
+    await request(app).post('/api/v1/onboarding/org').set('Cookie', cookie).send(VALID_ORG);
+    await request(app)
+      .patch('/api/v1/onboarding/org')
+      .set('Cookie', cookie)
+      .send({ step: 'learn', hasWebsite: true, crawlEnabled: true, websiteUrl: 'https://acme.com' });
+
+    const res = await request(app)
+      .get('/api/v1/onboarding/crawl-status')
+      .set('Cookie', cookie);
+
+    expect(res.status).toBe(200);
+    // Service sets crawlStatus='pending' when crawlEnabled=true
+    expect(res.body.data.crawlStatus).toBe('pending');
+  });
+
+  it('AT6.CS3 — 404: user has no org', async () => {
+    const { cookie } = await createUserAndToken();
+
+    const res = await request(app)
+      .get('/api/v1/onboarding/crawl-status')
+      .set('Cookie', cookie);
+
+    expect(res.status).toBe(404);
+  });
+
+  it('AT6.CS4 — 401 UNAUTHORIZED: no cookie', async () => {
+    const res = await request(app).get('/api/v1/onboarding/crawl-status');
+    expect(res.status).toBe(401);
+  });
+});
+
+// ═══════════════════════════════════════════════════════════════════════════
 // PATCH /api/v1/onboarding/org
 // ═══════════════════════════════════════════════════════════════════════════
 
@@ -234,7 +348,7 @@ describe('PATCH /api/v1/onboarding/org', () => {
     return { cookie, user, orgId: res.body.data.organization._id };
   }
 
-  it('AT6.8 — 200: Path A (crawlEnabled=true) saves hasWebsite + crawlEnabled + websiteUrl', async () => {
+  it('AT6.8 — 200: Path A (crawlEnabled=true) saves hasWebsite + crawlEnabled + websiteUrl + queues crawl', async () => {
     const { cookie, orgId } = await createOrgViaApi();
 
     const res = await request(app)
@@ -249,6 +363,14 @@ describe('PATCH /api/v1/onboarding/org', () => {
     expect(org.websiteUrl).toBe('https://acme.com');
     expect(org.onboardingStatus).toBe('WEBSITE_CRAWL');
 
+    // Crawl job queued
+    expect(mockCrawlQueueAdd).toHaveBeenCalledOnce();
+    expect(mockCrawlQueueAdd).toHaveBeenCalledWith(
+      'crawl',
+      expect.objectContaining({ orgId, websiteUrl: 'https://acme.com' }),
+      expect.objectContaining({ jobId: `crawl-${orgId}` }),
+    );
+
     // Verify DB
     const dbOrg = await OrganizationModel.findById(orgId);
     expect(dbOrg!.hasWebsite).toBe(true);
@@ -257,7 +379,7 @@ describe('PATCH /api/v1/onboarding/org', () => {
     expect(dbOrg!.onboardingStatus).toBe('WEBSITE_CRAWL');
   });
 
-  it('AT6.8b — 200: Path B (hasWebsite=true, crawlEnabled=false) saves without URL', async () => {
+  it('AT6.8b — 200: Path B (hasWebsite=true, crawlEnabled=false) saves without URL, no crawl queued', async () => {
     const { cookie, orgId } = await createOrgViaApi();
 
     const res = await request(app)
@@ -270,6 +392,7 @@ describe('PATCH /api/v1/onboarding/org', () => {
     expect(org.hasWebsite).toBe(true);
     expect(org.crawlEnabled).toBe(false);
     expect(org.onboardingStatus).toBe('WEBSITE_CRAWL');
+    expect(mockCrawlQueueAdd).not.toHaveBeenCalled();
 
     const dbOrg = await OrganizationModel.findById(orgId);
     expect(dbOrg!.crawlEnabled).toBe(false);

@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import agentopsIcon from '@/assets/logos/agentops-icon-reversed.svg';
@@ -21,7 +21,6 @@ export function PublicLayout() {
   const navigate = useNavigate();
   const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
-  const mobileRef = useRef<HTMLDivElement>(null);
 
   // Nav scroll shadow
   useEffect(() => {
@@ -33,6 +32,20 @@ export function PublicLayout() {
   // Close mobile menu on route change
   useEffect(() => { setMobileOpen(false); }, [location.pathname]);
 
+  // ESC key closes mobile menu
+  useEffect(() => {
+    const fn = (e: KeyboardEvent) => { if (e.key === 'Escape') setMobileOpen(false); };
+    document.addEventListener('keydown', fn);
+    return () => document.removeEventListener('keydown', fn);
+  }, []);
+
+  // Prevent body scroll while mobile menu is open
+  useEffect(() => {
+    if (mobileOpen) document.body.style.overflow = 'hidden';
+    else            document.body.style.overflow = '';
+    return () => { document.body.style.overflow = ''; };
+  }, [mobileOpen]);
+
   function handleDashboard() {
     if (isAuthenticated) {
       navigate(onboardingComplete ? '/dashboard' : '/onboarding');
@@ -43,6 +56,20 @@ export function PublicLayout() {
 
   return (
     <div className="min-h-screen" style={{ background: '#030712', color: '#f8fafc' }}>
+      {/* Backdrop — dims the page when mobile menu is open; tap to close */}
+      {mobileOpen && (
+        <div
+          aria-hidden="true"
+          onClick={() => setMobileOpen(false)}
+          style={{
+            position: 'fixed', inset: 0, zIndex: 50,
+            background: 'rgba(0,0,0,0.45)',
+            cursor: 'pointer',
+            // header is z-index 100, so the drawer inside the header sits above this
+          }}
+        />
+      )}
+
       {/* ── NAV ─────────────────────────────────────────────────────── */}
       <header
         style={{
@@ -163,7 +190,6 @@ export function PublicLayout() {
         {/* Mobile drawer */}
         {mobileOpen && (
           <div
-            ref={mobileRef}
             style={{
               borderTop: '1px solid rgba(255,255,255,0.07)',
               background: 'rgba(3,7,18,0.97)',
@@ -242,22 +268,45 @@ export function PublicLayout() {
             </div>
 
             {/* Link columns */}
-            {[
-              { heading: 'Product', links: ['Services', 'Pricing', 'Industries', 'Changelog'] },
-              { heading: 'Company', links: ['Why Us', 'Blog', 'Contact', 'Careers'] },
-              { heading: 'Legal', links: ['Privacy Policy', 'Terms of Service', 'Cookie Policy'] },
-            ].map(({ heading, links }) => (
+            {([
+              {
+                heading: 'Product',
+                links: [
+                  { label: 'Services', to: '/services' },
+                  { label: 'Pricing', to: '/pricing' },
+                  { label: 'Industries', to: '/industries' },
+                  { label: 'Changelog', to: '/changelog' },
+                ],
+              },
+              {
+                heading: 'Company',
+                links: [
+                  { label: 'Why Us', to: '/why-us' },
+                  { label: 'Blog', to: '/blog' },
+                  { label: 'Contact', to: '/contact' },
+                  { label: 'Careers', to: '/contact' },
+                ],
+              },
+              {
+                heading: 'Legal',
+                links: [
+                  { label: 'Privacy Policy', to: '/privacy' },
+                  { label: 'Terms of Service', to: '/terms' },
+                  { label: 'Cookie Policy', to: '/privacy#cookies' },
+                ],
+              },
+            ] as { heading: string; links: { label: string; to: string }[] }[]).map(({ heading, links }) => (
               <div key={heading}>
                 <h4 style={{ fontSize: 12.5, fontWeight: 700, color: '#f8fafc', marginBottom: 12 }}>{heading}</h4>
                 <ul style={{ listStyle: 'none', display: 'flex', flexDirection: 'column', gap: 7 }}>
-                  {links.map((link) => (
-                    <li key={link}>
-                      <a
-                        href="#"
+                  {links.map(({ label, to }) => (
+                    <li key={label}>
+                      <Link
+                        to={to}
                         style={{ fontSize: 12.5, color: '#475569', textDecoration: 'none', transition: 'color 0.2s' }}
                       >
-                        {link}
-                      </a>
+                        {label}
+                      </Link>
                     </li>
                   ))}
                 </ul>

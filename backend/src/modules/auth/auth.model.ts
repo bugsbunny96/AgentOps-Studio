@@ -6,6 +6,7 @@ export interface IUser extends Document {
   email: string;
   passwordHash: string;
   isVerified: boolean;
+  isSuperAdmin: boolean;
   status: 'Active' | 'Suspended' | 'Pending';
   emailVerificationToken?: string;
   emailVerificationExpires?: Date;
@@ -28,6 +29,7 @@ const UserSchema = new Schema<IUser>(
     },
     passwordHash: { type: String, required: true },
     isVerified: { type: Boolean, default: false },
+    isSuperAdmin: { type: Boolean, default: false },
     status: {
       type: String,
       enum: ['Active', 'Suspended', 'Pending'],

@@ -36,7 +36,7 @@ Declare active sub-role at task start: `[Acting as: Backend Engineer]`
 
 ### Backend (`backend/src/`)
 ```
-config/          ← env, DB, Redis, Vapi, Exotel
+config/          ← env, DB, Redis, Vapi, Vobiz
 middleware/      ← authenticate, validateOrganization, errorHandler, rateLimiter
 modules/
   auth/          ← register, login, verify, refresh, logout, me

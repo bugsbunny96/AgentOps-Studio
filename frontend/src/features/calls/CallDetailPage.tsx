@@ -3,18 +3,20 @@
  *
  * Fetches: GET /api/v1/calls/:id → { call, transcript, summary }
  * Shows:
- *   • Hero card: caller, direction, status, duration, date, cost
+ *   • Hero card: caller, direction, status, endedReason, duration, date, cost
  *   • Recording player (if recordingUrl present)
- *   • Transcript turn viewer (agent/user speech bubbles)
+ *   • Transcript turn viewer with relative timestamps + copy button
+ *   • Live indicator when call is active and no transcript yet
  *   • AI Summary card (summaryText, intentDetected, actionItems, resolutionState)
  */
 
+import { useState, useCallback } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import {
   ArrowLeft, PhoneCall, PhoneIncoming, PhoneOutgoing,
   Clock, CheckCircle2, XCircle, Loader2, AlertCircle,
-  FileText, Mic, Lightbulb, ListChecks, Play,
+  FileText, Mic, Lightbulb, ListChecks, Play, Copy, Check,
 } from 'lucide-react';
 import api from '@/utils/api';
 import type { Call, TranscriptTurn } from '@/types';
@@ -71,6 +73,30 @@ function resolutionLabel(state: Summary['resolutionState']): { label: string; co
     case 'Needs_Followup':  return { label: 'Needs Follow-up',  color: '#7c3aed' };
     default:                return { label: state,              color: '#64748b' };
   }
+}
+
+/** "customer-ended-call" → "Customer Ended Call" */
+function humanizeEndedReason(reason: string): string {
+  return reason
+    .split('-')
+    .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+    .join(' ');
+}
+
+/**
+ * Returns "m:ss" offset of thisTimestamp relative to firstTimestamp.
+ * Both are ISO strings stored on TranscriptTurn.
+ */
+function formatTurnOffset(firstTimestamp: string, thisTimestamp: string): string {
+  const diffSec = Math.max(
+    0,
+    Math.floor(
+      (new Date(thisTimestamp).getTime() - new Date(firstTimestamp).getTime()) / 1000,
+    ),
+  );
+  const m = Math.floor(diffSec / 60);
+  const s = diffSec % 60;
+  return `${m}:${s.toString().padStart(2, '0')}`;
 }
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
@@ -132,6 +158,17 @@ function HeroCard({ call }: { call: Call }) {
               Outbound
             </span>
           )}
+
+          {/* Ended reason — only for completed/failed calls */}
+          {call.endedReason && call.status !== 'active' && (
+            <span
+              className="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium"
+              style={{ background: 'rgba(100,116,139,.08)', color: '#475569' }}
+              title={call.endedReason}
+            >
+              {humanizeEndedReason(call.endedReason)}
+            </span>
+          )}
         </div>
       </div>
 
@@ -184,6 +221,18 @@ function RecordingPlayer({ url }: { url: string }) {
 // ─── Transcript viewer ────────────────────────────────────────────────────────
 
 function TranscriptViewer({ transcript }: { transcript: Transcript }) {
+  const [copied, setCopied] = useState(false);
+
+  const handleCopy = useCallback(() => {
+    const text = transcript.turns
+      .map((t) => `[${t.speaker === 'agent' ? 'Agent' : 'Caller'}]: ${t.text}`)
+      .join('\n');
+    navigator.clipboard.writeText(text).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }).catch(() => {/* clipboard unavailable */});
+  }, [transcript.turns]);
+
   if (transcript.turns.length === 0) {
     return (
       <div className="rounded-2xl border border-slate-200 bg-white p-5">
@@ -193,10 +242,29 @@ function TranscriptViewer({ transcript }: { transcript: Transcript }) {
     );
   }
 
+  const firstTs = transcript.turns[0]?.timestamp ?? '';
+
   return (
     <div className="rounded-2xl border border-slate-200 bg-white p-5">
-      <SectionHeader icon={<Mic size={14} className="text-brand-600" />} title="Transcript" />
-      <div className="mt-4 space-y-3 max-h-96 overflow-y-auto pr-1">
+      {/* Header row: title + copy button */}
+      <div className="flex items-center justify-between mb-4">
+        <SectionHeader icon={<Mic size={14} className="text-brand-600" />} title="Transcript" />
+        <button
+          onClick={handleCopy}
+          className="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium transition-colors"
+          style={
+            copied
+              ? { background: 'rgba(5,150,105,.1)', color: '#059669' }
+              : { background: 'rgba(100,116,139,.06)', color: '#64748b' }
+          }
+          title="Copy transcript"
+        >
+          {copied ? <Check size={12} /> : <Copy size={12} />}
+          {copied ? 'Copied' : 'Copy'}
+        </button>
+      </div>
+
+      <div className="space-y-3 max-h-96 overflow-y-auto pr-1">
         {transcript.turns.map((turn, i) => (
           <div
             key={i}
@@ -223,10 +291,18 @@ function TranscriptViewer({ transcript }: { transcript: Transcript }) {
                   : { background: 'rgba(241,245,249,1)', border: '1px solid rgba(226,232,240,1)' }
               }
             >
-              <p className="text-xs font-medium mb-1"
-                style={{ color: turn.speaker === 'agent' ? '#4f46e5' : '#0f766e' }}>
-                {turn.speaker === 'agent' ? 'Agent' : 'Caller'}
-              </p>
+              {/* Speaker label + timestamp */}
+              <div className="flex items-center justify-between gap-3 mb-1">
+                <p className="text-xs font-medium"
+                  style={{ color: turn.speaker === 'agent' ? '#4f46e5' : '#0f766e' }}>
+                  {turn.speaker === 'agent' ? 'Agent' : 'Caller'}
+                </p>
+                {turn.timestamp && firstTs && (
+                  <p className="text-xs text-slate-400 tabular-nums flex-shrink-0">
+                    {formatTurnOffset(firstTs, turn.timestamp)}
+                  </p>
+                )}
+              </div>
               <p className="text-sm text-slate-700 leading-relaxed">{turn.text}</p>
             </div>
           </div>
@@ -307,6 +383,33 @@ function SectionHeader({ icon, title }: { icon: React.ReactNode; title: string }
   );
 }
 
+// ─── Empty transcript states ──────────────────────────────────────────────────
+
+function TranscriptLiveState() {
+  return (
+    <div className="rounded-2xl border border-slate-200 bg-white p-5">
+      <SectionHeader icon={<Mic size={14} className="text-brand-600" />} title="Transcript" />
+      <div className="mt-4 flex items-center gap-3 rounded-xl border border-emerald-100 bg-emerald-50 px-4 py-3">
+        <span className="inline-block h-2 w-2 flex-shrink-0 animate-pulse rounded-full bg-emerald-500" />
+        <p className="text-sm text-emerald-700">
+          Call in progress — transcript will appear here when the call ends.
+        </p>
+      </div>
+    </div>
+  );
+}
+
+function TranscriptEmpty() {
+  return (
+    <div className="rounded-2xl border border-slate-200 bg-white p-5">
+      <SectionHeader icon={<FileText size={14} className="text-brand-600" />} title="Transcript" />
+      <p className="mt-4 text-sm text-slate-400 italic">
+        No transcript available for this call.
+      </p>
+    </div>
+  );
+}
+
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function CallDetailPage() {
@@ -316,6 +419,9 @@ export default function CallDetailPage() {
     queryKey: ['call', id],
     queryFn:  () => fetchCallDetail(id!),
     enabled:  Boolean(id),
+    // Poll every 5s while the call is active so the transcript appears live
+    refetchInterval: (query) =>
+      query.state.data?.data?.call?.status === 'active' ? 5_000 : false,
   });
 
   return (
@@ -368,13 +474,10 @@ export default function CallDetailPage() {
               <div className="xl:col-span-3">
                 {transcript ? (
                   <TranscriptViewer transcript={transcript} />
+                ) : call.status === 'active' ? (
+                  <TranscriptLiveState />
                 ) : (
-                  <div className="rounded-2xl border border-slate-200 bg-white p-5">
-                    <SectionHeader icon={<FileText size={14} className="text-brand-600" />} title="Transcript" />
-                    <p className="mt-4 text-sm text-slate-400 italic">
-                      No transcript available for this call.
-                    </p>
-                  </div>
+                  <TranscriptEmpty />
                 )}
               </div>
 
@@ -386,7 +489,9 @@ export default function CallDetailPage() {
                   <div className="rounded-2xl border border-slate-200 bg-white p-5">
                     <SectionHeader icon={<Lightbulb size={14} className="text-brand-600" />} title="AI Summary" />
                     <p className="mt-4 text-sm text-slate-400 italic">
-                      No AI summary available for this call.
+                      {call.status === 'active'
+                        ? 'Summary will be generated when the call ends.'
+                        : 'No AI summary available for this call.'}
                     </p>
                   </div>
                 )}

@@ -155,7 +155,7 @@ describe('validateOrganization middleware', () => {
   /**
    * Helper: create a user + org + membership, return an accessToken for that user.
    */
-  async function setupOrgMember(role: 'Owner' | 'Admin' | 'Member' = 'Owner') {
+  async function setupOrgMember(role: 'Owner' | 'Member' = 'Owner') {
     const user = await UserModel.create({
       name: 'Org Member',
       email: `orgmember-${Date.now()}@example.com`,
@@ -186,7 +186,8 @@ describe('validateOrganization middleware', () => {
   }
 
   it('AT2.1 — injects req.orgId and req.userRole for a valid member', async () => {
-    const { org, token } = await setupOrgMember('Admin');
+    // MembershipModel only allows 'Owner' | 'Member' — use 'Member' to test non-owner access
+    const { org, token } = await setupOrgMember('Member');
 
     const res = await request(testApp)
       .get('/test/org-protected')
@@ -195,7 +196,7 @@ describe('validateOrganization middleware', () => {
 
     expect(res.status).toBe(200);
     expect(res.body.orgId).toBe(org._id.toString());
-    expect(res.body.userRole).toBe('Admin');
+    expect(res.body.userRole).toBe('Member');
   });
 
   it('AT2.2 — injects Owner role for the organisation creator', async () => {

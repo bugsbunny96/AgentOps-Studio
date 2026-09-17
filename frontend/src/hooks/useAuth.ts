@@ -4,15 +4,17 @@ import { useAppDispatch, useAppSelector } from '@/store';
 import { setCredentials, clearCredentials, setAuthLoading } from '@/store/slices/authSlice';
 import { setCurrentOrg, setAvailableOrgs, clearCurrentOrg } from '@/store/slices/orgSlice';
 import { api } from '@/utils/api';
-import type { Organization, OnboardingStatus, UserRole, CrawlStatus } from '@/types';
+import type { Organization, OnboardingStatus, UserRole, CrawlStatus, MemberPermissions } from '@/types';
+import { DEFAULT_MEMBER_PERMISSIONS } from '@/types';
 
 // ─── Backend API response shapes ───────────────────────────────────────────
 interface AuthOrg {
-  id: string;
-  name: string;
-  slug: string;
+  id:               string;
+  name:             string;
+  slug:             string;
   onboardingStatus: string;
-  role: UserRole;
+  role:             UserRole;
+  permissions:      MemberPermissions;
 }
 
 interface MeData {
@@ -62,6 +64,8 @@ interface RawOrg {
   // Step 4
   supportedLanguages: string[];
   fallbackNumber?: string;
+  preferredVoiceProvider?: string;
+  preferredVoiceId?: string;
   // Step 5
   vapiAssistantId?: string;
   createdAt: string;
@@ -71,6 +75,15 @@ export interface CreateOrgInput {
   name: string;
   industry: string;
   timezone: string;
+}
+
+export interface ChangePasswordInput {
+  currentPassword: string;
+  newPassword: string;
+}
+
+export interface UpdateProfileInput {
+  name: string;
 }
 
 export type UpdateOrgInput =
@@ -85,7 +98,13 @@ export type UpdateOrgInput =
       locations?: string[];
       faqs?: Array<{ question: string; answer: string }>;
     }
-  | { step: 'customize'; supportedLanguages: string[]; fallbackNumber?: string };
+  | {
+      step: 'customize';
+      supportedLanguages: string[];
+      fallbackNumber?: string;
+      voiceProvider?: string;
+      voiceId?: string;
+    };
 
 // ─── Map raw backend org → frontend Organization type ─────────────────────
 function mapRawOrg(raw: RawOrg): Organization {
@@ -113,6 +132,8 @@ function mapRawOrg(raw: RawOrg): Organization {
     // Step 4
     supportedLanguages: raw.supportedLanguages ?? ['en-US'],
     fallbackNumber: raw.fallbackNumber,
+    preferredVoiceProvider: raw.preferredVoiceProvider,
+    preferredVoiceId: raw.preferredVoiceId,
     // Step 5
     vapiAssistantId: raw.vapiAssistantId,
     createdAt: raw.createdAt,
@@ -141,7 +162,11 @@ function dispatchOrgs(
   const match = orgs.find((o) => o.id === savedId) ?? orgs[0];
   if (match) {
     dispatch(
-      setCurrentOrg({ org: mapped.find((o) => o.id === match.id)!, role: match.role })
+      setCurrentOrg({
+        org:         mapped.find((o) => o.id === match.id)!,
+        role:        match.role,
+        permissions: match.permissions ?? { ...DEFAULT_MEMBER_PERMISSIONS },
+      })
     );
   }
   return match;
@@ -178,7 +203,7 @@ export function useAuth() {
 
   /** Login — server sets HttpOnly cookies; we just update Redux state */
   const login = useCallback(
-    async (email: string, password: string) => {
+    async (email: string, password: string, redirectTo?: string) => {
       const res = await api.post<{ success: boolean; data: LoginData }>(
         '/auth/login',
         { email, password }
@@ -187,13 +212,20 @@ export function useAuth() {
 
       dispatch(setCredentials({ ...u, createdAt: '' }));
 
-      if (organizations.length > 0) {
-        const active = dispatchOrgs(dispatch, organizations);
-        if (active?.onboardingStatus !== 'COMPLETED') {
-          navigate('/onboarding');
-        } else {
-          navigate('/dashboard');
-        }
+      const active = organizations.length > 0
+        ? dispatchOrgs(dispatch, organizations)
+        : undefined;
+
+      // ?next always takes priority — the page it points to (e.g. /accept-invite/:token)
+      // handles its own org/onboarding logic. Never override it with /onboarding.
+      if (redirectTo) {
+        navigate(redirectTo);
+        return;
+      }
+
+      // Default post-login navigation
+      if (active && active.onboardingStatus === 'COMPLETED') {
+        navigate('/dashboard');
       } else {
         navigate('/onboarding');
       }
@@ -320,6 +352,37 @@ export function useAuth() {
   }, [dispatch, currentOrg, currentRole]);
 
   /**
+   * PATCH /auth/profile — update the authenticated user's display name.
+   * Dispatches setCredentials with the new name so the header/nav updates immediately.
+   */
+  const updateProfile = useCallback(
+    async (dto: UpdateProfileInput) => {
+      const res = await api.patch<{
+        success: boolean;
+        data: { id: string; name: string; email: string };
+      }>('/auth/profile', dto);
+      const updated = res.data.data;
+      // Patch the Redux user state — keep all other fields intact
+      if (user) {
+        dispatch(setCredentials({ ...user, name: updated.name }));
+      }
+      return updated;
+    },
+    [dispatch, user],
+  );
+
+  /**
+   * PATCH /auth/change-password — change password for the authenticated user.
+   * Requires current password for verification. Current session remains active.
+   */
+  const changePassword = useCallback(
+    async (dto: ChangePasswordInput) => {
+      await api.patch('/auth/change-password', dto);
+    },
+    [],
+  );
+
+  /**
    * Step 5: complete onboarding.
    * Sets onboardingStatus = COMPLETED in DB and Redux, then navigates to /dashboard.
    * OrgGuard will now allow access to the dashboard.
@@ -349,5 +412,7 @@ export function useAuth() {
     getCrawlStatus,
     provisionAgent,
     completeOnboarding,
+    updateProfile,
+    changePassword,
   };
 }

@@ -1,6 +1,22 @@
 // ── Shared Global Types ───────────────────────────────────────────────────────
 
-export type UserRole = 'Owner' | 'Admin' | 'Member';
+export type UserRole = 'Owner' | 'Member';
+
+/** Granular access flags for Members. Owners always have full access. */
+export interface MemberPermissions {
+  agents:        boolean; // Agents page        — false: read-only,  true: full access
+  calls:         boolean; // Calls page         — false: read-only,  true: full access
+  knowledgeBase: boolean; // Knowledge Base     — false: read-only,  true: full access
+  team:          boolean; // Team page          — false: hidden,     true: full management access
+  // Dashboard is always visible. Settings is always Owner-only.
+}
+
+export const DEFAULT_MEMBER_PERMISSIONS: MemberPermissions = {
+  agents:        true,
+  calls:         true,
+  knowledgeBase: true,
+  team:          false, // Team management off by default
+};
 
 export type OnboardingStatus =
   | 'REGISTRATION'
@@ -45,6 +61,8 @@ export interface Organization {
   // Step 4 — Customize
   supportedLanguages: string[];
   fallbackNumber?: string;
+  preferredVoiceProvider?: string;
+  preferredVoiceId?: string;
   // Step 5 — Activate (Vapi provisioning)
   vapiAssistantId?: string;
   createdAt: string;
@@ -84,7 +102,9 @@ export interface Call {
   callerNumber: string;
   recordingUrl?: string;
   cost: number;
+  endedReason?: string;   // e.g. 'customer-ended-call', 'silence-timed-out', 'hangup'
   createdAt: string;
+  updatedAt: string;
 }
 
 export interface TranscriptTurn {

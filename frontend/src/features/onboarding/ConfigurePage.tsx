@@ -761,6 +761,9 @@ export default function ConfigurePage() {
             Skip
           </button>
         </div>
+        <p className="text-center text-xs text-slate-400 mt-2">
+          These settings are also accessible and editable anytime from the <strong>Knowledge Base</strong> page.
+        </p>
       </form>
     </div>
   );

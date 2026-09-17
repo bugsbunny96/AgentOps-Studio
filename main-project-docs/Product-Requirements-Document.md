@@ -89,7 +89,7 @@ Step 4: Business Configuration
    → [Business Configuration Page] Collect business description, services, FAQs, business hours, contact details, locations, supported languages, and industry-specific information.
    → Form displays dynamic fields based on selected industry.
 
-Step 5: AI Voice Agent Setup & Testing (using Vapi + Exotel)
+Step 5: AI Voice Agent Setup & Testing (using Vapi + Vobiz)
    → Backend generates initial voice agent configuration and links knowledge base.
    → System prompt, language settings, and voice settings are configured.
    │     → [Test Agent Widget] User starts test conversation via WebRTC.
@@ -149,7 +149,7 @@ Step 6: Dashboard Activation
    → Input System Prompt (defining behavioral guardrails and identity)
    → Click [Save Configuration]
    → Backend creates database representation
-   → Clicking "Activate" provisions the Vapi assistant and wires the Exotel SIP trunk mapping to the inbound Indian number
+   → Clicking "Activate" provisions the Vapi assistant and wires the Vobiz SIP trunk mapping to the inbound Indian number
 ```
 
 ### Flow 4: Call Review & Intelligence Inspection
@@ -222,7 +222,7 @@ Step 6: Dashboard Activation
 *   **FR-035 (Voice Configuration)**: Voice provider selection (ElevenLabs, Cartesia) and speech parameters (speed, pitch).
 
 ### 5.5 Calls (FR-040 - FR-046)
-*   **FR-040 (Inbound Calls)**: Handle incoming PSTN/SIP sessions routed from Exotel Indian virtual numbers through SIP trunk to the active Vapi AI agent.
+*   **FR-040 (Inbound Calls)**: Handle incoming PSTN/SIP sessions routed from Vobiz Indian virtual numbers through SIP trunk to the active Vapi AI agent.
 *   **FR-041 (Outbound Calls)**: Ability to trigger agent-initiated dial-out loops via backend API.
 *   **FR-042 (Recording Metadata)**: Capture start time, end time, duration, cost, termination reasons, and audio files.
 *   **FR-043 (Transcript Storage)**: Parse and store conversational turn-by-turn text blocks.
@@ -250,8 +250,8 @@ Step 6: Dashboard Activation
     *   **Document Editor**: Standard text editor to directly modify Markdown document contents.
 *   **FR-074 (KB Re-sync & Document Upload)**: Users can trigger website re-crawling ("Re-sync Website") or manually upload additional documents (.pdf, .txt, .md) to expand the knowledge base.
 *   **FR-075 (Dynamic Business Configuration)**: During onboarding, the system collects Business Description, Services, FAQs, Business Hours, Contact Details, Locations, Supported Languages, and Industry-Specific Information, rendering form inputs dynamically based on the selected Industry/Business Type.
-*   **FR-076 (Vapi Agent Auto-Provisioning)**: The system auto-generates the initial Vapi assistant configuration (name, pre-configured system prompt based on business configuration/KB, language settings, voice settings, and multi-lingual support for English, Hindi, and Punjabi). The assistant is provisioned via the Vapi API and linked to the organization's Exotel Indian number via SIP trunk.
-*   **FR-077 (Vapi Test Call Sandbox)**: Users can initiate a Vapi test call directly from the onboarding wizard. The test call is placed to the user's registered phone number via the Exotel SIP trunk, replicating the full production call path. The sandbox displays a real-time transcript, active language indicator (English / Hindi / Punjabi), and configuration controls to adjust agent settings.
+*   **FR-076 (Vapi Agent Auto-Provisioning)**: The system auto-generates the initial Vapi assistant configuration (name, pre-configured system prompt based on business configuration/KB, language settings, voice settings, and multi-lingual support for English, Hindi, and Punjabi). The assistant is provisioned via the Vapi API and linked to the organization's Vobiz Indian number via SIP trunk.
+*   **FR-077 (Vapi Test Call Sandbox)**: Users can initiate a Vapi test call directly from the onboarding wizard. The test call is placed to the user's registered phone number via the Vobiz SIP trunk, replicating the full production call path. The sandbox displays a real-time transcript, active language indicator (English / Hindi / Punjabi), and configuration controls to adjust agent settings.
 *   **FR-077A (Multi-lingual Agent Support)**: The AI voice agent must support three languages: English (default/primary), Hindi (auto-detected when customer speaks Hindi), and Punjabi (auto-detected when customer speaks Punjabi). Language detection and switching must happen mid-conversation without call interruption.
 *   **FR-078 (Onboarding Activation)**: Completing onboarding registers the organization record, links the Owner role to the registering user, establishes the default workspace, sets up the default voice agent with the attached knowledge base, and redirects the user to the active Dashboard.
 *   **FR-079 (Onboarding Session Persistence)**: The system must persist onboarding step progress, draft payloads, and retry state so users can save and resume onboarding without losing work.
