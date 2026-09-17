@@ -8,7 +8,7 @@
  * • Read-only send history stub (future: pull from audit logs)
  */
 import { useState, useCallback } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useMutation } from '@tanstack/react-query';
 import {
   Send, Users, Building2, Eye, EyeOff, AlertTriangle, CheckCircle,
   ChevronDown, Info,

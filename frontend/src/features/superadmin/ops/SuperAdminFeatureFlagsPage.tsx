@@ -215,7 +215,7 @@ export default function SuperAdminFeatureFlagsPage() {
   // Selected org for per-org flags
   const [selectedOrgId, setSelectedOrgId] = useState('');
 
-  const { data: orgFlagsData, isLoading: loadingOrgFlags, refetch: refetchOrgFlags } = useQuery({
+  const { data: orgFlagsData, isLoading: loadingOrgFlags } = useQuery({
     queryKey: ['sa-flags-org', selectedOrgId],
     queryFn:  () => fetchOrgFlags(selectedOrgId),
     enabled:  !!selectedOrgId,

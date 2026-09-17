@@ -5,8 +5,7 @@
  */
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Mic, RefreshCw, AlertTriangle, Clock, XCircle, Filter } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Mic, RefreshCw, AlertTriangle, Clock, XCircle } from 'lucide-react';
 import api from '@/utils/api';
 
 const T = {

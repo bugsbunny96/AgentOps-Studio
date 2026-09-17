@@ -5,7 +5,7 @@
  */
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { TrendingDown, RefreshCw, Zap, AlertTriangle, CheckCircle, XCircle } from 'lucide-react';
+import { TrendingDown, RefreshCw, Zap, CheckCircle } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import api from '@/utils/api';
 

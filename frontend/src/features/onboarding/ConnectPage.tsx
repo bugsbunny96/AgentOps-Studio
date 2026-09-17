@@ -82,7 +82,7 @@ const ConnectSchema = z.object({
   industry: z.enum(INDUSTRY_OPTIONS, {
     errorMap: () => ({ message: 'Please select an industry' }),
   }),
-  timezone: z.string().min(1, 'Timezone is required').default('Asia/Kolkata'),
+  timezone: z.string().min(1, 'Timezone is required'),
 });
 
 type ConnectFormValues = z.infer<typeof ConnectSchema>;
@@ -107,7 +107,7 @@ export default function ConnectPage() {
     resolver: zodResolver(ConnectSchema),
     defaultValues: {
       name:     currentOrg?.name     ?? '',
-      industry: currentOrg?.industry ?? ('' as ConnectFormValues['industry']),
+      industry: (currentOrg?.industry as ConnectFormValues['industry']) ?? undefined,
       timezone: currentOrg?.timezone ?? 'Asia/Kolkata',
     },
   });

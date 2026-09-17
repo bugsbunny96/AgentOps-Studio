@@ -1,6 +1,5 @@
 import { useEffect } from 'react';
 import { Navigate } from 'react-router-dom';
-import { useAppSelector } from '@/store';
 import { useAuth } from '@/hooks/useAuth';
 
 interface Props {

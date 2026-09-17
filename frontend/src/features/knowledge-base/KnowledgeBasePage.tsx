@@ -648,7 +648,7 @@ interface DocRowProps {
   canWrite: boolean;
 }
 
-function DocRow({ doc, onEdit, onDelete, onView, isDeleting, canWrite }: DocRowProps) {
+function DocRow({ doc, onEdit: _onEdit, onDelete, onView, isDeleting, canWrite }: DocRowProps) {
   const [downloading, setDownloading] = useState(false);
   const [downloadErr, setDownloadErr] = useState<string | null>(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);

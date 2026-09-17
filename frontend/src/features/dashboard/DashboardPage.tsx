@@ -12,7 +12,7 @@ import { useQuery, useMutation } from '@tanstack/react-query';
 import {
   Bot, BookOpen, PhoneCall, ArrowRight, Copy, CheckCheck,
   Timer, CheckCircle2, PhoneOutgoing, X, Loader2, CheckCircle,
-  AlertCircle, Activity, Zap, Phone, Settings, TrendingUp, TrendingDown, Minus, Clock,
+  AlertCircle, Activity, Zap, Phone, Settings, Clock,
 } from 'lucide-react';
 import { useAppSelector } from '@/store';
 import { api } from '@/utils/api';
@@ -475,7 +475,7 @@ export function DashboardPage() {
   const primaryAgent   = agents[0];
   const isAgentLive    = Boolean(currentOrg?.vapiAssistantId);
   const kbDocCount     = kbStatus?.total ?? (currentOrg as any)?.kbDocCount ?? 0;
-  const orgPhone       = currentOrg?.phoneNumber;
+  const orgPhone       = (currentOrg as any)?.phoneNumber;
   const totalCalls     = callStats?.total          ?? 0;
   const callsToday     = callStats?.today           ?? 0;
   const avgDuration    = callStats?.avgDuration     ?? 0;

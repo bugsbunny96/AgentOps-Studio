@@ -16,7 +16,7 @@ const NAV_LINKS = [
  * Wraps all unauthenticated public pages (/, /services, /industries, etc.).
  */
 export function PublicLayout() {
-  const { isAuthenticated, onboardingComplete } = useAuth();
+  const { isAuthenticated, onboardingComplete } = useAuth() as ReturnType<typeof useAuth> & { onboardingComplete?: boolean };
   const location = useLocation();
   const navigate = useNavigate();
   const [scrolled, setScrolled] = useState(false);

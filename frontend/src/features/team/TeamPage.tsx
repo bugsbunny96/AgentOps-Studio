@@ -480,7 +480,7 @@ export default function TeamPage() {
 
   const { data: billingStatus } = useQuery<BillingStatus>({
     queryKey: ['billing', 'status'],
-    queryFn: () => api.get('/billing/status').then((r: { data: { data?: BillingStatus; [key: string]: unknown } }) => r.data?.data ?? r.data),
+    queryFn: () => api.get('/billing/status').then((r: { data: { data?: BillingStatus; [key: string]: unknown } }) => (r.data?.data ?? r.data) as BillingStatus),
     staleTime: 5 * 60_000,
   });
 
@@ -729,7 +729,7 @@ export default function TeamPage() {
               desc: 'Agents, Calls, and Knowledge Base are always visible. Checked = full access; unchecked = read-only. Team section is hidden unless explicitly granted.',
               icon: '👤',
             },
-          ] as const).map(({ role, desc, icon }) => {
+          ] as const).map(({ role, desc, icon: _icon }) => {
             const s = ROLE_STYLE[role];
             return (
               <div

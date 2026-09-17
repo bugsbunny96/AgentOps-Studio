@@ -210,7 +210,7 @@ export function useAuth() {
       );
       const { user: u, organizations } = res.data.data;
 
-      dispatch(setCredentials({ ...u, createdAt: '' }));
+      dispatch(setCredentials({ ...u, createdAt: '', status: u.status as 'Active' | 'Suspended' | 'Pending' }));
 
       const active = organizations.length > 0
         ? dispatchOrgs(dispatch, organizations)

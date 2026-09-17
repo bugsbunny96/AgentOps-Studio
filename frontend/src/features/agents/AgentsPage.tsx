@@ -137,7 +137,7 @@ function TestCallButton({
     if (vapiRef.current) { vapiRef.current.setMuted(!muted); setMuted((m) => !m); }
   }
 
-  const isActive = state === 'active' || state === 'agent-speaking';
+  const _isActive = state === 'active' || state === 'agent-speaking'; void _isActive;
 
   if (state === 'idle' || state === 'ended' || state === 'error') {
     return (

@@ -285,7 +285,7 @@ export default function BlogPage() {
         )}
 
         {!isLoading && posts.map((post, i) => {
-          const primaryTag = post.tags[0] ?? 'Article';
+          const _primaryTag = post.tags[0] ?? 'Article'; void _primaryTag;
           const tc         = tagColor(i);
           return (
             <Reveal key={post._id} delay={i * 80}>

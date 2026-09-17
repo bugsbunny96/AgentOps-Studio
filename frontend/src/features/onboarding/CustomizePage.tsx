@@ -17,7 +17,7 @@ import { Loader2, Mic } from 'lucide-react';
 import { AxiosError } from 'axios';
 import { useAuth } from '@/hooks/useAuth';
 import VoiceSelector, { type VoiceSelectorValue } from '@/features/agents/VoiceSelector';
-import type { VoiceProviderId, LanguageCode } from '@/features/agents/voice-catalog';
+import type { LanguageCode } from '@/features/agents/voice-catalog';
 
 // ─── Form schema ─────────────────────────────────────────────────────────────
 
@@ -47,7 +47,7 @@ export default function CustomizePage() {
   } = useForm<CustomizeFormValues>({
     resolver: zodResolver(CustomizeSchema),
     defaultValues: {
-      voiceProvider: (currentOrg?.preferredVoiceProvider as VoiceProviderId) ?? 'openai',
+      voiceProvider: ((currentOrg?.preferredVoiceProvider as string) === 'deepgram' ? 'openai' : (currentOrg?.preferredVoiceProvider as CustomizeFormValues['voiceProvider'])) ?? 'openai',
       voiceId:       (currentOrg?.preferredVoiceId as string) ?? 'nova',
       supportedLanguages: (currentOrg?.supportedLanguages as LanguageCode[]) ?? ['en-US'],
       fallbackNumber: currentOrg?.fallbackNumber ?? '',
@@ -58,7 +58,7 @@ export default function CustomizePage() {
   useEffect(() => {
     if (!currentOrg) return;
     reset({
-      voiceProvider: (currentOrg.preferredVoiceProvider as VoiceProviderId) ?? 'openai',
+      voiceProvider: (((currentOrg.preferredVoiceProvider as string) === 'deepgram' ? 'openai' : currentOrg.preferredVoiceProvider) as CustomizeFormValues['voiceProvider']) ?? 'openai',
       voiceId:       (currentOrg.preferredVoiceId as string) ?? 'nova',
       supportedLanguages: (currentOrg.supportedLanguages as LanguageCode[]) ?? ['en-US'],
       fallbackNumber: currentOrg.fallbackNumber ?? '',

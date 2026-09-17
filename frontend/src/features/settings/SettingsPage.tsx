@@ -950,7 +950,7 @@ export default function SettingsPage() {
             : undefined
         }
       >
-        {passwordSaved && <SavedBanner message="Password updated successfully." />}
+        {passwordSaved && <SavedBanner />}
 
         {passwordEdit ? (
           <ChangePasswordForm

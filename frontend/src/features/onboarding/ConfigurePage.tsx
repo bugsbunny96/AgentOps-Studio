@@ -116,7 +116,6 @@ export default function ConfigurePage() {
     control,
     watch,
     reset,
-    setValue,
     formState: { errors, isSubmitting },
   } = useForm<ConfigureFormValues>({
     resolver: zodResolver(ConfigureSchema),
