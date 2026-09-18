@@ -563,7 +563,7 @@ export default function TeamPage() {
           <AlertCircle size={15} className="flex-shrink-0 text-amber-600" />
           <p className="text-sm text-amber-800">
             You've reached your {billingStatus.teamMembers.limit}-member limit on the{' '}
-            <strong>{billingStatus.isInTrial ? 'Growth (Trial)' : billingStatus.effectivePlan}</strong> plan.{' '}
+            <strong>{billingStatus.isInTrial ? 'Basic (Trial)' : billingStatus.effectivePlan}</strong> plan.{' '}
             <a href="/billing" className="font-semibold underline hover:text-amber-900">Upgrade</a> to add more members.
           </p>
         </div>

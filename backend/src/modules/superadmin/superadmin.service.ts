@@ -9,11 +9,13 @@ import { Unauthorized, BadRequest, NotFound } from '../../middleware/errorHandle
 import { sendEmail } from '../../utils/email';
 
 // ── Plan pricing constants (INR / month) ─────────────────────────────────────
+// Source of truth: AgentOps Studio — SaaS Pricing & Stripe Setup (2026-09-17)
+// starter = Basic (₹9,999), growth = Standard (₹17,999), enterprise = Pro (₹25,999)
 const PLAN_MRR: Record<string, number> = {
   free:       0,
-  starter:    2999,
-  growth:     7999,
-  enterprise: 14999,
+  starter:    9_999,
+  growth:     17_999,
+  enterprise: 25_999,
 };
 
 // ─── SA Login ─────────────────────────────────────────────────────────────────

@@ -99,7 +99,6 @@ function RecordingTab({ call }: { call: Call }) {
       {/* Stat pills */}
       <div className="flex flex-wrap gap-3">
         <StatPill icon={<Clock size={13} className="text-slate-400" />} label="Duration" value={formatDuration(call.duration)} />
-        <StatPill icon={null} label="Cost" value={`$${(call.cost ?? 0).toFixed(4)}`} />
         <StatPill icon={null} label="Date" value={formatDateFull(call.createdAt)} />
         {call.endedReason && (
           <StatPill icon={null} label="Ended" value={humanizeEndedReason(call.endedReason)} />

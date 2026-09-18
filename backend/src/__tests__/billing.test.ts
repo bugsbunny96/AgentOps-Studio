@@ -200,7 +200,7 @@ describe('POST /api/v1/billing/checkout', () => {
     const res = await request(app)
       .post('/api/v1/billing/checkout')
       .set('Cookie', cookie)
-      .send({ plan: 'enterprise' }); // enterprise uses contact-sales, not checkout
+      .send({ plan: 'bogus-plan' }); // not one of starter/growth/enterprise
 
     expect(res.status).toBe(400);
     expect(res.body.code).toBe('INVALID_PLAN');
@@ -289,11 +289,11 @@ describe('GET /api/v1/billing/status', () => {
     expect(res.body.data.kbDocs.used).toBe(3);
   });
 
-  it('returns null limit for enterprise plan', async () => {
+  it('returns Pro-tier limits for enterprise plan', async () => {
     const ts = Date.now();
     const { org, cookie } = await createOwnerWithOrg(ts);
 
-    // Upgrade org to enterprise in DB
+    // Upgrade org to enterprise (Pro) in DB
     await OrganizationModel.findByIdAndUpdate(org._id, { plan: 'enterprise' });
 
     const res = await request(app)
@@ -302,7 +302,10 @@ describe('GET /api/v1/billing/status', () => {
 
     expect(res.status).toBe(200);
     expect(res.body.data.plan).toBe('enterprise');
-    expect(res.body.data.kbDocs.limit).toBeNull();
+    // Pro: 500 KB docs, 3,000 min fair-use ceiling (finite, not unlimited).
+    expect(res.body.data.kbDocs.limit).toBe(500);
+    expect(res.body.data.callMinutes.limit).toBe(3000);
+    // teamMembers is unchanged by the pricing update — still unlimited on Pro.
     expect(res.body.data.teamMembers.limit).toBeNull();
   });
 });

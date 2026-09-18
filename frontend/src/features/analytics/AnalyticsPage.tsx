@@ -14,7 +14,7 @@
 import { useCallback, useRef, useState, type CSSProperties, type ReactNode } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import {
-  PhoneCall, Activity, Radio, Timer, DollarSign, CheckCircle2, CalendarDays,
+  PhoneCall, Activity, Radio, Timer, CheckCircle2, CalendarDays,
   Trophy, AlertCircle, Loader2,
 } from 'lucide-react';
 import api from '@/utils/api';
@@ -42,7 +42,6 @@ interface AnalyticsOverview {
   callsThisWeek: number;
   activeCalls: number;
   avgDurationSec: number;
-  totalCostUsd: number;
   resolutionRate: number;
 }
 interface CallsPerDayPoint { date: string; count: number }
@@ -202,7 +201,6 @@ export default function AnalyticsPage() {
   const secondaryCards = [
     { label: 'Calls This Week', value: o.callsThisWeek, unit: '', icon: CalendarDays, rgb: '96,165,250' },
     { label: 'Avg Duration', value: fmtDuration(o.avgDurationSec), unit: '', icon: Timer, rgb: '245,158,11' },
-    { label: 'Total Cost', value: `$${o.totalCostUsd.toFixed(2)}`, unit: '', icon: DollarSign, rgb: '244,63,94' },
   ];
 
   return (
@@ -242,10 +240,10 @@ export default function AnalyticsPage() {
         </div>
       </div>
 
-      {/* Secondary KPI row — 3 cards, span 4 of 12 each */}
+      {/* Secondary KPI row — 2 cards, span 6 of 12 each */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(12, 1fr)', gap: 12 }}>
         {secondaryCards.map(({ label, value, unit, icon: Icon, rgb }) => (
-          <div key={label} style={{ gridColumn: 'span 4' }}>
+          <div key={label} style={{ gridColumn: 'span 6' }}>
             <BentoCard glowColor={`rgba(${rgb},0.1)`}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                 <div style={{

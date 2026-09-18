@@ -2,12 +2,14 @@
  * BillingPage — plan overview, usage meters, upgrade flow.
  * Redesigned to match the dark futuristic theme of DashboardLayout.
  *
- * Prices aligned with AgentOps Studio SaaS Pricing & Stripe Setup doc (2026-09-17):
- *   Starter  → ₹9,999 / month  (500 min, 1 agent)   [maps to "Basic" in pricing doc]
- *   Growth   → ₹17,999 / month (1,000 min, 3 agents) [maps to "Standard" in pricing doc]
- *   Enterprise → Custom
+ * Prices match AgentOps Studio SaaS Pricing & Stripe Setup doc (2026-09-17).
+ * Internal plan enum values are unchanged; customer-facing names are:
+ *   starter    → Basic     ₹9,999 / month  (500 min, 1 assistant)
+ *   growth     → Standard  ₹17,999 / month (1,000 min, 3 assistants)
+ *   enterprise → Pro       ₹25,999 / month (1,500 min, 5 assistants)
  *
- * All prices are + 18% GST (tax_exclusive in Stripe).
+ * All prices are + 18% GST (tax_exclusive in Stripe). No annual billing
+ * option exists in the current pricing model — monthly only.
  *
  * Routes:
  *   GET  /api/v1/billing/status   → current plan + usage
@@ -59,57 +61,42 @@ interface BillingStatus {
   trialEndsAt:      string | null;
 }
 
-// ─── Plan definitions — prices match landing page ─────────────────────────────
+// ─── Plan definitions — source of truth: AgentOps Studio SaaS Pricing &
+// Stripe Setup doc (2026-09-17). Customer-facing names: Basic/Standard/Pro.
 const PLANS: Array<{
   id:          Plan;
   name:        string;
   price:       string;
-  annualPrice: string;
   period:      string;
   description: string;
   features:    string[];
   notIncluded: string[];
   highlight:   boolean;
-  targetPlan?: 'starter' | 'growth';
+  targetPlan?: 'starter' | 'growth' | 'enterprise';
   accentRgb:   string;
   accentColor: string;
   badgeBg:     string;
   badgeBdr:    string;
 }> = [
   {
-    id:          'free',
-    name:        'Free',
-    price:       '₹0',
-    annualPrice: '₹0',
-    period:      '',
-    description: 'For solo founders getting started',
-    features:    ['1 AI voice agent', '5 KB documents', 'Inbound calls only', 'Community support'],
-    notIncluded: ['Hindi / Punjabi', 'Analytics dashboard', 'Outbound calls'],
-    highlight:   false,
-    accentRgb:   '71,85,105',
-    accentColor: T.t3,
-    badgeBg:     'rgba(71,85,105,0.2)',
-    badgeBdr:    T.bdr,
-  },
-  {
     id:          'starter',
-    name:        'Starter',
+    name:        'Basic',
     price:       '₹9,999',
-    annualPrice: '₹7,999',
-    period:      '/ month',
-    description: 'For solo shops & businesses up to ~125 calls/month',
+    period:      '/ month + GST',
+    description: 'Solo shops, <10 calls/day',
     features:    [
-      '1 AI voice agent',
       '500 minutes / month',
-      'Hindi + English',
-      'Call logs & basic analytics',
+      '1 AI assistant',
+      '1 voice (standard Hindi/English)',
       '50 KB knowledge base',
-      '1 team member',
-      'Google Sheets integration',
-      'WhatsApp alerts',
+      'Google Sheets + WhatsApp alerts',
+      'Call logging, basic routing',
+      'Call logs analytics',
+      '1 concurrent call',
+      '₹25/min additional minutes',
       'Email support (business hours)',
     ],
-    notIncluded: ['Custom agent persona', 'Order capture workflow', 'Call transcripts & summaries', 'CRM integration'],
+    notIncluded: ['Order capture & appointment booking', 'CRM / n8n / Razorpay integrations', 'Sentiment analysis'],
     highlight:   false,
     targetPlan:  'starter',
     accentRgb:   '100,116,139',
@@ -119,21 +106,20 @@ const PLANS: Array<{
   },
   {
     id:          'growth',
-    name:        'Growth',
+    name:        'Standard',
     price:       '₹17,999',
-    annualPrice: '₹14,999',
-    period:      '/ month',
-    description: 'For active businesses with 10–30 calls/day',
+    period:      '/ month + GST',
+    description: 'Active businesses, 10–30 calls/day',
     features:    [
-      '3 AI voice agents',
       '1,000 minutes / month',
-      'Hindi + English + Punjabi',
-      'Call trends, sentiment analysis',
+      '3 AI assistants',
+      '3 voices',
       '200 KB knowledge base',
-      'Up to 5 team members',
-      'Order capture & appointment booking',
-      'CRM + n8n workflows + Razorpay',
-      'Call transcripts & AI summaries',
+      '+ CRM, n8n workflows, Razorpay',
+      '+ Order capture, appointment booking',
+      'Call trends, sentiment analysis',
+      '2 concurrent calls',
+      '₹20/min additional minutes',
       'Priority email + WhatsApp support',
     ],
     notIncluded: [],
@@ -146,24 +132,26 @@ const PLANS: Array<{
   },
   {
     id:          'enterprise',
-    name:        'Enterprise',
-    price:       'Custom',
-    annualPrice: 'Custom',
-    period:      'volume pricing',
-    description: 'Unlimited agents, SLA, dedicated support, custom integrations',
+    name:        'Pro',
+    price:       '₹25,999',
+    period:      '/ month + GST',
+    description: 'Multi-branch, high volume',
     features:    [
-      'Unlimited AI agents',
-      'Unlimited minutes',
-      'All languages + custom',
-      'Custom CRM / helpdesk integrations',
-      '99.9% uptime SLA',
+      '1,500 minutes / month',
+      '5 AI assistants',
+      'All voices + custom voice cloning',
+      '500 KB knowledge base',
+      'Unlimited integrations',
+      'Full automation suite + custom workflows',
+      'Full analytics + monthly reports',
+      '3 concurrent calls',
+      '₹18/min additional minutes',
       'Dedicated account manager',
-      'SSO / SAML',
-      'Indian data residency SLA',
-      'Custom contract & invoicing',
+      'Fair-use cap: 3,000 min',
     ],
     notIncluded: [],
     highlight:   false,
+    targetPlan:  'enterprise',
     accentRgb:   '139,92,246',
     accentColor: '#a78bfa',
     badgeBg:     'rgba(139,92,246,0.15)',
@@ -171,7 +159,7 @@ const PLANS: Array<{
   },
 ];
 
-const PLAN_ORDER: Plan[] = ['free', 'starter', 'growth', 'enterprise'];
+const PLAN_ORDER: Plan[] = ['starter', 'growth', 'enterprise'];
 
 // ─── UsageMeter ───────────────────────────────────────────────────────────────
 function UsageMeter({ label, used, limit, icon: Icon, subtitle }: {
@@ -303,20 +291,17 @@ function TrialBanner({
 
 // ─── PlanCard ─────────────────────────────────────────────────────────────────
 function PlanCard({
-  plan, currentPlan, onUpgrade, upgrading, annual,
+  plan, currentPlan, onUpgrade, upgrading,
 }: {
   plan:        typeof PLANS[number];
   currentPlan: Plan;
-  onUpgrade:   (targetPlan: 'starter' | 'growth') => void;
+  onUpgrade:   (targetPlan: 'starter' | 'growth' | 'enterprise') => void;
   upgrading:   string | null;
-  annual:      boolean;
 }) {
   const isCurrent   = plan.id === currentPlan;
   const isDowngrade = PLAN_ORDER.indexOf(plan.id) < PLAN_ORDER.indexOf(currentPlan);
   const showUpgrade = !isCurrent && plan.targetPlan && !isDowngrade;
   const isLoading   = upgrading === plan.targetPlan;
-
-  const displayPrice = annual && plan.annualPrice !== 'Custom' ? plan.annualPrice : plan.price;
 
   return (
     <div style={{
@@ -387,28 +372,16 @@ function PlanCard({
       {/* Price */}
       <div style={{ marginBottom: 4 }}>
         <span style={{
-          fontSize: plan.price !== 'Custom' ? 36 : 28,
+          fontSize: 36,
           fontWeight: 800, letterSpacing: '-0.04em', lineHeight: 1,
           color: plan.highlight ? T.blueL : T.t1,
         }}>
-          {displayPrice}
+          {plan.price}
         </span>
         {plan.period && (
           <span style={{ fontSize: 12, color: T.t3, marginLeft: 4 }}>{plan.period}</span>
         )}
       </div>
-
-      {/* Annual hint */}
-      {!annual && plan.annualPrice !== 'Custom' && plan.annualPrice !== '₹0' && (
-        <p style={{ fontSize: 10.5, color: T.t3, marginBottom: 4 }}>
-          or {plan.annualPrice}/mo billed annually
-        </p>
-      )}
-      {annual && plan.annualPrice !== 'Custom' && plan.annualPrice !== '₹0' && (
-        <p style={{ fontSize: 10.5, color: T.em, marginBottom: 4 }}>
-          Save 33% — billed annually
-        </p>
-      )}
 
       <p style={{ fontSize: 12, color: T.t2, margin: '10px 0 16px', lineHeight: 1.5 }}>
         {plan.description}
@@ -470,20 +443,6 @@ function PlanCard({
         </button>
       )}
 
-      {plan.id === 'enterprise' && !isCurrent && (
-        <a
-          href="mailto:sales@agentops.studio"
-          style={{
-            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-            padding: '9px 16px', borderRadius: 9, textDecoration: 'none',
-            border: `1px solid ${T.bdr}`, background: T.bgC,
-            color: T.t2, fontSize: 12, fontWeight: 700,
-          }}
-        >
-          Contact Sales <ChevronRight size={13} />
-        </a>
-      )}
-
       {isDowngrade && !isCurrent && (
         <p style={{ fontSize: 11, color: T.t3, textAlign: 'center', margin: 0 }}>
           Downgrade via support
@@ -499,7 +458,6 @@ export default function BillingPage() {
   const navigate       = useNavigate();
   const [upgrading, setUpgrading] = useState<string | null>(null);
   const [toast, setToast]         = useState<{ type: 'success' | 'error'; msg: string } | null>(null);
-  const [annual, setAnnual]       = useState(false);
 
   // Inject spin keyframe
   useEffect(() => {
@@ -542,7 +500,7 @@ export default function BillingPage() {
   });
 
   const checkoutMutation = useMutation({
-    mutationFn: async (plan: 'starter' | 'growth') => {
+    mutationFn: async (plan: 'starter' | 'growth' | 'enterprise') => {
       const res = await api.post<{ success: boolean; data: { url: string } }>('/billing/checkout', { plan });
       return res.data.data.url;
     },
@@ -573,7 +531,7 @@ export default function BillingPage() {
     },
   });
 
-  function handleUpgrade(plan: 'starter' | 'growth') {
+  function handleUpgrade(plan: 'starter' | 'growth' | 'enterprise') {
     setUpgrading(plan);
     checkoutMutation.mutate(plan);
   }
@@ -622,50 +580,13 @@ export default function BillingPage() {
       )}
 
       {/* Header */}
-      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap' }}>
-        <div>
-          <h1 style={{ fontSize: 22, fontWeight: 800, color: T.t1, margin: '0 0 4px', letterSpacing: '-0.02em' }}>
-            Billing & Plan
-          </h1>
-          <p style={{ fontSize: 13, color: T.t3, margin: 0 }}>
-            Manage your subscription, view feature usage, and upgrade when you're ready.
-          </p>
-        </div>
-
-        {/* Annual toggle */}
-        <div style={{
-          display: 'flex', alignItems: 'center', gap: 8,
-          padding: '8px 14px', borderRadius: 10,
-          background: T.bgC, border: `1px solid ${T.bdr}`,
-        }}>
-          <span style={{ fontSize: 12, fontWeight: 600, color: !annual ? T.t1 : T.t3 }}>Monthly</span>
-          <button
-            onClick={() => setAnnual(!annual)}
-            aria-pressed={annual}
-            style={{
-              width: 36, height: 20, borderRadius: 10, border: 'none', cursor: 'pointer', flexShrink: 0,
-              background: annual ? 'linear-gradient(135deg, #3b82f6, #8b5cf6)' : 'rgba(255,255,255,0.1)',
-              position: 'relative', transition: 'background 0.3s',
-            }}
-          >
-            <span style={{
-              position: 'absolute', top: 2, left: annual ? 17 : 2,
-              width: 16, height: 16, borderRadius: '50%', background: '#fff',
-              transition: 'left 0.25s cubic-bezier(0.4,0,0.2,1)',
-              boxShadow: '0 1px 4px rgba(0,0,0,0.35)',
-            }} />
-          </button>
-          <span style={{ fontSize: 12, fontWeight: 600, color: annual ? T.t1 : T.t3 }}>Annual</span>
-          {annual && (
-            <span style={{
-              fontSize: 9, fontWeight: 700, padding: '2px 6px', borderRadius: 999,
-              background: 'rgba(16,185,129,0.12)', border: '1px solid rgba(16,185,129,0.25)',
-              color: T.em, textTransform: 'uppercase', letterSpacing: '.08em',
-            }}>
-              Save 33%
-            </span>
-          )}
-        </div>
+      <div>
+        <h1 style={{ fontSize: 22, fontWeight: 800, color: T.t1, margin: '0 0 4px', letterSpacing: '-0.02em' }}>
+          Billing & Plan
+        </h1>
+        <p style={{ fontSize: 13, color: T.t3, margin: 0 }}>
+          Manage your subscription, view feature usage, and upgrade when you're ready.
+        </p>
       </div>
 
       {/* Current plan + usage */}
@@ -733,13 +654,13 @@ export default function BillingPage() {
                     {data.trialDaysLeft} day{data.trialDaysLeft !== 1 ? 's' : ''} left
                   </span>
                 )}
-                {!data?.isInTrial && currentPlanDef && currentPlanDef.price !== '₹0' && (
+                {!data?.isInTrial && currentPlanDef && (
                   <span style={{
                     fontSize: 11, fontWeight: 700, color: currentPlanDef.accentColor,
                     padding: '2px 8px', borderRadius: 999,
                     background: currentPlanDef.badgeBg, border: `1px solid ${currentPlanDef.badgeBdr}`,
                   }}>
-                    {annual ? currentPlanDef.annualPrice : currentPlanDef.price}{currentPlanDef.period && ` ${currentPlanDef.period}`}
+                    {currentPlanDef.price}{currentPlanDef.period && ` ${currentPlanDef.period}`}
                   </span>
                 )}
               </div>
@@ -837,7 +758,7 @@ export default function BillingPage() {
           <div style={{ flex: 1, height: 1, background: T.bdr }} />
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12, alignItems: 'start' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12, alignItems: 'start' }}>
           {PLANS.map((plan) => (
             <PlanCard
               key={plan.id}
@@ -845,7 +766,6 @@ export default function BillingPage() {
               currentPlan={currentPlan}
               onUpgrade={handleUpgrade}
               upgrading={upgrading}
-              annual={annual}
             />
           ))}
         </div>

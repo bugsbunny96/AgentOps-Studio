@@ -175,7 +175,6 @@ function HeroCard({ call }: { call: Call }) {
       {/* Stats row */}
       <div className="mt-5 grid grid-cols-2 gap-4 border-t border-slate-100 pt-5 sm:grid-cols-3">
         <Stat label="Duration" value={formatDuration(call.duration)} icon={<Clock size={14} className="text-slate-400" />} />
-        <Stat label="Cost" value={`$${(call.cost ?? 0).toFixed(4)}`} icon={null} />
         {call.recordingUrl && (
           <Stat label="Recording" value="Available" icon={<Play size={14} className="text-slate-400" />} />
         )}

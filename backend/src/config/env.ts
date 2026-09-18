@@ -90,13 +90,16 @@ const envSchema = z.object({
   STRIPE_SECRET_KEY:          z.string().optional(), // sk_live_... or sk_test_...
   STRIPE_WEBHOOK_SECRET:      z.string().optional(), // whsec_...
   // Primary price IDs (used as fallback if INR variants are not set)
-  STRIPE_STARTER_PRICE_ID:    z.string().optional(), // price_... for Starter plan
-  STRIPE_GROWTH_PRICE_ID:     z.string().optional(), // price_... for Growth plan
+  // starter = Basic (₹9,999/mo), growth = Standard (₹17,999/mo), enterprise = Pro (₹25,999/mo)
+  STRIPE_STARTER_PRICE_ID:    z.string().optional(), // price_... for Basic plan
+  STRIPE_GROWTH_PRICE_ID:     z.string().optional(), // price_... for Standard plan
+  STRIPE_PRO_PRICE_ID:        z.string().optional(), // price_... for Pro plan
   // INR-denominated price IDs — set these to charge Indian customers in ₹
   // Create them in your Stripe dashboard with currency = INR, then paste the IDs here.
   // When set, these take priority over the primary price IDs above.
-  STRIPE_STARTER_PRICE_ID_INR: z.string().optional(), // price_... Starter plan (INR)
-  STRIPE_GROWTH_PRICE_ID_INR:  z.string().optional(), // price_... Growth plan (INR)
+  STRIPE_STARTER_PRICE_ID_INR: z.string().optional(), // price_... Basic plan (INR)
+  STRIPE_GROWTH_PRICE_ID_INR:  z.string().optional(), // price_... Standard plan (INR)
+  STRIPE_PRO_PRICE_ID_INR:     z.string().optional(), // price_... Pro plan (INR)
 });
 
 const parsed = envSchema.safeParse(process.env);

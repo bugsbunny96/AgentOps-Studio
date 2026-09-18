@@ -153,6 +153,11 @@ CallSchema.set('toJSON', {
     ret.organizationId = ret.organizationId?.toString();
     ret.agentId = ret.agentId?.toString();
     delete ret.__v;
+    // `cost` is our internal per-call vendor cost (Vapi) — never expose it to
+    // customer-facing API responses. Internal/superadmin services that need
+    // it (e.g. vapi-reconciliation.service.ts) read it via raw aggregation
+    // queries, which bypass this transform entirely.
+    delete ret.cost;
     return ret;
   },
 });

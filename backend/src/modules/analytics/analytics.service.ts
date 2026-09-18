@@ -47,7 +47,6 @@ export interface AnalyticsOverview {
   callsThisWeek:   number;
   activeCalls:     number;
   avgDurationSec:  number;   // average across all completed calls
-  totalCostUsd:    number;
   resolutionRate:  number;   // 0–100 (percentage of completed calls that have a summary)
 }
 
@@ -58,7 +57,7 @@ export async function getOverview(userId: string): Promise<AnalyticsOverview> {
 
   // Single $facet aggregation for efficiency
   const [result] = await CallModel.aggregate<{
-    totals: Array<{ totalCalls: number; totalDuration: number; totalCost: number; completedCalls: number }>;
+    totals: Array<{ totalCalls: number; totalDuration: number; completedCalls: number }>;
     today:  Array<{ count: number }>;
     week:   Array<{ count: number }>;
     active: Array<{ count: number }>;
@@ -72,7 +71,8 @@ export async function getOverview(userId: string): Promise<AnalyticsOverview> {
               _id: null,
               totalCalls:     { $sum: 1 },
               totalDuration:  { $sum: '$duration' },
-              totalCost:      { $sum: '$cost' },
+              // NOTE: internal vendor cost (`$cost`) is intentionally NOT
+              // aggregated here — this endpoint is customer-facing.
               completedCalls: { $sum: { $cond: [{ $eq: ['$status', 'completed'] }, 1, 0] } },
             },
           },
@@ -118,7 +118,6 @@ export async function getOverview(userId: string): Promise<AnalyticsOverview> {
     callsThisWeek:  result?.week?.[0]?.count   ?? 0,
     activeCalls:    result?.active?.[0]?.count ?? 0,
     avgDurationSec: completedCalls > 0 ? Math.round(totalDuration / completedCalls) : 0,
-    totalCostUsd:   Math.round((totals?.totalCost ?? 0) * 1000) / 1000,  // round to 3 decimal places
     resolutionRate: completedCalls > 0 ? Math.round((resolvedCount / completedCalls) * 100) : 0,
   };
 }
