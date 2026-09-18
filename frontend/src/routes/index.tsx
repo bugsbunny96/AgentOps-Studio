@@ -182,13 +182,7 @@ export const router = createBrowserRouter([
   // ── 404 ────────────────────────────────────────────────────────────
   {
     path: '*',
-    element: (
-      <div className="flex h-screen flex-col items-center justify-center gap-4">
-        <h1 className="text-4xl font-bold text-slate-900">404</h1>
-        <p className="text-slate-500">Page not found</p>
-        <a href="/dashboard" className="text-brand-600 hover:underline">Go to dashboard →</a>
-      </div>
-    ),
+    element: lazy_page(() => import('@/features/public/NotFoundPage')),
   },
 ]);
 

@@ -108,9 +108,13 @@ export default function ContactPage() {
   useKF();
   const [formState, setFormState] = useState<FormState>('idle');
   const formRef = useRef<HTMLFormElement>(null);
+  // Honeypot — bots fill this; humans don't see it
+  const [honeypot, setHoneypot] = useState('');
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
+    // Silently reject bot submissions
+    if (honeypot) { setFormState('success'); return; }
     setFormState('submitting');
 
     const formData = new FormData(e.currentTarget);
@@ -174,6 +178,17 @@ export default function ContactPage() {
                 </div>
               ) : (
                 <form ref={formRef} onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
+                  {/* Honeypot — hidden from real users, catches bots */}
+                  <input
+                    type="text"
+                    name="_gotcha"
+                    tabIndex={-1}
+                    autoComplete="off"
+                    value={honeypot}
+                    onChange={e => setHoneypot(e.target.value)}
+                    style={{ position: 'absolute', left: '-9999px', opacity: 0, pointerEvents: 'none', width: 0, height: 0 }}
+                    aria-hidden="true"
+                  />
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
                     <Field label="Name" name="name" required placeholder="Rishabh Sharma" />
                     <Field label="Email" name="email" type="email" required placeholder="you@company.com" />

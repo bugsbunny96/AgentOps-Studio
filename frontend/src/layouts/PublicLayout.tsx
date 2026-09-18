@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
+import { CookieConsent } from '@/components/CookieConsent';
 import agentopsIcon from '@/assets/logos/agentops-icon-reversed.svg';
 
 const NAV_LINKS = [
@@ -335,6 +336,9 @@ export function PublicLayout() {
           </div>
         </div>
       </footer>
+
+      {/* Cookie consent banner */}
+      <CookieConsent />
 
       {/* Responsive hamburger show */}
       <style>{`

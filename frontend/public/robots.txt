@@ -1,0 +1,18 @@
+User-agent: *
+Allow: /
+
+# Block authenticated app routes from indexing
+Disallow: /dashboard
+Disallow: /onboarding
+Disallow: /agents
+Disallow: /calls
+Disallow: /analytics
+Disallow: /knowledge-base
+Disallow: /billing
+Disallow: /settings
+Disallow: /team
+Disallow: /catalog
+Disallow: /orders
+Disallow: /superadmin
+
+Sitemap: https://agent-ops-studio-eight.vercel.app/sitemap.xml
