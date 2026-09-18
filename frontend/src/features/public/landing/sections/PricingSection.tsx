@@ -4,28 +4,28 @@ import { GradientText, Pill, Reveal, SectionEyebrow, SectionHeading, cardStyle }
 
 const PLANS = [
   {
-    badge: 'Starter', badgeBg: 'rgba(100,116,139,.2)', badgeColor: color.text2, badgeBdr: color.border,
-    price: '₹2,999', per: 'per month',
-    desc: 'For solopreneurs and small teams up to 500 calls/month.',
-    features: ['1 AI voice agent', '500 minutes / month', 'English language', 'Basic analytics'],
-    missing: ['Hindi / Punjabi', 'Custom agent name'],
+    badge: 'Basic', badgeBg: 'rgba(100,116,139,.2)', badgeColor: color.text2, badgeBdr: color.border,
+    price: '₹9,999', per: 'per month + GST',
+    desc: 'For solo shops with under 10 calls/day.',
+    features: ['1 AI assistant', '500 minutes / month', '1 voice (Hindi/English)', 'Google Sheets + WhatsApp alerts'],
+    missing: ['Order capture & booking', 'CRM / n8n integrations'],
     cta: 'Start Free Trial', ctaStyle: 'outline' as const, featured: false,
   },
   {
-    badge: 'Growth · Most Popular', badgeBg: 'rgba(59,130,246,.15)', badgeColor: color.blueLight, badgeBdr: 'rgba(59,130,246,.3)',
-    price: '₹7,999', per: 'per month',
-    desc: 'Multi-language support and deeper analytics for growing teams.',
-    features: ['3 AI voice agents', '2,000 minutes / month', 'Hindi + English + Punjabi', 'Full analytics dashboard', 'Custom agent persona', 'Fallback transfer number'],
+    badge: 'Standard · Most Popular', badgeBg: 'rgba(59,130,246,.15)', badgeColor: color.blueLight, badgeBdr: 'rgba(59,130,246,.3)',
+    price: '₹17,999', per: 'per month + GST',
+    desc: 'For active businesses handling 10–30 calls/day.',
+    features: ['3 AI assistants', '1,000 minutes / month', 'Order capture & appointment booking', 'CRM + n8n + Razorpay', 'Call trends & sentiment analysis'],
     missing: [],
     cta: 'Start Free Trial', ctaStyle: 'primary' as const, featured: true,
   },
   {
-    badge: 'Enterprise', badgeBg: 'rgba(139,92,246,.15)', badgeColor: color.violetLight, badgeBdr: 'rgba(139,92,246,.3)',
-    price: 'Custom', per: 'volume pricing',
-    desc: 'Unlimited agents, SLA, dedicated support, custom integrations.',
-    features: ['Unlimited AI agents', 'Unlimited minutes', 'All languages', 'Custom integrations', '99.9% uptime SLA', 'Dedicated account manager'],
+    badge: 'Pro', badgeBg: 'rgba(139,92,246,.15)', badgeColor: color.violetLight, badgeBdr: 'rgba(139,92,246,.3)',
+    price: '₹25,999', per: 'per month + GST',
+    desc: 'For multi-branch, high-volume operations.',
+    features: ['5 AI assistants', '1,500 minutes / month', 'All voices + custom cloning', 'Unlimited integrations', 'Dedicated account manager'],
     missing: [],
-    cta: 'Contact Sales →', ctaStyle: 'outline' as const, featured: false,
+    cta: 'Start Free Trial', ctaStyle: 'outline' as const, featured: false,
   },
 ];
 
@@ -79,7 +79,7 @@ export function PricingSection() {
                   ))}
                 </ul>
                 <Link
-                  to={cta === 'Contact Sales →' ? '/contact' : '/register'}
+                  to="/register"
                   style={{
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
                     width: '100%', padding: '9px 16px', borderRadius: 8, fontSize: 13, fontWeight: 600,

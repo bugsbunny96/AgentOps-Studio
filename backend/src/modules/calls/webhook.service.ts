@@ -20,7 +20,7 @@ import { OrganizationModel }  from '../organization/organization.model';
 import { VoiceAgentModel }    from '../agents/agent.model';
 import { CallModel, TranscriptModel, SummaryModel } from './call.model';
 import { isWithinBusinessHours, formatBusinessHours } from '../../utils/businessHours';
-import { PLAN_LIMITS }        from '../billing/billing.service';
+import { PLAN_LIMITS, getEffectiveCallMinutesLimit } from '../billing/billing.service';
 import { computeTrialState }  from '../billing/trial.service';
 import { env }    from '../../config/env';
 import { logger } from '../../utils/logger';
@@ -280,16 +280,17 @@ export async function handleAssistantRequest(
 
   // ── Call minutes quota gate ───────────────────────────────────────────────
   // Must be checked BEFORE Vapi connects any assistant to prevent cost exposure.
-  // Trial orgs use 'growth' effective plan; planOverride takes precedence over plan.
+  // Trial orgs get the 30-min trial cap (not the full plan allocation);
+  // planOverride takes precedence over plan.
   {
-    const basePlan   = (org.planOverride ?? org.plan) || 'free';
+    const basePlan   = ((org.planOverride ?? org.plan) || 'free') as keyof typeof PLAN_LIMITS;
     const trialState = computeTrialState(
       basePlan,
       org.trialUsed  ?? false,
       org.trialEndsAt,
     );
-    const effectivePlan = (trialState.isInTrial ? 'growth' : basePlan) as keyof typeof PLAN_LIMITS;
-    const minutesLimit  = PLAN_LIMITS[effectivePlan]?.callMinutes ?? Infinity;
+    const effectivePlan = trialState.isInTrial ? 'starter' : basePlan;
+    const minutesLimit  = getEffectiveCallMinutesLimit(basePlan, trialState.isInTrial);
     const minutesUsed   = org.callMinutesUsed ?? 0;
 
     if (minutesLimit !== Infinity && minutesUsed >= minutesLimit) {

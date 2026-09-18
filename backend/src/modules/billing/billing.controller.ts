@@ -4,7 +4,7 @@ import { BadRequest } from '../../middleware/errorHandler';
 
 /**
  * POST /api/v1/billing/checkout
- * Body: { plan: 'starter' | 'growth' }
+ * Body: { plan: 'starter' | 'growth' | 'enterprise' } (Basic | Standard | Pro)
  * Returns: { url } — redirect the browser to this Stripe Checkout URL
  */
 export async function createCheckoutSessionHandler(

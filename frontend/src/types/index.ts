@@ -101,7 +101,9 @@ export interface Call {
   status: 'active' | 'completed' | 'failed';
   callerNumber: string;
   recordingUrl?: string;
-  cost: number;
+  // NOTE: internal vendor cost is intentionally not exposed on this
+  // customer-facing type — the backend strips `cost` from all Call API
+  // responses (see CallSchema.toJSON in call.model.ts).
   endedReason?: string;   // e.g. 'customer-ended-call', 'silence-timed-out', 'hangup'
   createdAt: string;
   updatedAt: string;

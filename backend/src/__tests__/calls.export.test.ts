@@ -127,7 +127,7 @@ async function seedCall(
 }
 
 // CSV header expected in every export response
-const CSV_HEADER = 'id,caller_number,direction,status,duration_seconds,duration_formatted,cost_inr,ended_reason,date';
+const CSV_HEADER = 'id,caller_number,direction,status,duration_seconds,duration_formatted,ended_reason,date';
 
 // ── Tests ─────────────────────────────────────────────────────────────────────
 
@@ -208,7 +208,7 @@ describe('GET /api/v1/calls/export', () => {
     expect(body).toContain('+910000000003');
   });
 
-  it('each data row contains caller_number, direction, status, duration, cost, date', async () => {
+  it('each data row contains caller_number, direction, status, duration, date — no internal cost', async () => {
     const ts = Date.now();
     const { org, cookie } = await createOwnerWithOrg(`row-${ts}`);
     const agent = await createAgent(org._id, `row-${ts}`);
@@ -231,7 +231,8 @@ describe('GET /api/v1/calls/export', () => {
     expect(dataRow).toContain('completed');
     expect(dataRow).toContain('125');          // duration_seconds
     expect(dataRow).toContain('2m 05s');       // duration_formatted
-    expect(dataRow).toContain('2.75');         // cost_inr
+    // Internal vendor cost must never appear in a customer-facing export.
+    expect(dataRow).not.toContain('2.75');
   });
 
   it('filters by status=completed', async () => {

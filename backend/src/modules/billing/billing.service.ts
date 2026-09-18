@@ -24,26 +24,49 @@ import { computeTrialState } from './trial.service';
 // ─── Plan Limits (shared with kb.service + team.service + webhook.service) ────
 //
 // Source of truth: AgentOps Studio — SaaS Pricing & Stripe Setup (2026-09-17)
+// Internal enum values (free/starter/growth/enterprise) are unchanged from the
+// prior pricing model to avoid a data migration; they map to the doc's
+// customer-facing plan names as: starter → "Basic", growth → "Standard",
+// enterprise → "Pro". Only the numeric limits below were updated.
 //
 // callMinutes: max cumulative call-minutes per calendar month.
 //   - Enforced at assistant-request webhook BEFORE Vapi connects the call.
-//   - free=60       (1 hr — enough for demos/testing without Vapi cost exposure)
-//   - starter=500   (Basic plan: ₹9,999/mo, 500 min, ~125 calls/month @ 4 min avg)
-//   - growth=1000   (Standard plan: ₹17,999/mo, 1,000 min, ~250 calls/month)
-//   - enterprise=∞  (Pro/custom contract; no per-minute cap — billed via overage or custom)
+//   - free=60       (1 hr — internal-only fallback for orgs with no plan/trial)
+//   - starter=500   (Basic: ₹9,999/mo, 500 min, ~125 calls/month @ 4 min avg)
+//   - growth=1000   (Standard: ₹17,999/mo, 1,000 min, ~250 calls/month)
+//   - enterprise=3000 (Pro: ₹25,999/mo, 1,500 min included; doc specifies a
+//     "soft cap with overage billing" up to a 3,000 min fair-use ceiling, but
+//     no overage-billing system exists yet — see recharge/overage note in the
+//     pricing doc §4/§9 Step 7. Until that's built, 3,000 is enforced as a
+//     hard cap (the fair-use ceiling) rather than allowing unbilled overage.)
 //
 // kbDocs: max knowledge-base documents (not KB size in bytes — each doc ≤50KB).
-//   - free=5, starter=50 (≈50KB), growth=200 (≈200KB), enterprise=∞ (≈500KB+)
+//   The pricing doc's "Knowledge base: 50 KB / 200 KB / 500 KB" row is treated
+//   as matching these existing document-count limits (50/200/500), not a
+//   literal byte-size migration — flagged in the implementation report.
+//   - free=5, starter=50, growth=200, enterprise=500
 //
 // teamMembers: max additional Members (non-Owner). Owners excluded from count.
+//   Not present in the new pricing doc's package table — left unchanged.
 //   - free=0 (solo), starter=1, growth=5, enterprise=∞
 
+export const TRIAL_CALL_MINUTES = 30;
+
 export const PLAN_LIMITS: Record<Plan, { kbDocs: number; teamMembers: number; callMinutes: number }> = {
-  free:       { kbDocs: 5,        teamMembers: 0,        callMinutes: 60       },
-  starter:    { kbDocs: 50,       teamMembers: 1,        callMinutes: 500      },
-  growth:     { kbDocs: 200,      teamMembers: 5,        callMinutes: 1_000    },
-  enterprise: { kbDocs: Infinity, teamMembers: Infinity, callMinutes: Infinity },
+  free:       { kbDocs: 5,   teamMembers: 0,        callMinutes: 60    },
+  starter:    { kbDocs: 50,  teamMembers: 1,        callMinutes: 500   },
+  growth:     { kbDocs: 200, teamMembers: 5,        callMinutes: 1_000 },
+  enterprise: { kbDocs: 500, teamMembers: Infinity, callMinutes: 3_000 },
 };
+
+/**
+ * Call-minutes ceiling to apply for a given (plan, isInTrial) pair.
+ * During an active trial the org gets the doc's 30-minute trial cap
+ * regardless of plan — NOT the full plan allocation.
+ */
+export function getEffectiveCallMinutesLimit(plan: Plan, isInTrial: boolean): number {
+  return isInTrial ? TRIAL_CALL_MINUTES : PLAN_LIMITS[plan].callMinutes;
+}
 
 // ─── Plan name → Stripe price ID mapping ──────────────────────────────────────
 //
@@ -52,14 +75,19 @@ export const PLAN_LIMITS: Record<Plan, { kbDocs: number; teamMembers: number; ca
 // the Stripe Price object — no `currency` param needed on the session).
 // If the INR variants are absent, we fall back to the primary price IDs.
 
-function getPlanPriceId(plan: 'starter' | 'growth'): string {
+function getPlanPriceId(plan: 'starter' | 'growth' | 'enterprise'): string {
   if (plan === 'starter') {
     const id = env.STRIPE_STARTER_PRICE_ID_INR ?? env.STRIPE_STARTER_PRICE_ID;
-    if (!id) throw BadRequest('Starter plan is not configured');
+    if (!id) throw BadRequest('Basic plan is not configured');
     return id;
   }
-  const id = env.STRIPE_GROWTH_PRICE_ID_INR ?? env.STRIPE_GROWTH_PRICE_ID;
-  if (!id) throw BadRequest('Growth plan is not configured');
+  if (plan === 'growth') {
+    const id = env.STRIPE_GROWTH_PRICE_ID_INR ?? env.STRIPE_GROWTH_PRICE_ID;
+    if (!id) throw BadRequest('Standard plan is not configured');
+    return id;
+  }
+  const id = env.STRIPE_PRO_PRICE_ID_INR ?? env.STRIPE_PRO_PRICE_ID;
+  if (!id) throw BadRequest('Pro plan is not configured');
   return id;
 }
 
@@ -67,6 +95,7 @@ function getPlanFromPriceId(priceId: string): Plan | null {
   // Check INR variants first (they are preferred at checkout)
   if (priceId === env.STRIPE_STARTER_PRICE_ID_INR || priceId === env.STRIPE_STARTER_PRICE_ID) return 'starter';
   if (priceId === env.STRIPE_GROWTH_PRICE_ID_INR  || priceId === env.STRIPE_GROWTH_PRICE_ID)  return 'growth';
+  if (priceId === env.STRIPE_PRO_PRICE_ID_INR     || priceId === env.STRIPE_PRO_PRICE_ID)     return 'enterprise';
   return null;
 }
 
@@ -98,21 +127,21 @@ async function resolveOwnerOrgForBilling(userId: string) {
 // ─── createCheckoutSession ────────────────────────────────────────────────────
 
 /**
- * Creates a Stripe Checkout session for upgrading to `starter` or `growth`.
- * Returns the Stripe Checkout URL for redirect.
+ * Creates a Stripe Checkout session for upgrading to `starter`, `growth`, or `enterprise`
+ * (customer-facing: Basic, Standard, Pro). Returns the Stripe Checkout URL for redirect.
  */
 export async function createCheckoutSession(
   userId: string,
   targetPlan: string,
 ): Promise<{ url: string }> {
-  if (!targetPlan || !['starter', 'growth'].includes(targetPlan)) {
-    throw BadRequest('Plan must be "starter" or "growth"', 'INVALID_PLAN');
+  if (!targetPlan || !['starter', 'growth', 'enterprise'].includes(targetPlan)) {
+    throw BadRequest('Plan must be "starter", "growth", or "enterprise"', 'INVALID_PLAN');
   }
 
   const stripe = getStripe();
   const { org, orgId } = await resolveOwnerOrgForBilling(userId);
 
-  const priceId = getPlanPriceId(targetPlan as 'starter' | 'growth');
+  const priceId = getPlanPriceId(targetPlan as 'starter' | 'growth' | 'enterprise');
 
   const successUrl = `${env.CLIENT_URL}/billing?upgraded=true&session_id={CHECKOUT_SESSION_ID}`;
   const cancelUrl  = `${env.CLIENT_URL}/billing?cancelled=true`;
@@ -301,7 +330,7 @@ export async function createPortalSession(userId: string): Promise<{ url: string
 
 export interface BillingStatus {
   plan:            Plan;
-  /** The plan that governs feature access. Equals `plan` except during an active trial, where it's 'growth'. */
+  /** The plan that governs feature access. Equals `plan` except during an active trial, where it's 'starter' (Basic feature set) — call-minutes are further capped to TRIAL_CALL_MINUTES regardless. */
   effectivePlan:   Plan;
   kbDocs:          { used: number; limit: number | null };
   teamMembers:     { used: number; limit: number | null };
@@ -338,9 +367,11 @@ export async function getBillingStatus(userId: string): Promise<BillingStatus> {
   // Compute trial state
   const trial = computeTrialState(plan, orgData.trialUsed ?? false, orgData.trialEndsAt);
 
-  // During an active trial, treat the org as growth-level for feature access
-  const effectivePlan: Plan = trial.isInTrial ? 'growth' : plan;
+  // During an active trial, treat the org as starter-level (Basic feature set)
+  // for feature access; call-minutes get the separate 30-min trial cap below.
+  const effectivePlan: Plan = trial.isInTrial ? 'starter' : plan;
   const limits = PLAN_LIMITS[effectivePlan];
+  const callMinutesLimit = getEffectiveCallMinutesLimit(plan, trial.isInTrial);
 
   const [kbDocsUsed, membersUsed, pendingInvites] = await Promise.all([
     KbDocumentModel.countDocuments({ organizationId: orgId }),
@@ -365,7 +396,7 @@ export async function getBillingStatus(userId: string): Promise<BillingStatus> {
     },
     callMinutes: {
       used:    orgData.callMinutesUsed ?? 0,
-      limit:   limits.callMinutes === Infinity ? null : limits.callMinutes,
+      limit:   callMinutesLimit === Infinity ? null : callMinutesLimit,
       resetAt: nextResetAt.toISOString(),
     },
     stripeCustomerId: orgData.stripeCustomerId ?? null,

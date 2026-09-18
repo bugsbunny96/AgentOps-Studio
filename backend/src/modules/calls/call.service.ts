@@ -103,7 +103,8 @@ export async function listCalls(userId: string, query: ListCallsQuery) {
  * Serialises all calls matching the given filters to CSV string.
  * No pagination — exports every matching row (capped at 10 000 for safety).
  * Columns: id, caller_number, direction, status, duration_seconds,
- *          duration_formatted, cost_inr, ended_reason, date
+ *          duration_formatted, ended_reason, date
+ * Internal vendor cost is intentionally excluded — customer-facing export.
  */
 
 function csvEscape(val: unknown): string {
@@ -145,7 +146,6 @@ export async function exportCalls(userId: string, query: ExportCallsQuery): Prom
     'status',
     'duration_seconds',
     'duration_formatted',
-    'cost_inr',
     'ended_reason',
     'date',
   ].join(',');
@@ -158,7 +158,6 @@ export async function exportCalls(userId: string, query: ExportCallsQuery): Prom
       csvEscape(c.status),
       csvEscape(c.duration),
       csvEscape(formatDurationSeconds(c.duration)),
-      csvEscape(c.cost.toFixed(2)),
       csvEscape(c.endedReason ?? ''),
       csvEscape(c.createdAt.toISOString()),
     ].join(','),

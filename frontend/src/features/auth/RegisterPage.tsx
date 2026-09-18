@@ -139,7 +139,7 @@ export default function RegisterPage() {
         <p className="mt-1 text-sm text-slate-500">
           {showInviteBanner
             ? 'Create an account to accept your invitation.'
-            : 'Start your 14-day free trial. No credit card required.'}
+            : 'Start your 7-day free trial. No credit card required.'}
         </p>
       </div>
 

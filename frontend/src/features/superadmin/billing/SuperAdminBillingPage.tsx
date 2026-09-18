@@ -51,11 +51,14 @@ const PLAN_COLOR: Record<string, string> = {
   enterprise: T.violet,
 };
 
+// Source of truth: AgentOps Studio — SaaS Pricing & Stripe Setup (2026-09-17)
+// Internal `plan` enum values are unchanged (starter/growth/enterprise);
+// customer-facing names are Basic/Standard/Pro.
 const PLAN_LABEL: Record<string, string> = {
   free:       'Free',
-  starter:    'Starter  ₹2,999/mo',
-  growth:     'Growth  ₹5,999/mo',
-  enterprise: 'Enterprise  ₹14,999/mo',
+  starter:    'Basic  ₹9,999/mo',
+  growth:     'Standard  ₹17,999/mo',
+  enterprise: 'Pro  ₹25,999/mo',
 };
 
 const fmt = (n: number) =>

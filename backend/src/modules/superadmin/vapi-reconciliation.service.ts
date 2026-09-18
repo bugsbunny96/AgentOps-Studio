@@ -7,11 +7,13 @@
  *
  * This surfaces orgs whose Vapi costs are eating into margins or exceeding revenue.
  *
- * Plan pricing (monthly, USD):
+ * Plan pricing (monthly, USD — approximate, converted from the real INR
+ * subscription prices at ~₹83/$1 for this internal margin-alert tool only;
+ * source of truth is the INR pricing doc, not this USD estimate):
  *   free       → $0    / mo  (trial — costs are pure loss)
- *   starter    → $49   / mo
- *   growth     → $149  / mo
- *   enterprise → $499  / mo  (floor; actual contract may be higher)
+ *   starter    → $120  / mo  (Basic, ₹9,999/mo)
+ *   growth     → $217  / mo  (Standard, ₹17,999/mo)
+ *   enterprise → $313  / mo  (Pro, ₹25,999/mo)
  *
  * Vapi minute rates (approximate, USD per minute — update when Vapi reprices):
  *   STT: ~$0.002 / min  (Deepgram)
@@ -35,12 +37,12 @@ import { OrganizationModel } from '../organization/organization.model';
 /** Approximate Vapi all-in cost per call-minute in USD. Update quarterly. */
 const VAPI_COST_PER_MIN_USD = 0.012;
 
-/** Monthly plan revenue in USD (per plan tier). */
+/** Monthly plan revenue in USD (per plan tier) — approximate, see header comment. */
 const PLAN_MONTHLY_REVENUE_USD: Record<string, number> = {
   free:       0,
-  starter:    49,
-  growth:    149,
-  enterprise: 499,
+  starter:    120,
+  growth:     217,
+  enterprise: 313,
 };
 
 /** Warn when estimated margin drops below this % */

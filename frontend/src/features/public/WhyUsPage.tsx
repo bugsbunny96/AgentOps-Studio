@@ -61,8 +61,8 @@ const DIFFS = [
     body: 'No enterprise sales cycle. No 6-month implementation. Sign up, paste your website URL, connect your number — your agent handles real calls before your next team standup.' },
   { icon: '🔒', title: 'Your data, your org', color: T.blue,
     body: 'Every org is fully isolated. Your transcripts, KB docs, and customer data never touch another tenant\'s records. Multi-tenant architecture with row-level org scoping on every database query.' },
-  { icon: '💸', title: 'Predictable flat-rate pricing', color: T.violet,
-    body: 'No surprise per-minute charges that blow your budget at month end. Flat monthly plans so your finance team can plan accurately. Upgrade when you need more — downgrade any time.' },
+  { icon: '💸', title: 'Transparent, published pricing', color: T.violet,
+    body: 'A flat monthly plan with a fixed number of included minutes — no hidden fees. If you need more, our overage and recharge rates are published up front, not buried in a sales call. Upgrade when you need more, any time.' },
   { icon: '🧪', title: 'Enterprise voice stack, SMB price', color: '#f97316',
     body: 'The same stack used by enterprise contact centres — Vapi, Deepgram, GPT-4o, ElevenLabs — packaged at a price point a 5-person logistics company can actually afford.' },
 ];
@@ -74,7 +74,7 @@ const COMPARE = [
   { feature: 'Hindi + English voice',vals: ['✅',           'Depends on hire',   '❌ text only',  '⚠️ extra dev'] },
   { feature: 'Outbound calling',     vals: ['✅',           '❌',                 '❌',            '⚠️ extra dev'] },
   { feature: 'Real-time transcripts',vals: ['✅',           '❌',                 'N/A',           '⚠️ extra dev'] },
-  { feature: 'Monthly cost (SMB)',   vals: ['₹4,999+',      '₹25,000–60,000',    '₹8,000–20,000','₹2L+ setup'] },
+  { feature: 'Monthly cost (SMB)',   vals: ['₹9,999+',      '₹25,000–60,000',    '₹8,000–20,000','₹2L+ setup'] },
   { feature: 'No-code setup',        vals: ['✅',           'N/A',               '⚠️ partial',   '❌'] },
 ];
 

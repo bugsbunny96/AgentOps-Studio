@@ -154,7 +154,7 @@ export default function TermsPage() {
           <p style={S.p}>"<strong style={{ color: T.t1 }}>Voice Agent</strong>" means an AI-powered automated calling agent configured through the Platform.</p>
           <p style={S.p}>"<strong style={{ color: T.t1 }}>Call Data</strong>" means recordings, transcripts, and metadata associated with calls made via the Platform.</p>
           <p style={S.p}>"<strong style={{ color: T.t1 }}>Organisation</strong>" means the account entity created by the first registered user (the "Owner").</p>
-          <p style={S.p}>"<strong style={{ color: T.t1 }}>Subscription Plan</strong>" means the Free, Starter, or Growth tier to which an Organisation subscribes.</p>
+          <p style={S.p}>"<strong style={{ color: T.t1 }}>Subscription Plan</strong>" means the Basic, Standard, or Pro tier to which an Organisation subscribes.</p>
           <p style={S.p}>"<strong style={{ color: T.t1 }}>SPDI</strong>" or "<strong style={{ color: T.t1 }}>Sensitive Personal Data or Information</strong>" has the meaning ascribed under Rule 3 of the Information Technology (Reasonable Security Practices and Procedures and Sensitive Personal Data or Information) Rules, 2011.</p>
           <p style={S.p}>"<strong style={{ color: T.t1 }}>TRAI</strong>" means the Telecom Regulatory Authority of India.</p>
         </div>
@@ -202,7 +202,7 @@ export default function TermsPage() {
         <div style={S.section}>
           <h2 style={S.h2}>6. Subscription Plans & Billing</h2>
           <h3 style={S.h3}>6.1 Plan Tiers</h3>
-          <p style={S.p}>The Service is offered under three plans — Free, Starter (₹4,999/month), and Growth (₹12,999/month). Feature availability and usage limits vary by plan and are described on the Pricing page. We may introduce additional plans or modify existing plans with 30 days' notice.</p>
+          <p style={S.p}>The Service is offered under three plans — Basic (₹9,999/month), Standard (₹17,999/month), and Pro (₹25,999/month), each plus 18% GST. Feature availability and usage limits vary by plan and are described on the Pricing page. We may introduce additional plans or modify existing plans with 30 days' notice.</p>
 
           <h3 style={S.h3}>6.2 Billing Cycle</h3>
           <p style={S.p}>Paid subscriptions are billed monthly in advance. Your subscription auto-renews on the same calendar day each month unless cancelled before the renewal date.</p>
@@ -226,8 +226,8 @@ export default function TermsPage() {
         {/* Section 7 */}
         <div style={S.section}>
           <h2 style={S.h2}>7. Free Trial</h2>
-          <p style={S.p}>7.1 We may offer a free trial period for paid plans. During a free trial, you can access the Service without charge for the specified duration.</p>
-          <p style={S.p}>7.2 If you do not cancel before the trial ends, your account will automatically convert to the applicable paid plan and your payment method will be charged.</p>
+          <p style={S.p}>7.1 New Organisations receive a 7-day free trial with the Basic-plan feature set and 30 included call-minutes. No credit card or payment method is required to start a trial.</p>
+          <p style={S.p}>7.2 If you do not select a paid plan before the trial ends, your AI agent will pause — it will stop answering new calls — but your account data is retained for 30 days. No charge is made automatically; you are only billed once you actively choose and confirm a paid plan.</p>
           <p style={S.p}>7.3 We reserve the right to modify or terminate free trial offerings at any time without liability.</p>
         </div>
 
