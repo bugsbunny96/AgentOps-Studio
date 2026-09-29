@@ -1176,3 +1176,67 @@ Founder decision needed: Yes (T1) — requires campaign budget and founder time 
 Updated from R&D Backlog item #8 (Cold outreach sequence for Indian SMBs) and #3 (Product Hunt launch strategy):
 - Item #8: COMPLETED — 12-touch WhatsApp outbound sequence documented above. Promote to sprint-ready template (T1 approval needed).
 - Item #3: Product Hunt strategy to be scoped in next Growth R&D session. Recommend timing launch alongside "Missed Call Audit" campaign for momentum amplification.
+
+---
+
+## v1.8.0 — 2026-09-28 — Session: Instagram Content Intelligence Scan (24 posts)
+
+Source report: `~/Documents/IG-POST/IG_Content_Intelligence_Report_24_Posts.docx` (24 AI/automation posts, 26 Aug – 25 Sep 2026, tools verified against GitHub on 2026-09-28).
+
+[2026-09-28 05:45] v1.8 — Product R&D Worker
+Type: Research Note
+Trigger: on-demand (founder request)
+Finding: "AI receptionist for small business" is now marketed as a weekend vibe-coding project (@avani.codes, 8.4K comments) and a free n8n/Make template (@bitbyybit, ~4K comments). A basic English voice bot is commoditised.
+Opportunity: Lead positioning with what DIY builds lack — Hindi/Punjabi auto-detect, Indian DIDs via Vobiz, call analytics/transcript search, reliability.
+Proposed artifact: BL-018 (positioning refresh — hero, pricing, outbound copy)
+Affects: PRD (positioning), landing page
+Founder decision needed: Yes — promote to sprint (T1)
+
+[2026-09-28 05:45] v1.8 — Growth R&D Worker
+Type: Backlog Candidate
+Trigger: on-demand (founder request)
+Finding: Non-technical "AI implementers" (@kekoamac, 943K followers) package Vapi + Synthflow + n8n for local niches at ~$2,500 setup + $2,500/month, with a 30-day pilot. 12 of 24 posts use comment-to-DM gating; comments exceeded likes on 3 posts. The only Hindi-caption item (AI-fatigue meme) had the largest reach (1.06M views).
+Opportunity: (a) Partner/agency tier so implementers build on AgentOps instead of Vapi+n8n; (b) comment-to-DM carousels ("comment AUDIT") feeding BL-015 Missed Call Audit; (c) monthly Hindi/Hinglish meme-format reel.
+Proposed artifact: BL-019 (partner/agency tier — multi-client dashboard, white-label, rebilling), BL-020 (comment-gated carousel series for BL-015)
+Affects: Roadmap (GTM), Sprint Backlog
+Founder decision needed: Yes — promote to sprint (T1)
+
+[2026-09-28 05:45] v1.8 — AI R&D Worker
+Type: RFC Draft candidate
+Trigger: on-demand (founder request)
+Finding: (1) vectorize-io/hindsight — agent memory (retain/recall/reflect), MIT, ~22K★, Node/TS SDK, per-user/agent "banks", Docker/Helm + Postgres. (2) NandhaKishorM/laya — non-generative decision model (choice/score/yes-no), Apache-2.0, ~26K★, multilingual checkpoint (100+ langs), ~33 ms/call GPU, Jev-compatible POST /v1/systemone. (3) NVIDIA PersonaPlex is English-only; Qwen3-TTS supports 10 languages with no Hindi/Punjabi → keep Sarvam TTS.
+Opportunity: Returning-caller memory (one Hindsight bank per org; retain after end-of-call report, recall before assistant start) and post-call intent/urgency tagging with Laya to fill existing `intentDetected` without an LLM call. Both as BullMQ jobs, outside live-call latency path. Requires 200-call EN/HI/PA labelled eval set before production.
+Proposed artifact: BL-021 (Hindsight caller-memory spike), BL-022 (Laya intent/urgency tagging + eval set)
+Affects: TAD (AI sections), webhook.service.ts pipeline
+Founder decision needed: Yes — promote to sprint (T1); cross-domain (Eng) → file RFC before implementation
+
+[2026-09-28 05:45] v1.8 — Engineering R&D Worker
+Type: Research Note
+Trigger: on-demand (founder request)
+Finding: tashfeenahmed/freellmapi (MIT, ~27K★) aggregates 34 free LLM providers behind one OpenAI-compatible endpoint; README says "personal experimentation only". paperclipai/paperclip (MIT, ~84K★, Node 24.11+) provides org chart, per-agent budgets, tickets, approval gates, audit log, multi-org. Google Ax is Kubernetes-based (mismatch with ECS/Fargate). Crawl4AI is a candidate benchmark vs the Playwright KB crawler.
+Opportunity: FreeLLMAPI for dev/CI evals only (never customer traffic). Paperclip as internal operating layer for the CEO/worker agent model; design reference for per-assistant budgets.
+Proposed artifact: BL-023 (dev-only free-LLM eval harness + Paperclip internal pilot)
+Affects: Tech-debt / tooling backlog
+Founder decision needed: No (logged) for evaluation; Yes (T1) to adopt
+
+[2026-09-28 05:45] v1.8 — CS R&D Worker
+Type: Research Note
+Trigger: on-demand (founder request)
+Finding: Once BL-021/BL-022 ship, two new health signals become measurable: share of calls from returning callers, and urgent-call response time.
+Opportunity: Add both to customer health score; offer partner tier (BL-019) to beta customers who are agencies/consultants.
+Proposed artifact: Health-score addendum (after BL-021/022)
+Affects: CS playbook
+Founder decision needed: No (logged)
+
+#### BACKLOG CANDIDATES ADDED THIS SESSION
+
+| ID | Title | Priority | Type |
+|---|---|---|---|
+| BL-018 | Positioning refresh vs DIY voice bots (Indic languages, Indian DIDs, analytics) | High | Positioning |
+| BL-019 | Partner / agency tier (multi-client, white-label, rebilling) | High | Product + GTM |
+| BL-020 | Comment-to-DM carousel series feeding Missed Call Audit (BL-015) | Medium | Campaign |
+| BL-021 | Returning-caller memory via Hindsight (spike, feature-flagged) | High | AI + Eng |
+| BL-022 | Laya post-call intent/urgency tagging + EN/HI/PA eval set | Medium | AI + Eng |
+| BL-023 | Dev-only FreeLLMAPI eval harness + Paperclip internal pilot | Low | Tooling |
+
+Sequencing note: all items queue behind gaps.md Week-1 launch blockers (Vobiz provisioning, Activate test call).

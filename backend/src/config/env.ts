@@ -49,21 +49,6 @@ const envSchema = z.object({
    */
   VAPI_TOOL_WEBHOOK_SECRET: z.string().optional(),
 
-  // ── Sarvam TTS Bridge (opt-in custom voice) ──────────────────────────
-  SARVAM_API_KEY: z.string().optional(),
-  /**
-   * Public URL of the deployed TTS bridge service.
-   * When set, Vapi assistants use 'custom-voice' provider pointing to this URL.
-   * When absent, assistants use Vapi native 'Naina V2' voice instead.
-   */
-  SARVAM_BRIDGE_URL: z.string().optional(),
-  /** Sarvam TTS model — default: 'bulbul:v3' */
-  TTS_MODEL: z.string().default('bulbul:v3'),
-  /** Sarvam TTS language code — default: 'hi-IN' */
-  TTS_LANGUAGE_CODE: z.string().default('hi-IN'),
-  /** Sarvam TTS speaker name — default: 'shubh' */
-  TTS_SPEAKER: z.string().default('shubh'),
-
   // ── Vobiz SIP Trunk (sole telephony provider — https://vobiz.ai) ────────
   /**
    * Unique SIP domain for your outbound trunk.
@@ -85,6 +70,31 @@ const envSchema = z.object({
    * (per-org inbound credential IDs are stored on the Organization document).
    */
   VOBIZ_VAPI_CREDENTIAL_ID: z.string().optional(),
+  /**
+   * Vobiz REST API credentials (account-level, NOT the SIP trunk username/password).
+   * Found on the Vobiz Console dashboard. Used to list the numbers in the shared
+   * Vobiz account so customers can pick one during onboarding (Step 5).
+   * X-Auth-ID format: MA_XXXXXXXX. Server-side only — never expose to the browser.
+   */
+  VOBIZ_AUTH_ID:    z.string().optional(),
+  VOBIZ_AUTH_TOKEN: z.string().optional(),
+  /**
+   * Vapi credential ID of the shared "Vobiz Inbound" byo-sip-trunk credential
+   * (gateways = the 10 Vobiz signaling IPs). New customer numbers are imported
+   * into Vapi against this credential so inbound calls reach the assistant-request
+   * webhook. Falls back to VOBIZ_VAPI_CREDENTIAL_ID when unset.
+   */
+  VOBIZ_VAPI_INBOUND_CREDENTIAL_ID: z.string().optional(),
+
+  // ── Keep-alive (Render free tier) ────────────────────────────────────
+  /** Injected automatically by Render — the service's public URL. */
+  RENDER_EXTERNAL_URL: z.string().optional(),
+  /** Optional override for the self-ping target (defaults to RENDER_EXTERNAL_URL). */
+  KEEP_ALIVE_URL: z.string().optional(),
+  /** Set to 'false' to disable the self-ping (e.g. on a paid always-on plan). */
+  KEEP_ALIVE_ENABLED: z.string().default('true').transform((v) => v !== 'false'),
+  /** Ping interval in minutes — clamped to 1–14 (Render sleeps after 15). */
+  KEEP_ALIVE_INTERVAL_MINUTES: z.string().default('10').transform(Number),
 
   // ── Stripe ───────────────────────────────────────────────────────────
   STRIPE_SECRET_KEY:          z.string().optional(), // sk_live_... or sk_test_...

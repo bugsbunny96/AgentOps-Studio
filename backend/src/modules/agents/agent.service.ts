@@ -42,13 +42,13 @@ const VAPI_PROVIDER_MAP: Record<string, VapiVoice['provider']> = {
   playht:         'playht',
   azure:          'azure',
   vapi:           'vapi',
-  'custom-voice': 'custom-voice',
+  // Legacy: agents saved with the removed Sarvam bridge fall back to Vapi native voice
+  'custom-voice': 'vapi',
 };
 
 /**
  * Builds the Vapi voice config block from agent + env settings.
- * If SARVAM_BRIDGE_URL is set, uses the custom-voice bridge for Sarvam TTS.
- * Otherwise uses Vapi native Naina V2.
+ * All TTS runs inside Vapi (native voices or Vapi-hosted providers).
  */
 function buildVapiVoice(
   rawProvider: string,
@@ -57,17 +57,6 @@ function buildVapiVoice(
   hasNonEnglish: boolean,
 ): VapiVoice {
   const vapiProvider = VAPI_PROVIDER_MAP[rawProvider] ?? 'openai';
-
-  // Custom-voice bridge (opt-in via SARVAM_BRIDGE_URL env var)
-  if (vapiProvider === 'custom-voice' && env.SARVAM_BRIDGE_URL) {
-    return {
-      provider: 'custom-voice',
-      server: {
-        url: `${env.SARVAM_BRIDGE_URL}/api/synthesize`,
-        timeoutSeconds: 10,
-      },
-    };
-  }
 
   // Vapi native voice (e.g. Naina V2 for Hindi support)
   if (vapiProvider === 'vapi') {

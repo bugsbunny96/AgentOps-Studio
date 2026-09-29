@@ -15,6 +15,7 @@ out/
 # ── Environment ────────────────────────────────────────────────────────
 .env
 .env.local
+.env.bak
 .env.*.local
 # Keep .env.example committed
 !.env.example

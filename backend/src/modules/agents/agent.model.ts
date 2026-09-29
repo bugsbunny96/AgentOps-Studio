@@ -11,7 +11,7 @@ export interface IVoiceAgent extends Document {
   /**
    * TTS voice provider.
    * 'vapi'         → Vapi native voices (e.g. Naina V2)
-   * 'custom-voice' → Custom TTS bridge (e.g. Sarvam Bulbul v3 via tts-bridge service)
+   * 'custom-voice' → Legacy only (Sarvam bridge removed) — mapped to Vapi native voice
    */
   voiceProvider: 'openai' | 'elevenlabs' | 'deepgram' | 'cartesia' | 'playht' | 'azure' | 'vapi' | 'custom-voice';
   voiceId: string;
