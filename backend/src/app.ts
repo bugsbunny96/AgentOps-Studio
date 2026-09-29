@@ -24,7 +24,7 @@ import { announcementRouter }  from './modules/announcement/announcement.routes'
 import { changelogRouter }     from './modules/changelog/changelog.routes';
 import { catalogRouter }       from './modules/catalog/catalog.routes';
 import { ordersRouter }        from './modules/orders/order.routes';
-import { ttsBridgeRouter }     from './modules/tts-bridge/tts-bridge.routes';
+import { telephonyRouter }     from './modules/telephony/telephony.routes';
 import {
   publicEnterpriseLinkHandler,
   publicOrgBrandingHandler,
@@ -139,16 +139,13 @@ app.use('/api/v1/team',          teamRouter);
 
 // Layer 3 — Voice AI
 app.use('/api/v1/agents', agentsRouter);
+app.use('/api/v1/telephony', telephonyRouter);
 app.use('/api/v1/webhooks/vapi', vapiWebhookRouter);
 
 // Layer 4 — Intelligence
 app.use('/api/v1/calls', callsRouter);
 app.use('/api/v1/catalog', catalogRouter);
 app.use('/api/v1/orders', ordersRouter);
-
-// TTS Bridge — Vapi custom-voice protocol endpoint (NOT behind auth; Vapi calls it directly)
-// Only active when SARVAM_BRIDGE_URL points back here (opt-in via env)
-app.use('/api/tts', ttsBridgeRouter);
 
 // Layer 5 — Observability
 app.use('/api/v1/analytics', analyticsRouter);

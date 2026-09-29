@@ -4,6 +4,7 @@ import { connectDatabase, disconnectDatabase } from './config/database';
 import { redis } from './config/redis';
 import { logger } from './utils/logger';
 import { startCallReportWorker } from './jobs/callReport.worker';
+import { startKeepAlive, stopKeepAlive } from './utils/keepAlive';
 // ── Workers disabled for POC to stay inside Redis Cloud free-tier connection limit ──
 // Redis Cloud free tier: 30 max connections.
 // Each BullMQ Worker uses 3 Redis connections (blocking + non-blocking + subscriber).
@@ -59,12 +60,15 @@ async function bootstrap(): Promise<void> {
     logger.info(`✅  HTTP server listening on port ${env.PORT}`);
     logger.info(`   Health: http://localhost:${env.PORT}/health`);
     logger.info(`   API:    http://localhost:${env.PORT}/api/v1`);
+    startKeepAlive();
   });
 }
 
 // ─── Graceful Shutdown ───────────────────────────────────────────────────────
 async function shutdown(signal: string): Promise<void> {
   logger.info(`${signal} received — shutting down gracefully...`);
+
+  stopKeepAlive();
 
   // 1. Stop accepting new connections
   if (server) {

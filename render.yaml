@@ -51,6 +51,8 @@ services:
         sync: false               # different from JWT_ACCESS_SECRET
       - key: JWT_ACCESS_EXPIRES_IN
         value: "15m"
+      - key: SA_JWT_SECRET
+        sync: false               # super-admin JWT secret (min 32 chars)
       - key: JWT_REFRESH_EXPIRES_IN
         value: "7d"
 
@@ -88,17 +90,11 @@ services:
       - key: VAPI_STRUCTURED_OUTPUT_ID
         sync: false               # electrical-shop-call-summary schema ID
 
-      # ── TTS / Sarvam (optional — leave blank to use silence fallback) ──────
-      - key: SARVAM_API_KEY
-        sync: false
-      - key: SARVAM_BRIDGE_URL
-        sync: false               # set to https://agentops-studio-backend.onrender.com if self-hosting
-      - key: TTS_MODEL
-        value: "bulbul:v3"
-      - key: TTS_LANGUAGE_CODE
-        value: "hi-IN"
-      - key: TTS_SPEAKER
-        value: "shubh"
+      # ── Keep-alive self-ping (free plan only; RENDER_EXTERNAL_URL is auto-set) ──
+      - key: KEEP_ALIVE_ENABLED
+        value: "true"               # set "false" after upgrading to an always-on plan
+      - key: KEEP_ALIVE_INTERVAL_MINUTES
+        value: "10"
 
       # ── Telephony — Vobiz (optional, set when ready) ──────────────────────
       - key: VOBIZ_SIP_DOMAIN
@@ -106,6 +102,14 @@ services:
       - key: VOBIZ_AUTH_USERNAME
         sync: false
       - key: VOBIZ_AUTH_PASSWORD
+        sync: false
+      - key: VOBIZ_VAPI_CREDENTIAL_ID
+        sync: false               # outbound byo-sip-trunk credential in Vapi
+      - key: VOBIZ_VAPI_INBOUND_CREDENTIAL_ID
+        sync: false               # inbound byo-sip-trunk credential in Vapi
+      - key: VOBIZ_AUTH_ID
+        sync: false               # Vobiz REST API Auth ID (MA_...) — number picker
+      - key: VOBIZ_AUTH_TOKEN
         sync: false
       - key: VOBIZ_GATEWAY_IP
         sync: false
@@ -134,4 +138,8 @@ services:
       - key: STRIPE_STARTER_PRICE_ID_INR
         sync: false
       - key: STRIPE_GROWTH_PRICE_ID_INR
+        sync: false
+      - key: STRIPE_PRO_PRICE_ID
+        sync: false
+      - key: STRIPE_PRO_PRICE_ID_INR
         sync: false

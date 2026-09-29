@@ -36,7 +36,7 @@ export interface VapiTranscriber {
 }
 
 export interface VapiVoice {
-  provider: 'openai' | '11labs' | 'azure' | 'cartesia' | 'deepgram' | 'playht' | 'vapi' | 'custom-voice';
+  provider: 'openai' | '11labs' | 'azure' | 'cartesia' | 'deepgram' | 'playht' | 'vapi';
   voiceId?: string;
   speed?: number;
   /** Provider-specific TTS model. Required for ElevenLabs multilingual: 'eleven_multilingual_v2' */
@@ -45,11 +45,6 @@ export interface VapiVoice {
   version?: string;
   /** Auto-language detection mode for Vapi native voices */
   language?: string;
-  /** For 'custom-voice' provider: the bridge server that handles TTS synthesis */
-  server?: {
-    url: string;
-    timeoutSeconds?: number;
-  };
 }
 
 export interface VapiAnalysisPlan {
@@ -237,4 +232,53 @@ export async function vapiInitiateOutboundCall(
   const call = await vapiRequest<VapiOutboundCall>('POST', '/call/phone', payload);
   logger.info('Vapi outbound call initiated', { vapiCallId: call.id });
   return call;
+}
+
+// ─── Phone numbers (BYO SIP trunk) ────────────────────────────────────────────
+
+export interface VapiCreateByoPhoneNumberPayload {
+  provider: 'byo-phone-number';
+  name: string;
+  /** E.164, e.g. +918071387376 */
+  number: string;
+  numberE164CheckEnabled?: boolean;
+  /** byo-sip-trunk credential the number is reached through */
+  credentialId: string;
+  /**
+   * Deliberately omitted by onboarding: with no assistantId, Vapi sends an
+   * assistant-request webhook, which is where quota + business-hours routing runs.
+   */
+  assistantId?: string;
+}
+
+export interface VapiPhoneNumber {
+  id: string;
+  number?: string;
+  name?: string;
+  credentialId?: string;
+}
+
+/**
+ * Import a BYO (Vobiz) phone number into Vapi.
+ * Docs: POST https://api.vapi.ai/phone-number
+ */
+export async function vapiCreatePhoneNumber(
+  payload: VapiCreateByoPhoneNumberPayload,
+): Promise<VapiPhoneNumber> {
+  logger.info('Importing phone number into Vapi', { number: payload.number });
+  const phone = await vapiRequest<VapiPhoneNumber>('POST', '/phone-number', payload);
+  logger.info('Vapi phone number created', { vapiPhoneNumberId: phone.id });
+  return phone;
+}
+
+/**
+ * Remove a phone number from Vapi. 404 is treated as success (already gone).
+ */
+export async function vapiDeletePhoneNumber(phoneNumberId: string): Promise<void> {
+  try {
+    await vapiRequest<void>('DELETE', `/phone-number/${phoneNumberId}`);
+  } catch (err) {
+    if (err instanceof Error && err.message.includes('404')) return;
+    throw err;
+  }
 }

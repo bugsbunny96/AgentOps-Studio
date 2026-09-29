@@ -6,7 +6,8 @@
  *     and local VoiceAgent record if not already done. The assistant is immediately
  *     visible in the Vapi dashboard.
  *  2. Shows the TestCallWidget — a browser-based test call using @vapi-ai/web SDK.
- *  3. Keeps the existing setup checklist and Launch CTA.
+ *  3. Shows PhoneNumberPicker — pick an Indian Vobiz number (auto-connected to Vapi).
+ *  4. Keeps the existing setup checklist and Launch CTA.
  *
  * On "Launch" → POST /api/v1/onboarding/complete → navigates to /dashboard.
  */
@@ -36,6 +37,7 @@ import { AxiosError } from 'axios';
 import Vapi from '@vapi-ai/web';
 import { useAuth } from '@/hooks/useAuth';
 import type { Organization } from '@/types';
+import PhoneNumberPicker from './PhoneNumberPicker';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -614,6 +616,9 @@ export default function ActivatePage() {
 
       {/* Summary config card */}
       {currentOrg && <SummaryCard org={currentOrg} />}
+
+      {/* ── Phone Number (Vobiz) ────────────────────────────────────────── */}
+      <PhoneNumberPicker />
 
       {/* ── Test Call Section ───────────────────────────────────────────── */}
       <div className="space-y-2">

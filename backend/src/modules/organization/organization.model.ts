@@ -244,6 +244,16 @@ OrganizationSchema.set('toJSON', {
   },
 });
 
+/**
+ * One Vobiz number can belong to only one org. Partial index so orgs without a
+ * number are unaffected. Guards against two customers claiming the same number
+ * at the same moment in onboarding Step 5 (duplicate-key → 409 in number.service).
+ */
+OrganizationSchema.index(
+  { phoneNumber: 1 },
+  { unique: true, partialFilterExpression: { phoneNumber: { $type: 'string' } }, name: 'org_phone_number_unique' },
+);
+
 export const OrganizationModel = mongoose.model<IOrganization>('Organization', OrganizationSchema);
 
 // ─── Member Permissions ────────────────────────────────────────────────────
