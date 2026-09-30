@@ -101,17 +101,17 @@ export default function RegisterPage() {
     return (
       <div className="space-y-6 text-center">
         <div className="flex flex-col items-center gap-4">
-          <div className="flex h-16 w-16 items-center justify-center rounded-full bg-brand-50 border border-brand-100">
-            <Mail size={28} className="text-brand-500" />
+          <div className="flex h-16 w-16 items-center justify-center rounded-full bg-brand-400/10 border border-brand-400/30">
+            <Mail size={28} className="text-brand-300" />
           </div>
           <div>
-            <h2 className="text-xl font-bold text-slate-900">Check your inbox</h2>
-            <p className="mt-2 text-sm text-slate-500 leading-relaxed">
+            <h2 className="text-xl font-bold text-slate-50">Check your inbox</h2>
+            <p className="mt-2 text-sm text-slate-400 leading-relaxed">
               We've sent a verification link to <strong>{prefilledEmail || 'your email'}</strong>.
               Click it to activate your account, then sign in to continue.
             </p>
             {nextPath && (
-              <p className="mt-2 text-xs text-brand-600 font-medium">
+              <p className="mt-2 text-xs text-brand-300 font-medium">
                 After verifying, you'll be taken straight back to accept the invitation.
               </p>
             )}
@@ -119,8 +119,8 @@ export default function RegisterPage() {
         </div>
         <button
           onClick={() => navigate(buildLoginUrl())}
-          className="w-full rounded-md bg-brand-600 px-4 py-2.5 text-sm font-semibold
-            text-white hover:bg-brand-700 transition"
+          className="w-full rounded-md bg-brand-400 px-4 py-2.5 text-sm font-semibold
+            text-slate-900 hover:bg-brand-300 transition"
         >
           Back to sign in
         </button>
@@ -135,8 +135,8 @@ export default function RegisterPage() {
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-bold text-slate-900">Create your account</h1>
-        <p className="mt-1 text-sm text-slate-500">
+        <h1 className="text-2xl font-bold text-slate-50">Create your account</h1>
+        <p className="mt-1 text-sm text-slate-400">
           {showInviteBanner
             ? 'Create an account to accept your invitation.'
             : 'Start your 7-day free trial. No credit card required.'}
@@ -145,9 +145,9 @@ export default function RegisterPage() {
 
       {/* Invite context banner — shown when coming from an invite link */}
       {showInviteBanner && (
-        <div className="rounded-xl border border-brand-100 bg-brand-50 px-4 py-3 flex items-start gap-3">
-          <CheckCircle2 size={16} className="text-brand-500 mt-0.5 flex-shrink-0" />
-          <div className="text-xs text-brand-700 leading-relaxed">
+        <div className="rounded-xl border border-brand-400/30 bg-brand-400/10 px-4 py-3 flex items-start gap-3">
+          <CheckCircle2 size={16} className="text-brand-300 mt-0.5 flex-shrink-0" />
+          <div className="text-xs text-brand-300 leading-relaxed">
             <strong>You have a pending invitation.</strong> Create your account using{' '}
             <strong>{prefilledEmail}</strong> and you'll be added to the workspace automatically.
           </div>
@@ -156,7 +156,7 @@ export default function RegisterPage() {
 
       {/* Server error */}
       {serverError && (
-        <div className="rounded-md bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">
+        <div className="rounded-md bg-red-500/10 border border-red-500/30 px-4 py-3 text-sm text-red-300">
           {serverError}
         </div>
       )}
@@ -165,7 +165,7 @@ export default function RegisterPage() {
       <form onSubmit={handleSubmit(onSubmit)} noValidate className="space-y-4">
         {/* Name */}
         <div>
-          <label htmlFor="name" className="block text-sm font-medium text-slate-700 mb-1">
+          <label htmlFor="name" className="block text-sm font-medium text-slate-200 mb-1">
             Full name
           </label>
           <input
@@ -175,15 +175,15 @@ export default function RegisterPage() {
             {...register('name')}
             className={`w-full rounded-md border px-3 py-2 text-sm shadow-sm outline-none
               focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition
-              ${errors.name ? 'border-red-400 bg-red-50' : 'border-slate-300 bg-white'}`}
+              ${errors.name ? 'border-red-400 bg-red-500/10' : 'border-white/15 bg-surface'}`}
             placeholder="Jane Smith"
           />
-          {errors.name && <p className="mt-1 text-xs text-red-600">{errors.name.message}</p>}
+          {errors.name && <p className="mt-1 text-xs text-red-300">{errors.name.message}</p>}
         </div>
 
         {/* Email — readonly if pre-filled from invite */}
         <div>
-          <label htmlFor="reg-email" className="block text-sm font-medium text-slate-700 mb-1">
+          <label htmlFor="reg-email" className="block text-sm font-medium text-slate-200 mb-1">
             Work email
           </label>
           <input
@@ -194,8 +194,8 @@ export default function RegisterPage() {
             {...register('email')}
             className={`w-full rounded-md border px-3 py-2 text-sm shadow-sm outline-none
               focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition
-              ${prefilledEmail ? 'bg-slate-50 text-slate-500 cursor-not-allowed' : 'bg-white'}
-              ${errors.email ? 'border-red-400 bg-red-50' : 'border-slate-300'}`}
+              ${prefilledEmail ? 'bg-white/[0.03] text-slate-400 cursor-not-allowed' : 'bg-surface'}
+              ${errors.email ? 'border-red-400 bg-red-500/10' : 'border-white/15'}`}
             placeholder="you@company.com"
           />
           {prefilledEmail && (
@@ -203,12 +203,12 @@ export default function RegisterPage() {
               This email matches your invitation and cannot be changed.
             </p>
           )}
-          {errors.email && <p className="mt-1 text-xs text-red-600">{errors.email.message}</p>}
+          {errors.email && <p className="mt-1 text-xs text-red-300">{errors.email.message}</p>}
         </div>
 
         {/* Password */}
         <div>
-          <label htmlFor="reg-password" className="block text-sm font-medium text-slate-700 mb-1">
+          <label htmlFor="reg-password" className="block text-sm font-medium text-slate-200 mb-1">
             Password
           </label>
           <div className="relative">
@@ -219,13 +219,13 @@ export default function RegisterPage() {
               {...register('password')}
               className={`w-full rounded-md border px-3 py-2 pr-10 text-sm shadow-sm outline-none
                 focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition
-                ${errors.password ? 'border-red-400 bg-red-50' : 'border-slate-300 bg-white'}`}
+                ${errors.password ? 'border-red-400 bg-red-500/10' : 'border-white/15 bg-surface'}`}
               placeholder="••••••••"
             />
             <button
               type="button"
               onClick={() => setShowPassword((v) => !v)}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-300"
               aria-label={showPassword ? 'Hide password' : 'Show password'}
             >
               {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
@@ -236,20 +236,20 @@ export default function RegisterPage() {
               {rules.map((r) => (
                 <span
                   key={r.label}
-                  className={`text-xs flex items-center gap-1 ${r.ok ? 'text-green-600' : 'text-slate-400'}`}
+                  className={`text-xs flex items-center gap-1 ${r.ok ? 'text-green-300' : 'text-slate-400'}`}
                 >
-                  <span className={`inline-block w-1.5 h-1.5 rounded-full ${r.ok ? 'bg-green-500' : 'bg-slate-300'}`} />
+                  <span className={`inline-block w-1.5 h-1.5 rounded-full ${r.ok ? 'bg-green-500' : 'bg-white/15'}`} />
                   {r.label}
                 </span>
               ))}
             </div>
           )}
-          {errors.password && <p className="mt-1 text-xs text-red-600">{errors.password.message}</p>}
+          {errors.password && <p className="mt-1 text-xs text-red-300">{errors.password.message}</p>}
         </div>
 
         {/* Confirm password */}
         <div>
-          <label htmlFor="confirmPassword" className="block text-sm font-medium text-slate-700 mb-1">
+          <label htmlFor="confirmPassword" className="block text-sm font-medium text-slate-200 mb-1">
             Confirm password
           </label>
           <input
@@ -259,20 +259,20 @@ export default function RegisterPage() {
             {...register('confirmPassword')}
             className={`w-full rounded-md border px-3 py-2 text-sm shadow-sm outline-none
               focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition
-              ${errors.confirmPassword ? 'border-red-400 bg-red-50' : 'border-slate-300 bg-white'}`}
+              ${errors.confirmPassword ? 'border-red-400 bg-red-500/10' : 'border-white/15 bg-surface'}`}
             placeholder="••••••••"
           />
           {errors.confirmPassword && (
-            <p className="mt-1 text-xs text-red-600">{errors.confirmPassword.message}</p>
+            <p className="mt-1 text-xs text-red-300">{errors.confirmPassword.message}</p>
           )}
         </div>
 
         <button
           type="submit"
           disabled={isSubmitting}
-          className="w-full flex items-center justify-center gap-2 rounded-md bg-brand-600
-            px-4 py-2.5 text-sm font-semibold text-white shadow-sm
-            hover:bg-brand-700 focus:outline-none focus:ring-2 focus:ring-brand-500
+          className="w-full flex items-center justify-center gap-2 rounded-md bg-brand-400
+            px-4 py-2.5 text-sm font-semibold text-slate-900 shadow-sm
+            hover:bg-brand-300 focus:outline-none focus:ring-2 focus:ring-brand-500
             disabled:opacity-50 disabled:cursor-not-allowed transition"
         >
           {isSubmitting && <Loader2 size={16} className="animate-spin" />}
@@ -280,9 +280,9 @@ export default function RegisterPage() {
         </button>
       </form>
 
-      <p className="text-center text-sm text-slate-500">
+      <p className="text-center text-sm text-slate-400">
         Already have an account?{' '}
-        <Link to={buildLoginUrl()} className="font-medium text-brand-600 hover:underline">
+        <Link to={buildLoginUrl()} className="font-medium text-brand-300 hover:underline">
           Sign in
         </Link>
       </p>

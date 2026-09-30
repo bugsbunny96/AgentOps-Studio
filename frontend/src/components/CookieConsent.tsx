@@ -40,7 +40,7 @@ export function CookieConsent() {
         zIndex: 9999,
         width: 'calc(100% - 40px)',
         maxWidth: 560,
-        background: '#0e1120',
+        background: '#1f1f1f',
         border: '1px solid rgba(255,255,255,0.1)',
         borderRadius: 14,
         padding: '16px 20px',
@@ -60,13 +60,13 @@ export function CookieConsent() {
         flex: 1,
         margin: 0,
         fontSize: 13,
-        color: '#94a3b8',
+        color: '#a3a3a3',
         lineHeight: 1.55,
         minWidth: 200,
       }}>
-        We use only <strong style={{ color: '#f8fafc' }}>essential cookies</strong> to keep you signed in and the platform running.
+        We use only <strong style={{ color: '#fafafa' }}>essential cookies</strong> to keep you signed in and the platform running.
         No tracking or advertising cookies.{' '}
-        <Link to="/privacy#cookies" style={{ color: '#3b82f6', textDecoration: 'underline' }}>
+        <Link to="/privacy#cookies" style={{ color: '#21F1A8', textDecoration: 'underline' }}>
           Learn more
         </Link>
       </p>
@@ -80,7 +80,7 @@ export function CookieConsent() {
             borderRadius: 8,
             border: '1px solid rgba(255,255,255,0.12)',
             background: 'transparent',
-            color: '#94a3b8',
+            color: '#a3a3a3',
             fontSize: 13,
             fontWeight: 600,
             cursor: 'pointer',
@@ -94,12 +94,12 @@ export function CookieConsent() {
             padding: '7px 16px',
             borderRadius: 8,
             border: 'none',
-            background: 'linear-gradient(135deg, #3b82f6, #8b5cf6)',
-            color: '#fff',
+            background: 'linear-gradient(135deg, #21F1A8, #0FC98A)',
+            color: '#171717',
             fontSize: 13,
             fontWeight: 600,
             cursor: 'pointer',
-            boxShadow: '0 2px 12px rgba(59,130,246,0.3)',
+            boxShadow: '0 2px 12px rgba(33,241,168,0.3)',
           }}
         >
           Accept

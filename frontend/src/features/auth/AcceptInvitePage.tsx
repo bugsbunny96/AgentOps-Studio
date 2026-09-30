@@ -76,7 +76,7 @@ type PagePhase =
 // ─── Role style ───────────────────────────────────────────────────────────────
 
 const ROLE_STYLE: Record<string, { color: string; bg: string; border: string }> = {
-  Owner:  { color: '#4f46e5', bg: 'rgba(99,102,241,.1)',  border: 'rgba(99,102,241,.2)' },
+  Owner:  { color: '#0FC98A', bg: 'rgba(33,241,168,.1)',  border: 'rgba(33,241,168,.2)' },
   Member: { color: '#0891b2', bg: 'rgba(8,145,178,.1)',   border: 'rgba(8,145,178,.2)'  },
 };
 
@@ -84,17 +84,17 @@ const ROLE_STYLE: Record<string, { color: string; bg: string; border: string }> 
 
 function Shell({ children }: { children: React.ReactNode }) {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-slate-50 p-6">
+    <div className="flex min-h-screen items-center justify-center bg-white/[0.03] p-6">
       <div className="w-full max-w-md">
         {/* Brand */}
         <div className="flex items-center justify-center gap-2.5 mb-8">
           <div
             className="flex h-8 w-8 items-center justify-center rounded-xl"
-            style={{ background: 'linear-gradient(135deg, #6366f1, #8b5cf6)' }}
+            style={{ background: 'linear-gradient(135deg, #21F1A8, #0FC98A)' }}
           >
             <Users size={15} className="text-white" />
           </div>
-          <span className="text-base font-bold text-slate-900">AgentOps Studio</span>
+          <span className="text-base font-bold text-slate-50">AgentOps Studio</span>
         </div>
         {children}
       </div>
@@ -162,9 +162,9 @@ export default function AcceptInvitePage() {
   if (phase.phase === 'loading' || phase.phase === 'accepting') {
     return (
       <Shell>
-        <div className="rounded-2xl border border-slate-200 bg-white p-8 text-center shadow-sm">
-          <Loader2 size={36} className="mx-auto mb-4 animate-spin text-brand-500" />
-          <p className="text-sm text-slate-500">
+        <div className="rounded-2xl border border-white/10 bg-surface p-8 text-center shadow-sm">
+          <Loader2 size={36} className="mx-auto mb-4 animate-spin text-brand-300" />
+          <p className="text-sm text-slate-400">
             {phase.phase === 'loading' ? 'Loading…' : 'Joining workspace…'}
           </p>
         </div>
@@ -183,32 +183,32 @@ export default function AcceptInvitePage() {
 
     return (
       <Shell>
-        <div className="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
+        <div className="rounded-2xl border border-white/10 bg-surface shadow-sm overflow-hidden">
 
           {/* Purple gradient header */}
           <div
             className="px-8 py-8 text-center"
-            style={{ background: 'linear-gradient(135deg, rgba(99,102,241,.08), rgba(139,92,246,.08))' }}
+            style={{ background: 'linear-gradient(135deg, rgba(33,241,168,.08), rgba(15,201,138,.08))' }}
           >
             <div
               className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl"
-              style={{ background: 'linear-gradient(135deg, #6366f1, #8b5cf6)' }}
+              style={{ background: 'linear-gradient(135deg, #21F1A8, #0FC98A)' }}
             >
               <Building2 size={24} className="text-white" />
             </div>
-            <h1 className="text-xl font-bold text-slate-900">You're invited!</h1>
-            <p className="mt-1.5 text-sm text-slate-500">
+            <h1 className="text-xl font-bold text-slate-50">You're invited!</h1>
+            <p className="mt-1.5 text-sm text-slate-400">
               You've been invited to join
             </p>
-            <p className="mt-1 text-lg font-semibold text-slate-800">{info.orgName}</p>
+            <p className="mt-1 text-lg font-semibold text-slate-100">{info.orgName}</p>
           </div>
 
           <div className="px-8 py-6 space-y-5">
 
             {/* Invite details */}
-            <div className="rounded-xl bg-slate-50 border border-slate-100 divide-y divide-slate-100">
+            <div className="rounded-xl bg-white/[0.03] border border-white/10 divide-y divide-white/10">
               <div className="flex items-center justify-between px-4 py-3">
-                <span className="text-xs font-medium text-slate-500 uppercase tracking-wide">Role</span>
+                <span className="text-xs font-medium text-slate-400 uppercase tracking-wide">Role</span>
                 <span
                   className="inline-block rounded-full px-2.5 py-0.5 text-[11px] font-bold tracking-wide"
                   style={{ background: s.bg, color: s.color, border: `1px solid ${s.border}` }}
@@ -217,22 +217,22 @@ export default function AcceptInvitePage() {
                 </span>
               </div>
               <div className="flex items-center justify-between px-4 py-3">
-                <span className="text-xs font-medium text-slate-500 uppercase tracking-wide">Invited email</span>
-                <span className="text-sm font-medium text-slate-700">{info.email}</span>
+                <span className="text-xs font-medium text-slate-400 uppercase tracking-wide">Invited email</span>
+                <span className="text-sm font-medium text-slate-200">{info.email}</span>
               </div>
               <div className="px-4 py-3">
                 <div className="flex items-center gap-1.5 mb-2">
                   <Shield size={12} style={{ color: s.color }} />
-                  <span className="text-xs font-medium text-slate-500 uppercase tracking-wide">Section access</span>
+                  <span className="text-xs font-medium text-slate-400 uppercase tracking-wide">Section access</span>
                 </div>
                 <div className="space-y-1">
                   <div className="flex items-center justify-between">
-                    <span className="text-xs text-slate-600">Dashboard</span>
-                    <span className="text-[10px] font-semibold rounded-full bg-slate-100 px-1.5 py-0.5 text-slate-500">Read-only</span>
+                    <span className="text-xs text-slate-300">Dashboard</span>
+                    <span className="text-[10px] font-semibold rounded-full bg-white/[0.06] px-1.5 py-0.5 text-slate-400">Read-only</span>
                   </div>
                   {PERMISSION_LABELS.map(({ key, label, hiddenWhenFalse }) => (
                     <div key={key} className="flex items-center justify-between">
-                      <span className="text-xs text-slate-600">{label}</span>
+                      <span className="text-xs text-slate-300">{label}</span>
                       {info.permissions[key] ? (
                         <span
                           className="text-[10px] font-semibold rounded-full px-1.5 py-0.5"
@@ -241,7 +241,7 @@ export default function AcceptInvitePage() {
                           Full access
                         </span>
                       ) : (
-                        <span className="text-[10px] font-semibold rounded-full bg-slate-100 px-1.5 py-0.5 text-slate-500">
+                        <span className="text-[10px] font-semibold rounded-full bg-white/[0.06] px-1.5 py-0.5 text-slate-400">
                           {hiddenWhenFalse ? 'Hidden' : 'Read-only'}
                         </span>
                       )}
@@ -252,8 +252,8 @@ export default function AcceptInvitePage() {
             </div>
 
             {/* IMPORTANT: must sign in with the invited email */}
-            <div className="rounded-xl bg-amber-50 border border-amber-100 px-4 py-3">
-              <p className="text-xs text-amber-700 leading-relaxed">
+            <div className="rounded-xl bg-amber-500/10 border border-amber-500/30 px-4 py-3">
+              <p className="text-xs text-amber-300 leading-relaxed">
                 <strong>Important:</strong> You must sign in or create an account using{' '}
                 <strong>{info.email}</strong> to accept this invitation.
               </p>
@@ -264,8 +264,8 @@ export default function AcceptInvitePage() {
               {/* Already have an account */}
               <button
                 onClick={() => navigate(loginUrl)}
-                className="flex w-full items-center justify-center gap-2 rounded-xl bg-brand-600
-                  px-4 py-3 text-sm font-semibold text-white hover:bg-brand-700 transition-colors shadow-sm"
+                className="flex w-full items-center justify-center gap-2 rounded-xl bg-brand-400
+                  px-4 py-3 text-sm font-semibold text-slate-900 hover:bg-brand-300 transition-colors shadow-sm"
               >
                 <LogIn size={15} />
                 Sign in to accept
@@ -274,8 +274,8 @@ export default function AcceptInvitePage() {
               {/* New user */}
               <button
                 onClick={() => navigate(registerUrl)}
-                className="flex w-full items-center justify-center gap-2 rounded-xl border border-slate-200
-                  bg-white px-4 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-50 transition-colors"
+                className="flex w-full items-center justify-center gap-2 rounded-xl border border-white/10
+                  bg-surface px-4 py-3 text-sm font-semibold text-slate-200 hover:bg-white/[0.03] transition-colors"
               >
                 <UserPlus size={15} />
                 Create account &amp; accept
@@ -295,14 +295,14 @@ export default function AcceptInvitePage() {
   if (phase.phase === 'success') {
     return (
       <Shell>
-        <div className="rounded-2xl border border-slate-200 bg-white p-8 text-center shadow-sm">
+        <div className="rounded-2xl border border-white/10 bg-surface p-8 text-center shadow-sm">
           <div className="flex justify-center mb-4">
-            <div className="flex h-14 w-14 items-center justify-center rounded-full bg-green-50 border border-green-100">
+            <div className="flex h-14 w-14 items-center justify-center rounded-full bg-green-500/10 border border-green-500/30">
               <CheckCircle2 size={28} className="text-green-500" />
             </div>
           </div>
-          <h1 className="text-lg font-semibold text-slate-900">You're in!</h1>
-          <p className="mt-2 text-sm text-slate-500">
+          <h1 className="text-lg font-semibold text-slate-50">You're in!</h1>
+          <p className="mt-2 text-sm text-slate-400">
             You've successfully joined <strong>{phase.orgName}</strong>.
           </p>
           <button
@@ -313,8 +313,8 @@ export default function AcceptInvitePage() {
               await verifySession();
               navigate('/dashboard', { replace: true });
             }}
-            className="mt-6 w-full rounded-xl bg-brand-600 px-4 py-2.5 text-sm font-medium
-              text-white hover:bg-brand-700 transition-colors"
+            className="mt-6 w-full rounded-xl bg-brand-400 px-4 py-2.5 text-sm font-medium
+              text-slate-900 hover:bg-brand-300 transition-colors"
           >
             Go to Dashboard →
           </button>
@@ -326,18 +326,18 @@ export default function AcceptInvitePage() {
   // ── Error ──────────────────────────────────────────────────────────────────
   return (
     <Shell>
-      <div className="rounded-2xl border border-slate-200 bg-white p-8 text-center shadow-sm">
+      <div className="rounded-2xl border border-white/10 bg-surface p-8 text-center shadow-sm">
         <div className="flex justify-center mb-4">
-          <div className="flex h-14 w-14 items-center justify-center rounded-full bg-red-50 border border-red-100">
+          <div className="flex h-14 w-14 items-center justify-center rounded-full bg-red-500/10 border border-red-500/30">
             <XCircle size={28} className="text-red-400" />
           </div>
         </div>
-        <h1 className="text-lg font-semibold text-slate-900">Invitation failed</h1>
-        <p className="mt-2 text-sm text-slate-500">{phase.message}</p>
+        <h1 className="text-lg font-semibold text-slate-50">Invitation failed</h1>
+        <p className="mt-2 text-sm text-slate-400">{phase.message}</p>
         <button
           onClick={() => navigate('/login', { replace: true })}
-          className="mt-6 w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm
-            font-medium text-slate-600 hover:bg-slate-50 transition-colors"
+          className="mt-6 w-full rounded-xl border border-white/10 bg-surface px-4 py-2.5 text-sm
+            font-medium text-slate-300 hover:bg-white/[0.03] transition-colors"
         >
           Go to Sign In
         </button>

@@ -6,9 +6,9 @@ const T = {
   bgC:  'rgba(255,255,255,0.04)',
   bdr:  'rgba(255,255,255,0.07)',
   red:  '#ef4444',
-  t1:   '#f8fafc',
-  t2:   '#94a3b8',
-  t3:   '#475569',
+  t1:   '#fafafa',
+  t2:   '#a3a3a3',
+  t3:   '#737373',
   em:   '#10b981',
   warn: '#f59e0b',
 };
@@ -103,8 +103,8 @@ export default function SuperAdminDashboardPage() {
       ) : (
         <>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 14, marginBottom: 24 }}>
-            <StatCard icon={Building2} label="Total Orgs"       value={stats?.totalOrgs ?? 0}     color="#60a5fa" />
-            <StatCard icon={Users}     label="Total Users"      value={stats?.totalUsers ?? 0}    color="#a78bfa" />
+            <StatCard icon={Building2} label="Total Orgs"       value={stats?.totalOrgs ?? 0}     color="#7CF7CB" />
+            <StatCard icon={Users}     label="Total Users"      value={stats?.totalUsers ?? 0}    color="#5CF4BF" />
             <StatCard icon={CheckCircle} label="Active Users"   value={stats?.activeUsers ?? 0}   color={T.em} />
             <StatCard icon={XCircle}   label="Suspended Users"  value={stats?.suspendedUsers ?? 0} color={T.red} />
           </div>

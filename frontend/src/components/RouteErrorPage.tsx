@@ -15,13 +15,13 @@ import { useEffect } from 'react';
 import * as Sentry from '@sentry/react';
 
 const T = {
-  bg:   '#030712',
-  bgS:  '#0e1117',
+  bg:   '#171717',
+  bgS:  '#1c1c1c',
   bdr:  'rgba(255,255,255,0.07)',
-  t1:   '#f8fafc',
-  t2:   '#94a3b8',
-  t3:   '#475569',
-  blue: '#3b82f6',
+  t1:   '#fafafa',
+  t2:   '#a3a3a3',
+  t3:   '#737373',
+  blue: '#21F1A8',
   red:  '#ef4444',
 };
 
@@ -132,8 +132,8 @@ export function RouteErrorPage() {
             style={{
               padding: '9px 20px', borderRadius: 8,
               fontSize: 14, fontWeight: 600,
-              background: `linear-gradient(135deg, ${T.blue}, #8b5cf6)`,
-              color: '#fff', border: 'none', cursor: 'pointer',
+              background: `linear-gradient(135deg, ${T.blue}, #0FC98A)`,
+              color: '#171717', border: 'none', cursor: 'pointer',
             }}
           >
             Go back

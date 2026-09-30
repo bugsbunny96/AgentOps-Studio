@@ -20,21 +20,21 @@ import type { VoiceAgent, Call } from '@/types';
 
 // ── Design tokens ─────────────────────────────────────────────────────────────
 const T = {
-  bg:    '#030712',
-  bgS:   '#0d1524',
+  bg:    '#171717',
+  bgS:   '#1f1f1f',
   bgC:   'rgba(255,255,255,0.035)',
   bgH:   'rgba(255,255,255,0.06)',
   bdr:   'rgba(255,255,255,0.07)',
   bdrH:  'rgba(255,255,255,0.15)',
-  blue:  '#3b82f6',
-  blueL: '#60a5fa',
-  violet:'#8b5cf6',
+  blue:  '#21F1A8',
+  blueL: '#7CF7CB',
+  violet:'#0FC98A',
   em:    '#10b981',
   amb:   '#f59e0b',
   rose:  '#f43f5e',
-  t1:    '#f8fafc',
-  t2:    '#94a3b8',
-  t3:    '#475569',
+  t1:    '#fafafa',
+  t2:    '#a3a3a3',
+  t3:    '#737373',
 };
 
 // ── Keyframes ─────────────────────────────────────────────────────────────────
@@ -98,7 +98,7 @@ function WaveBars({ active = true, color = T.blue, count = 5 }: {
 
 // ── BentoCard ─────────────────────────────────────────────────────────────────
 function BentoCard({
-  children, style, glowColor = 'rgba(59,130,246,0.12)', noPad = false,
+  children, style, glowColor = 'rgba(33,241,168,0.12)', noPad = false,
 }: {
   children: React.ReactNode; style?: CSSProperties; glowColor?: string; noPad?: boolean;
 }) {
@@ -159,7 +159,7 @@ function AuroraBlob({ color, x, y, size, delay = 0 }: {
 function CallStatusBadge({ status }: { status: string }) {
   const map: Record<string, { bg: string; color: string }> = {
     completed:   { bg: 'rgba(16,185,129,0.1)',  color: '#10b981' },
-    'in-progress':{ bg: 'rgba(59,130,246,0.1)', color: '#60a5fa' },
+    'in-progress':{ bg: 'rgba(33,241,168,0.1)', color: '#7CF7CB' },
     failed:      { bg: 'rgba(244,63,94,0.1)',   color: '#f43f5e' },
     missed:      { bg: 'rgba(245,158,11,0.1)',  color: '#f59e0b' },
   };
@@ -202,8 +202,8 @@ function CallsChart({ data }: { data: { date: string; count: number }[] }) {
                 borderRadius: '4px 4px 2px 2px',
                 background: isLatest
                   ? `linear-gradient(to top, ${T.blue}, ${T.blueL})`
-                  : 'rgba(59,130,246,0.35)',
-                boxShadow: isLatest ? '0 0 10px rgba(59,130,246,0.4)' : 'none',
+                  : 'rgba(33,241,168,0.35)',
+                boxShadow: isLatest ? '0 0 10px rgba(33,241,168,0.4)' : 'none',
                 transition: 'height 0.4s ease',
               }} />
             </div>
@@ -240,11 +240,11 @@ function SetupStep({
         flexShrink: 0,
         display: 'flex', alignItems: 'center', justifyContent: 'center',
         width: 28, height: 28, borderRadius: '50%',
-        background: done ? 'rgba(16,185,129,0.15)' : 'rgba(59,130,246,0.1)',
-        border: `1.5px solid ${done ? 'rgba(16,185,129,0.35)' : 'rgba(59,130,246,0.25)'}`,
+        background: done ? 'rgba(16,185,129,0.15)' : 'rgba(33,241,168,0.1)',
+        border: `1.5px solid ${done ? 'rgba(16,185,129,0.35)' : 'rgba(33,241,168,0.25)'}`,
         fontSize: 11, fontWeight: 800,
         color: done ? T.em : T.blueL,
-        boxShadow: done ? '0 0 12px rgba(16,185,129,0.15)' : '0 0 10px rgba(59,130,246,0.1)',
+        boxShadow: done ? '0 0 12px rgba(16,185,129,0.15)' : '0 0 10px rgba(33,241,168,0.1)',
       }}>
         {done ? <CheckCircle2 size={14} strokeWidth={2.5} /> : step}
       </div>
@@ -260,7 +260,7 @@ function SetupStep({
           flexShrink: 0, fontSize: 11, fontWeight: 600, color: T.blueL,
           display: 'flex', alignItems: 'center', gap: 4,
           padding: '5px 10px', borderRadius: 7, textDecoration: 'none', whiteSpace: 'nowrap',
-          background: 'rgba(59,130,246,0.1)', border: '1px solid rgba(59,130,246,0.2)',
+          background: 'rgba(33,241,168,0.1)', border: '1px solid rgba(33,241,168,0.2)',
         }}>
           {linkLabel} <ArrowRight size={10} />
         </Link>
@@ -280,12 +280,12 @@ function CallNumberModal({ agentId, onClose }: { agentId: string; onClose: () =>
     <div style={{
       position: 'fixed', inset: 0, zIndex: 9999,
       display: 'flex', alignItems: 'center', justifyContent: 'center',
-      background: 'rgba(3,7,18,0.85)', backdropFilter: 'blur(8px)',
+      background: 'rgba(23,23,23,0.85)', backdropFilter: 'blur(8px)',
     }}>
       <div style={{
         width: 420, borderRadius: 20,
         background: T.bgS, border: `1px solid ${T.bdr}`,
-        boxShadow: '0 0 60px rgba(59,130,246,0.15)',
+        boxShadow: '0 0 60px rgba(33,241,168,0.15)',
         animation: 'dashFadeUp 0.2s ease-out both', overflow: 'hidden',
       }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '20px 24px', borderBottom: `1px solid ${T.bdr}` }}>
@@ -293,7 +293,7 @@ function CallNumberModal({ agentId, onClose }: { agentId: string; onClose: () =>
             <div style={{
               width: 32, height: 32, borderRadius: 9,
               display: 'flex', alignItems: 'center', justifyContent: 'center',
-              background: 'rgba(59,130,246,0.15)', border: '1px solid rgba(59,130,246,0.25)',
+              background: 'rgba(33,241,168,0.15)', border: '1px solid rgba(33,241,168,0.25)',
             }}>
               <PhoneOutgoing size={15} style={{ color: T.blueL }} />
             </div>
@@ -355,7 +355,7 @@ function CallNumberModal({ agentId, onClose }: { agentId: string; onClose: () =>
                   style={{
                     flex: 2, padding: '10px 0', borderRadius: 10, border: 'none',
                     background: `linear-gradient(135deg, ${T.blue}, ${T.violet})`,
-                    color: '#fff', fontSize: 13, fontWeight: 700, cursor: 'pointer',
+                    color: '#171717', fontSize: 13, fontWeight: 700, cursor: 'pointer',
                     opacity: isPending || num.trim().length < 7 ? 0.6 : 1,
                     display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
                   }}
@@ -512,8 +512,8 @@ export function DashboardPage() {
 
   // ── Quick actions config ──────────────────────────────────────────────────────
   const quickActions = [
-    { icon: Bot,      label: 'Manage Agents',    desc: `${agents.length} configured`,      to: '/agents',         color: T.blueL,  bg: 'rgba(59,130,246,0.1)',  bdr: 'rgba(59,130,246,0.2)'  },
-    { icon: BookOpen, label: 'Knowledge Base',   desc: `${kbDocCount} docs indexed`,        to: '/knowledge-base', color: T.violet, bg: 'rgba(139,92,246,0.1)', bdr: 'rgba(139,92,246,0.2)' },
+    { icon: Bot,      label: 'Manage Agents',    desc: `${agents.length} configured`,      to: '/agents',         color: T.blueL,  bg: 'rgba(33,241,168,0.1)',  bdr: 'rgba(33,241,168,0.2)'  },
+    { icon: BookOpen, label: 'Knowledge Base',   desc: `${kbDocCount} docs indexed`,        to: '/knowledge-base', color: T.violet, bg: 'rgba(15,201,138,0.1)', bdr: 'rgba(15,201,138,0.2)' },
     { icon: PhoneCall,label: 'Call Logs',        desc: `${totalCalls} calls recorded`,      to: '/calls',          color: T.em,     bg: 'rgba(16,185,129,0.1)', bdr: 'rgba(16,185,129,0.2)' },
     { icon: Settings, label: 'Settings',         desc: 'Phone · integrations · billing',    to: '/settings',       color: T.amb,    bg: 'rgba(245,158,11,0.1)', bdr: 'rgba(245,158,11,0.2)' },
   ];
@@ -524,8 +524,8 @@ export function DashboardPage() {
       <div style={{
         position: 'fixed', inset: 0, pointerEvents: 'none', zIndex: 0,
         backgroundImage: `
-          linear-gradient(rgba(59,130,246,0.025) 1px, transparent 1px),
-          linear-gradient(90deg, rgba(59,130,246,0.025) 1px, transparent 1px)
+          linear-gradient(rgba(33,241,168,0.025) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(33,241,168,0.025) 1px, transparent 1px)
         `,
         backgroundSize: '40px 40px',
       }} />
@@ -546,8 +546,8 @@ export function DashboardPage() {
         }}>
           {/* Aurora */}
           <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', overflow: 'hidden' }}>
-            <AuroraBlob color="rgba(59,130,246,0.08)"  x="-80px" y="-60px" size={320} delay={0} />
-            <AuroraBlob color="rgba(139,92,246,0.06)"  x="60%"   y="-40px" size={280} delay={2} />
+            <AuroraBlob color="rgba(33,241,168,0.08)"  x="-80px" y="-60px" size={320} delay={0} />
+            <AuroraBlob color="rgba(15,201,138,0.06)"  x="60%"   y="-40px" size={280} delay={2} />
             <AuroraBlob color="rgba(16,185,129,0.05)"  x="80%"   y="30%"   size={200} delay={4} />
           </div>
 
@@ -639,8 +639,8 @@ export function DashboardPage() {
                   display: 'flex', alignItems: 'center', gap: 8,
                   padding: '9px 20px', borderRadius: 10, border: 'none',
                   background: `linear-gradient(135deg, ${T.blue}, ${T.violet})`,
-                  color: '#fff', fontSize: 13, fontWeight: 700, cursor: 'pointer',
-                  boxShadow: '0 0 20px rgba(59,130,246,0.3)',
+                  color: '#171717', fontSize: 13, fontWeight: 700, cursor: 'pointer',
+                  boxShadow: '0 0 20px rgba(33,241,168,0.3)',
                 }}
               >
                 <PhoneOutgoing size={14} /> Make a Call
@@ -660,7 +660,7 @@ export function DashboardPage() {
         {/* ── KPI BENTO GRID ────────────────────────────────────────────────── */}
         <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 22, height: 22, borderRadius: 6, background: 'rgba(59,130,246,0.15)', border: '1px solid rgba(59,130,246,0.25)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 22, height: 22, borderRadius: 6, background: 'rgba(33,241,168,0.15)', border: '1px solid rgba(33,241,168,0.25)' }}>
               <Activity size={11} style={{ color: T.blueL }} />
             </div>
             <span style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.12em', color: T.t3 }}>Performance</span>
@@ -693,7 +693,7 @@ export function DashboardPage() {
         {/* ── CHART + QUICK ACTIONS ─────────────────────────────────────────── */}
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
 
-          <BentoCard glowColor="rgba(59,130,246,0.07)">
+          <BentoCard glowColor="rgba(33,241,168,0.07)">
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 18 }}>
               <div>
                 <p style={{ fontSize: 13, fontWeight: 700, color: T.t1, margin: 0 }}>Call Activity</p>
@@ -704,7 +704,7 @@ export function DashboardPage() {
             <CallsChart data={callsByDay} />
           </BentoCard>
 
-          <BentoCard glowColor="rgba(139,92,246,0.07)">
+          <BentoCard glowColor="rgba(15,201,138,0.07)">
             <p style={{ fontSize: 13, fontWeight: 700, color: T.t1, margin: '0 0 14px' }}>Quick Actions</p>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 9 }}>
               {quickActions.map(({ icon: Icon, label, desc, to, color, bg, bdr }) => (
@@ -733,7 +733,7 @@ export function DashboardPage() {
 
           {/* Checklist */}
           {!allDone && (
-            <BentoCard glowColor="rgba(59,130,246,0.09)">
+            <BentoCard glowColor="rgba(33,241,168,0.09)">
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
                 <div>
                   <p style={{ fontSize: 13, fontWeight: 700, color: T.t1, margin: 0 }}>Setup Checklist</p>
@@ -753,7 +753,7 @@ export function DashboardPage() {
                   height: '100%', borderRadius: 999,
                   background: `linear-gradient(90deg, ${T.blue}, ${T.violet})`,
                   width: `${progressPct}%`, transition: 'width 0.5s ease',
-                  boxShadow: '0 0 8px rgba(59,130,246,0.5)',
+                  boxShadow: '0 0 8px rgba(33,241,168,0.5)',
                 }} />
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 9 }}>
@@ -765,7 +765,7 @@ export function DashboardPage() {
           )}
 
           {/* Recent calls */}
-          <BentoCard glowColor="rgba(139,92,246,0.07)" noPad>
+          <BentoCard glowColor="rgba(15,201,138,0.07)" noPad>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '20px 24px 16px', borderBottom: `1px solid ${T.bdr}` }}>
               <div>
                 <p style={{ fontSize: 13, fontWeight: 700, color: T.t1, margin: 0 }}>Recent Calls</p>
@@ -775,7 +775,7 @@ export function DashboardPage() {
                 fontSize: 11, fontWeight: 600, color: T.blueL, textDecoration: 'none',
                 display: 'flex', alignItems: 'center', gap: 4,
                 padding: '5px 10px', borderRadius: 7,
-                background: 'rgba(59,130,246,0.1)', border: '1px solid rgba(59,130,246,0.2)',
+                background: 'rgba(33,241,168,0.1)', border: '1px solid rgba(33,241,168,0.2)',
               }}>
                 View all <ArrowRight size={10} />
               </Link>
@@ -785,7 +785,7 @@ export function DashboardPage() {
               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 12, padding: '40px 24px' }}>
                 <div style={{
                   width: 44, height: 44, borderRadius: '50%',
-                  background: 'rgba(59,130,246,0.07)', border: '1px solid rgba(59,130,246,0.14)',
+                  background: 'rgba(33,241,168,0.07)', border: '1px solid rgba(33,241,168,0.14)',
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                 }}>
                   <PhoneCall size={18} style={{ color: T.t3 }} />
@@ -817,7 +817,7 @@ export function DashboardPage() {
                     <div style={{
                       width: 30, height: 30, borderRadius: 8, flexShrink: 0,
                       display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      background: 'rgba(59,130,246,0.07)', border: '1px solid rgba(59,130,246,0.14)',
+                      background: 'rgba(33,241,168,0.07)', border: '1px solid rgba(33,241,168,0.14)',
                     }}>
                       <Phone size={12} style={{ color: T.blueL }} />
                     </div>

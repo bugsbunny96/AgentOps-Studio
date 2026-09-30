@@ -46,17 +46,17 @@ export default function ForgotPasswordPage() {
     return (
       <div className="space-y-6 text-center">
         <div className="flex flex-col items-center gap-4">
-          <MailCheck size={48} className="text-brand-500" />
+          <MailCheck size={48} className="text-brand-300" />
           <div>
-            <h2 className="text-xl font-bold text-slate-900">Check your email</h2>
-            <p className="mt-2 text-sm text-slate-500">
+            <h2 className="text-xl font-bold text-slate-50">Check your email</h2>
+            <p className="mt-2 text-sm text-slate-400">
               If an account exists for <strong>{getValues('email')}</strong>, you&apos;ll receive a
               reset link shortly. It expires in 1 hour.
             </p>
           </div>
         </div>
-        <p className="text-center text-sm text-slate-500">
-          <Link to="/login" className="font-medium text-brand-600 hover:underline">
+        <p className="text-center text-sm text-slate-400">
+          <Link to="/login" className="font-medium text-brand-300 hover:underline">
             ← Back to sign in
           </Link>
         </p>
@@ -68,15 +68,15 @@ export default function ForgotPasswordPage() {
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-bold text-slate-900">Reset password</h1>
-        <p className="mt-1 text-sm text-slate-500">
+        <h1 className="text-2xl font-bold text-slate-50">Reset password</h1>
+        <p className="mt-1 text-sm text-slate-400">
           Enter your email and we&apos;ll send a reset link.
         </p>
       </div>
 
       {/* Server error */}
       {serverError && (
-        <div className="rounded-md bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">
+        <div className="rounded-md bg-red-500/10 border border-red-500/30 px-4 py-3 text-sm text-red-300">
           {serverError}
         </div>
       )}
@@ -84,7 +84,7 @@ export default function ForgotPasswordPage() {
       {/* Form */}
       <form onSubmit={handleSubmit(onSubmit)} noValidate className="space-y-4">
         <div>
-          <label htmlFor="forgot-email" className="block text-sm font-medium text-slate-700 mb-1">
+          <label htmlFor="forgot-email" className="block text-sm font-medium text-slate-200 mb-1">
             Email address
           </label>
           <input
@@ -94,20 +94,20 @@ export default function ForgotPasswordPage() {
             {...register('email')}
             className={`w-full rounded-md border px-3 py-2 text-sm shadow-sm outline-none
               focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition
-              ${errors.email ? 'border-red-400 bg-red-50' : 'border-slate-300 bg-white'}`}
+              ${errors.email ? 'border-red-400 bg-red-500/10' : 'border-white/15 bg-surface'}`}
             placeholder="you@example.com"
           />
           {errors.email && (
-            <p className="mt-1 text-xs text-red-600">{errors.email.message}</p>
+            <p className="mt-1 text-xs text-red-300">{errors.email.message}</p>
           )}
         </div>
 
         <button
           type="submit"
           disabled={isSubmitting}
-          className="w-full flex items-center justify-center gap-2 rounded-md bg-brand-600
-            px-4 py-2.5 text-sm font-semibold text-white shadow-sm
-            hover:bg-brand-700 focus:outline-none focus:ring-2 focus:ring-brand-500
+          className="w-full flex items-center justify-center gap-2 rounded-md bg-brand-400
+            px-4 py-2.5 text-sm font-semibold text-slate-900 shadow-sm
+            hover:bg-brand-300 focus:outline-none focus:ring-2 focus:ring-brand-500
             disabled:opacity-50 disabled:cursor-not-allowed transition"
         >
           {isSubmitting && <Loader2 size={16} className="animate-spin" />}
@@ -115,8 +115,8 @@ export default function ForgotPasswordPage() {
         </button>
       </form>
 
-      <p className="text-center text-sm text-slate-500">
-        <Link to="/login" className="font-medium text-brand-600 hover:underline">
+      <p className="text-center text-sm text-slate-400">
+        <Link to="/login" className="font-medium text-brand-300 hover:underline">
           ← Back to sign in
         </Link>
       </p>

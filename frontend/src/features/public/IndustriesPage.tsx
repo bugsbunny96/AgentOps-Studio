@@ -13,10 +13,10 @@ import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 
 const T = {
-  bg: '#030712', bgS: '#0d1524',
+  bg: '#171717', bgS: '#1f1f1f',
   bgC: 'rgba(255,255,255,0.03)', bdr: 'rgba(255,255,255,0.07)', bdrB: 'rgba(255,255,255,0.12)',
-  blue: '#3b82f6', violet: '#8b5cf6', em: '#10b981', amber: '#f59e0b', orange: '#f97316',
-  t1: '#f8fafc', t2: '#94a3b8', t3: '#475569',
+  blue: '#21F1A8', violet: '#0FC98A', em: '#10b981', amber: '#21F1A8', orange: '#7CF7CB',
+  t1: '#fafafa', t2: '#a3a3a3', t3: '#737373',
 };
 
 const pill = (bg: string, color: string, border: string): React.CSSProperties => ({
@@ -114,12 +114,12 @@ export default function IndustriesPage() {
       {/* Hero */}
       <section style={{ position: 'relative', overflow: 'hidden', padding: 'clamp(80px,10vw,120px) 24px 72px', textAlign: 'center' }}>
         <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none' }}>
-          <div style={{ position: 'absolute', top: '10%', left: '20%', width: 450, height: 450, borderRadius: '50%', background: 'radial-gradient(circle, rgba(245,158,11,0.10) 0%, transparent 70%)', animation: 'ip-float 13s ease-in-out infinite' }} />
-          <div style={{ position: 'absolute', top: '15%', right: '10%', width: 300, height: 300, borderRadius: '50%', background: 'radial-gradient(circle, rgba(59,130,246,0.10) 0%, transparent 70%)', animation: 'ip-float 9s ease-in-out infinite reverse' }} />
+          <div style={{ position: 'absolute', top: '10%', left: '20%', width: 450, height: 450, borderRadius: '50%', background: 'radial-gradient(circle, rgba(33,241,168,0.10) 0%, transparent 70%)', animation: 'ip-float 13s ease-in-out infinite' }} />
+          <div style={{ position: 'absolute', top: '15%', right: '10%', width: 300, height: 300, borderRadius: '50%', background: 'radial-gradient(circle, rgba(33,241,168,0.10) 0%, transparent 70%)', animation: 'ip-float 9s ease-in-out infinite reverse' }} />
         </div>
         <div style={{ position: 'relative', maxWidth: 720, margin: '0 auto' }}>
           <div style={{ marginBottom: 20 }}>
-            <span style={pill('rgba(245,158,11,0.1)', T.amber, 'rgba(245,158,11,0.25)')}>● Industry Solutions</span>
+            <span style={pill('rgba(33,241,168,0.1)', T.amber, 'rgba(33,241,168,0.25)')}>● Industry Solutions</span>
           </div>
           <h1 style={{ fontSize: 'clamp(32px,5vw,60px)', fontWeight: 900, lineHeight: 1.1, margin: '0 0 20px', letterSpacing: '-0.03em' }}>
             Built for India's{' '}
@@ -129,7 +129,7 @@ export default function IndustriesPage() {
           <p style={{ color: T.t2, fontSize: 'clamp(15px,2vw,18px)', lineHeight: 1.7, margin: '0 0 36px' }}>
             AgentOps Studio isn't a generic tool. It's pre-configured for the workflows, call patterns, and language preferences of Indian logistics, real estate, and healthcare businesses.
           </p>
-          <Link to="/register" style={{ display: 'inline-flex', alignItems: 'center', padding: '13px 32px', borderRadius: 10, background: T.amber, color: '#000', fontWeight: 700, fontSize: 15, textDecoration: 'none', gap: 8 }}>Start free for your industry →</Link>
+          <Link to="/register" style={{ display: 'inline-flex', alignItems: 'center', padding: '13px 32px', borderRadius: 10, background: T.amber, color: '#171717', fontWeight: 700, fontSize: 15, textDecoration: 'none', gap: 8 }}>Start free for your industry →</Link>
         </div>
       </section>
 
@@ -226,7 +226,7 @@ export default function IndustriesPage() {
               Start free. Set up your knowledge base in 20 minutes. Make your first test call. No credit card needed.
             </p>
             <div style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap' }}>
-              <Link to="/register" style={{ padding: '13px 28px', borderRadius: 10, background: T.amber, color: '#000', fontWeight: 700, fontSize: 15, textDecoration: 'none' }}>Get started free →</Link>
+              <Link to="/register" style={{ padding: '13px 28px', borderRadius: 10, background: T.amber, color: '#171717', fontWeight: 700, fontSize: 15, textDecoration: 'none' }}>Get started free →</Link>
               <Link to="/contact" style={{ padding: '13px 28px', borderRadius: 10, border: `1px solid ${T.bdrB}`, color: T.t1, fontWeight: 600, fontSize: 15, textDecoration: 'none' }}>Talk to our team</Link>
             </div>
           </div>

@@ -8,12 +8,12 @@ const T = {
   bgC:  'rgba(255,255,255,0.04)',
   bgR:  'rgba(255,255,255,0.02)',
   bdr:  'rgba(255,255,255,0.07)',
-  t1:   '#f8fafc',
-  t2:   '#94a3b8',
-  t3:   '#475569',
+  t1:   '#fafafa',
+  t2:   '#a3a3a3',
+  t3:   '#737373',
   red:  '#ef4444',
   em:   '#10b981',
-  blue: '#60a5fa',
+  blue: '#7CF7CB',
 };
 
 interface Org {
@@ -35,8 +35,8 @@ interface OrgListResponse {
 
 const PLAN_COLOR: Record<string, string> = {
   free: T.t3,
-  starter: '#60a5fa',
-  growth: '#a78bfa',
+  starter: '#7CF7CB',
+  growth: '#5CF4BF',
   enterprise: '#f59e0b',
 };
 

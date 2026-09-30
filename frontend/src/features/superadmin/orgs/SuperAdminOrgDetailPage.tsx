@@ -5,8 +5,8 @@ import { ArrowLeft, LogIn, ArrowRightLeft, AlertTriangle, Download, Palette } fr
 import api from '@/utils/api';
 
 const T = {
-  bg:   '#07070f',
-  bgS:  '#0e0e1a',
+  bg:   '#141414',
+  bgS:  '#1c1c1c',
   bgC:  'rgba(255,255,255,0.04)',
   bdr:  'rgba(255,255,255,0.07)',
   bdrB: 'rgba(255,255,255,0.12)',
@@ -14,10 +14,10 @@ const T = {
   redL: '#fca5a5',
   green:'#22c55e',
   amber:'#f59e0b',
-  blue: '#3b82f6',
-  t1:   '#f8fafc',
-  t2:   '#94a3b8',
-  t3:   '#475569',
+  blue: '#21F1A8',
+  t1:   '#fafafa',
+  t2:   '#a3a3a3',
+  t3:   '#737373',
   em:   '#10b981',
 };
 
@@ -287,8 +287,8 @@ export default function SuperAdminOrgDetailPage() {
             style={{
               display: 'flex', alignItems: 'center', gap: 7,
               padding: '9px 16px', borderRadius: 9, cursor: exporting ? 'not-allowed' : 'pointer',
-              border: `1px solid rgba(59,130,246,0.35)`,
-              background: 'rgba(59,130,246,0.08)',
+              border: `1px solid rgba(33,241,168,0.35)`,
+              background: 'rgba(33,241,168,0.08)',
               color: T.blue, fontSize: 13, fontWeight: 600,
               opacity: exporting ? 0.7 : 1,
             }}
@@ -302,8 +302,8 @@ export default function SuperAdminOrgDetailPage() {
             style={{
               display: 'flex', alignItems: 'center', gap: 7,
               padding: '9px 16px', borderRadius: 9, textDecoration: 'none',
-              border: `1px solid rgba(168,85,247,0.35)`,
-              background: 'rgba(168,85,247,0.08)',
+              border: `1px solid rgba(33,241,168,0.35)`,
+              background: 'rgba(33,241,168,0.08)',
               color: '#a855f7', fontSize: 13, fontWeight: 600,
             }}
           >

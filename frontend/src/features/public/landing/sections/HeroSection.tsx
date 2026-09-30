@@ -4,8 +4,8 @@ import { GradientText, Pill, PrimaryButton, Reveal } from '../primitives';
 import { HeroMockup } from './HeroMockup';
 
 const AURORA_BLOBS = [
-  { w: 600, h: 600, color: 'rgba(59,130,246,.2)', top: -200, right: -80, delay: 0, dur: 12 },
-  { w: 450, h: 450, color: 'rgba(139,92,246,.15)', top: 80, right: 220, delay: -4, dur: 15 },
+  { w: 600, h: 600, color: 'rgba(33,241,168,.2)', top: -200, right: -80, delay: 0, dur: 12 },
+  { w: 450, h: 450, color: 'rgba(15,201,138,.15)', top: 80, right: 220, delay: -4, dur: 15 },
   { w: 350, h: 350, color: 'rgba(16,185,129,.1)', bottom: -80, right: 0, delay: -7, dur: 10 },
 ];
 
@@ -48,7 +48,7 @@ export function HeroSection() {
       >
         <div>
           <Reveal>
-            <Pill bg="rgba(59,130,246,.12)" fg={color.blueLight} border="rgba(59,130,246,.25)" live>
+            <Pill bg="rgba(33,241,168,.12)" fg={color.blueLight} border="rgba(33,241,168,.25)" live>
               New — Next-gen AI voice agents
             </Pill>
           </Reveal>

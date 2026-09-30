@@ -16,9 +16,9 @@ import api from '@/utils/api';
 // ─── Styles ───────────────────────────────────────────────────────────────────
 
 const T = {
-  bg: '#07070f', bgS: '#0e0e1a', bgC: 'rgba(255,255,255,0.04)',
+  bg: '#141414', bgS: '#1c1c1c', bgC: 'rgba(255,255,255,0.04)',
   bdr: 'rgba(255,255,255,0.07)',
-  red: '#ef4444', green: '#10b981', t1: '#f8fafc', t2: '#94a3b8', t3: '#475569',
+  red: '#ef4444', green: '#10b981', t1: '#fafafa', t2: '#a3a3a3', t3: '#737373',
 };
 
 const inputStyle: React.CSSProperties = {
@@ -287,7 +287,7 @@ export default function SuperAdminPromoComposePage() {
             onClick={() => { setServerErr(null); saveMut.mutate(); }}
             disabled={saveMut.isPending || !canSave}
             style={{
-              padding: '10px 24px', borderRadius: 8, background: T.red, border: 'none',
+              padding: '10px 24px', borderRadius: 8, background: '#21F1A8', border: 'none',
               color: '#fff', fontSize: 13, fontWeight: 700, cursor: 'pointer',
               display: 'flex', alignItems: 'center', gap: 8,
               opacity: !canSave ? 0.5 : 1,

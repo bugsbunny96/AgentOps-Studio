@@ -89,12 +89,12 @@ export default function CustomizePage() {
     <div className="space-y-8">
       {/* Header */}
       <div className="flex items-start gap-4">
-        <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-xl bg-brand-100 text-brand-600">
+        <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-xl bg-brand-400/15 text-brand-300">
           <Mic size={24} />
         </div>
         <div>
-          <h1 className="text-2xl font-bold text-slate-900">Customize your AI agent</h1>
-          <p className="mt-1 text-sm text-slate-500">
+          <h1 className="text-2xl font-bold text-slate-50">Customize your AI agent</h1>
+          <p className="mt-1 text-sm text-slate-400">
             Choose your agent's voice and the languages it will speak. You can change these any time from Agent Details.
           </p>
         </div>
@@ -102,7 +102,7 @@ export default function CustomizePage() {
 
       {/* Server error */}
       {serverError && (
-        <div className="rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+        <div className="rounded-md border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-300">
           {serverError}
         </div>
       )}
@@ -147,12 +147,12 @@ export default function CustomizePage() {
         />
 
         {errors.supportedLanguages && (
-          <p className="text-xs text-red-600">{errors.supportedLanguages.message}</p>
+          <p className="text-xs text-red-300">{errors.supportedLanguages.message}</p>
         )}
 
         {/* Fallback number */}
         <div>
-          <label htmlFor="fallback-number" className="block text-sm font-medium text-slate-700 mb-1">
+          <label htmlFor="fallback-number" className="block text-sm font-medium text-slate-200 mb-1">
             Fallback number{' '}
             <span className="text-slate-400 font-normal">(optional)</span>
           </label>
@@ -161,8 +161,8 @@ export default function CustomizePage() {
             type="tel"
             {...register('fallbackNumber')}
             placeholder="+91 98765 43210"
-            className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm shadow-sm outline-none
-              focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition bg-white"
+            className="w-full rounded-md border border-white/15 px-3 py-2 text-sm shadow-sm outline-none
+              focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition bg-surface"
           />
           <p className="mt-1 text-xs text-slate-400">
             When the AI can't handle a call, it will transfer to this number.
@@ -174,9 +174,9 @@ export default function CustomizePage() {
           <button
             type="submit"
             disabled={isSubmitting}
-            className="w-full flex items-center justify-center gap-2 rounded-md bg-brand-600
-              px-4 py-2.5 text-sm font-semibold text-white shadow-sm
-              hover:bg-brand-700 focus:outline-none focus:ring-2 focus:ring-brand-500
+            className="w-full flex items-center justify-center gap-2 rounded-md bg-brand-400
+              px-4 py-2.5 text-sm font-semibold text-slate-900 shadow-sm
+              hover:bg-brand-300 focus:outline-none focus:ring-2 focus:ring-brand-500
               disabled:opacity-50 disabled:cursor-not-allowed transition"
           >
             {isSubmitting && <Loader2 size={16} className="animate-spin" />}

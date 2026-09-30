@@ -10,13 +10,13 @@ import { Link } from 'react-router-dom';
 import api from '@/utils/api';
 
 const T = {
-  bg: '#07070f', bgS: '#0e0e1a', bgC: 'rgba(255,255,255,0.04)',
+  bg: '#141414', bgS: '#1c1c1c', bgC: 'rgba(255,255,255,0.04)',
   bdr: 'rgba(255,255,255,0.07)', bdrB: 'rgba(255,255,255,0.12)',
   green: '#22c55e', greenL: '#bbf7d0', greenD: 'rgba(34,197,94,0.12)',
   amber: '#f59e0b', amberL: '#fde68a', amberD: 'rgba(245,158,11,0.12)',
   red: '#ef4444', redL: '#fca5a5', redD: 'rgba(239,68,68,0.12)',
-  blue: '#3b82f6', blueD: 'rgba(59,130,246,0.12)',
-  t1: '#f8fafc', t2: '#94a3b8', t3: '#475569',
+  blue: '#21F1A8', blueD: 'rgba(33,241,168,0.12)',
+  t1: '#fafafa', t2: '#a3a3a3', t3: '#737373',
 };
 
 type Tier = 'healthy' | 'warning' | 'critical';

@@ -14,8 +14,8 @@ import api from '@/utils/api';
 // ─── Design tokens ────────────────────────────────────────────────────────────
 
 const T = {
-  bg:    '#07070f',
-  bgS:   '#0e0e1a',
+  bg:    '#141414',
+  bgS:   '#1c1c1c',
   bgC:   'rgba(255,255,255,0.04)',
   bdr:   'rgba(255,255,255,0.07)',
   bdrB:  'rgba(255,255,255,0.12)',
@@ -25,14 +25,14 @@ const T = {
   greenL:'#bbf7d0',
   amber: '#f59e0b',
   amberL:'#fde68a',
-  blue:  '#3b82f6',
-  blueL: '#93c5fd',
+  blue:  '#21F1A8',
+  blueL: '#A2FAD9',
   purple:'#a855f7',
   teal:  '#14b8a6',
   tealL: '#99f6e4',
-  t1:    '#f8fafc',
-  t2:    '#94a3b8',
-  t3:    '#475569',
+  t1:    '#fafafa',
+  t2:    '#a3a3a3',
+  t3:    '#737373',
 };
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -68,7 +68,7 @@ const EMPTY_FORM: ChangelogFormData = {
 
 const TYPE_META: Record<ChangelogType, { label: string; color: string; bg: string; icon: React.ReactNode }> = {
   new:      { label: 'New',      color: T.tealL,  bg: 'rgba(20,184,166,0.15)',  icon: <Sparkles size={12} /> },
-  improved: { label: 'Improved', color: T.blueL,  bg: 'rgba(59,130,246,0.15)',  icon: <TrendingUp size={12} /> },
+  improved: { label: 'Improved', color: T.blueL,  bg: 'rgba(33,241,168,0.15)',  icon: <TrendingUp size={12} /> },
   fixed:    { label: 'Fixed',    color: T.amberL, bg: 'rgba(245,158,11,0.15)',  icon: <Wrench size={12} /> },
 };
 

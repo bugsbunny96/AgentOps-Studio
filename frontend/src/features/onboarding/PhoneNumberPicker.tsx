@@ -107,41 +107,41 @@ export default function PhoneNumberPicker() {
   return (
     <div className="space-y-2">
       <div className="flex items-center justify-between">
-        <p className="text-sm font-semibold text-slate-700">Your business phone number</p>
+        <p className="text-sm font-semibold text-slate-200">Your business phone number</p>
         <span className="text-xs text-slate-400">Customers call this number</span>
       </div>
 
       {state === 'loading' && (
-        <div className="rounded-xl border border-slate-200 bg-slate-50 p-6 flex items-center justify-center gap-2">
-          <Loader2 size={18} className="text-indigo-500 animate-spin" />
-          <p className="text-sm text-slate-500">Loading phone numbers…</p>
+        <div className="rounded-xl border border-white/10 bg-white/[0.03] p-6 flex items-center justify-center gap-2">
+          <Loader2 size={18} className="text-brand-300 animate-spin" />
+          <p className="text-sm text-slate-400">Loading phone numbers…</p>
         </div>
       )}
 
       {state === 'assigned' && assigned && (
-        <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-5">
+        <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/10 p-5">
           <div className="flex items-start gap-3">
-            <CheckCircle2 size={18} className="text-emerald-600 mt-0.5 flex-shrink-0" />
+            <CheckCircle2 size={18} className="text-emerald-300 mt-0.5 flex-shrink-0" />
             <div className="min-w-0 flex-1">
               {assigned.display ? (
                 <>
                   <div className="flex items-center gap-2">
-                    <p className="text-lg font-semibold text-emerald-900 tracking-wide">{assigned.display}</p>
+                    <p className="text-lg font-semibold text-emerald-300 tracking-wide">{assigned.display}</p>
                     <button
                       type="button"
                       onClick={copyNumber}
-                      className="rounded p-1 text-emerald-700 hover:bg-emerald-100"
+                      className="rounded p-1 text-emerald-300 hover:bg-emerald-500/15"
                       aria-label="Copy phone number"
                     >
                       {copied ? <CheckCircle2 size={14} /> : <Copy size={14} />}
                     </button>
                   </div>
-                  <p className="text-xs text-emerald-700 mt-1">
+                  <p className="text-xs text-emerald-300 mt-1">
                     Connected. Once you launch, calls to this number are answered by your AI agent.
                   </p>
                 </>
               ) : (
-                <p className="text-sm text-emerald-800">A phone number is already linked to your agent.</p>
+                <p className="text-sm text-emerald-300">A phone number is already linked to your agent.</p>
               )}
             </div>
           </div>
@@ -149,8 +149,8 @@ export default function PhoneNumberPicker() {
       )}
 
       {state === 'choose' && (
-        <div className="rounded-xl border border-slate-200 bg-white p-5 space-y-4">
-          <p className="text-xs text-slate-500">
+        <div className="rounded-xl border border-white/10 bg-surface p-5 space-y-4">
+          <p className="text-xs text-slate-400">
             Pick an Indian number for your AI agent. You can forward your existing business line to it later.
           </p>
           <div role="radiogroup" aria-label="Available phone numbers" className="grid grid-cols-1 sm:grid-cols-2 gap-2">
@@ -164,28 +164,28 @@ export default function PhoneNumberPicker() {
                   aria-checked={active}
                   onClick={() => setSelected(n.e164)}
                   className={`flex items-center gap-3 rounded-lg border px-3 py-2.5 text-left transition
-                    ${active ? 'border-indigo-500 bg-indigo-50 ring-1 ring-indigo-500' : 'border-slate-200 hover:border-slate-300'}`}
+                    ${active ? 'border-brand-500 bg-brand-400/10 ring-1 ring-brand-500' : 'border-white/10 hover:border-white/15'}`}
                 >
-                  <Phone size={15} className={active ? 'text-indigo-600' : 'text-slate-400'} />
-                  <span className="text-sm font-medium text-slate-800 tracking-wide">{n.display}</span>
+                  <Phone size={15} className={active ? 'text-brand-300' : 'text-slate-400'} />
+                  <span className="text-sm font-medium text-slate-100 tracking-wide">{n.display}</span>
                 </button>
               );
             })}
           </div>
           {numbers.length > INITIAL_VISIBLE && (
-            <button type="button" onClick={() => setShowAll((v) => !v)} className="text-xs font-medium text-indigo-600 hover:underline">
+            <button type="button" onClick={() => setShowAll((v) => !v)} className="text-xs font-medium text-brand-300 hover:underline">
               {showAll ? 'Show fewer' : `Show all ${numbers.length} numbers`}
             </button>
           )}
           {error && (
-            <p className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700">{error}</p>
+            <p className="rounded-md border border-red-500/30 bg-red-500/10 px-3 py-2 text-xs text-red-300">{error}</p>
           )}
           <button
             type="button"
             disabled={!selected || claiming}
             onClick={claim}
-            className="w-full flex items-center justify-center gap-2 rounded-md bg-indigo-600 px-4 py-2.5
-              text-sm font-semibold text-white hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition"
+            className="w-full flex items-center justify-center gap-2 rounded-md bg-brand-400 px-4 py-2.5
+              text-sm font-semibold text-slate-900 hover:bg-brand-300 disabled:opacity-50 disabled:cursor-not-allowed transition"
           >
             {claiming && <Loader2 size={15} className="animate-spin" />}
             {claiming ? 'Connecting number…' : 'Use this number'}
@@ -194,9 +194,9 @@ export default function PhoneNumberPicker() {
       )}
 
       {(state === 'empty' || state === 'unavailable') && (
-        <div className="rounded-xl border border-amber-200 bg-amber-50 p-5 flex items-start gap-2">
+        <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-5 flex items-start gap-2">
           <AlertTriangle size={16} className="text-amber-500 mt-0.5 flex-shrink-0" />
-          <p className="text-xs text-amber-800">
+          <p className="text-xs text-amber-300">
             {state === 'empty'
               ? 'No phone numbers are free right now. You can launch now — we will assign your number shortly.'
               : 'Phone numbers are not available yet. You can launch now and add a number later from Settings.'}
@@ -205,10 +205,10 @@ export default function PhoneNumberPicker() {
       )}
 
       {state === 'error' && (
-        <div className="rounded-xl border border-red-200 bg-red-50 p-5 space-y-2">
-          <p className="text-xs text-red-700">{error ?? 'Something went wrong.'}</p>
+        <div className="rounded-xl border border-red-500/30 bg-red-500/10 p-5 space-y-2">
+          <p className="text-xs text-red-300">{error ?? 'Something went wrong.'}</p>
           <button type="button" onClick={() => { setState('loading'); setError(null); void loadAvailable(); }}
-            className="text-xs font-medium text-red-700 underline">
+            className="text-xs font-medium text-red-300 underline">
             Try again
           </button>
         </div>

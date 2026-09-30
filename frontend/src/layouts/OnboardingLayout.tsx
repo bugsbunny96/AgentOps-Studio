@@ -115,24 +115,24 @@ export function OnboardingLayout() {
   }
 
   return (
-    <div className="flex min-h-screen flex-col bg-slate-50">
+    <div className="flex min-h-screen flex-col bg-white/[0.03]">
       {/* Top bar */}
-      <header className="flex h-16 items-center justify-between border-b border-slate-200 bg-white px-6">
+      <header className="flex h-16 items-center justify-between border-b border-white/10 bg-surface px-6">
         <div className="flex items-center gap-2.5">
           <img src={agentopsIcon} alt="AgentOps" className="h-8 w-8 rounded-lg" />
-          <span className="font-semibold text-slate-900">AgentOps Studio</span>
+          <span className="font-semibold text-slate-50">AgentOps Studio</span>
         </div>
 
         <button
           onClick={logout}
-          className="text-sm text-slate-500 hover:text-slate-700 transition"
+          className="text-sm text-slate-400 hover:text-slate-200 transition"
         >
           Sign out
         </button>
       </header>
 
       {/* Step progress bar */}
-      <div className="border-b border-slate-200 bg-white px-6 py-4">
+      <div className="border-b border-white/10 bg-surface px-6 py-4">
         <div className="mx-auto max-w-2xl">
           {/*
             KEY LAYOUT FIX:
@@ -178,10 +178,10 @@ export function OnboardingLayout() {
                       }
                       className={[
                         'flex h-8 w-8 items-center justify-center rounded-full text-sm font-semibold transition-all',
-                        done     ? 'bg-emerald-500 text-white cursor-pointer hover:bg-emerald-600 hover:ring-4 hover:ring-emerald-100' : '',
-                        active   ? 'bg-brand-600 text-white ring-4 ring-brand-100 cursor-default' : '',
-                        frontier ? 'bg-brand-600 text-white cursor-pointer hover:bg-brand-700 hover:ring-4 hover:ring-brand-100' : '',
-                        locked   ? 'bg-slate-200 text-slate-400 cursor-not-allowed' : '',
+                        done     ? 'bg-emerald-500 text-white cursor-pointer hover:bg-emerald-600 hover:ring-4 hover:ring-emerald-500/30' : '',
+                        active   ? 'bg-brand-400 text-slate-900 ring-4 ring-brand-400/30 cursor-default' : '',
+                        frontier ? 'bg-brand-400 text-slate-900 cursor-pointer hover:bg-brand-300 hover:ring-4 hover:ring-brand-400/30' : '',
+                        locked   ? 'bg-white/10 text-slate-400 cursor-not-allowed' : '',
                       ].join(' ')}
                     >
                       {s.step}
@@ -193,8 +193,8 @@ export function OnboardingLayout() {
                     <span
                       className={[
                         'absolute top-9 left-1/2 -translate-x-1/2 whitespace-nowrap text-xs font-medium transition-colors',
-                        active || frontier ? 'text-brand-600' :
-                        done               ? 'text-emerald-600' :
+                        active || frontier ? 'text-brand-300' :
+                        done               ? 'text-emerald-300' :
                         'text-slate-400',
                       ].join(' ')}
                     >
@@ -206,7 +206,7 @@ export function OnboardingLayout() {
                       Green when the step to the LEFT is completed; gray otherwise. */}
                   {i < STEPS.length - 1 && (
                     <div
-                      className={`flex-1 h-0.5 transition-colors ${s.step <= completedSteps ? 'bg-emerald-500' : 'bg-slate-200'
+                      className={`flex-1 h-0.5 transition-colors ${s.step <= completedSteps ? 'bg-emerald-500' : 'bg-white/10'
                         }`}
                     />
                   )}
@@ -217,9 +217,9 @@ export function OnboardingLayout() {
 
           {/* Personalised sub-header — visible from Step 2 onwards */}
           {showPersonalisedHeader && (
-            <p className="text-center text-s text-slate-500">
+            <p className="text-center text-s text-slate-400">
               Setting up your AI agent for{' '}
-              <span className="font-semibold text-slate-700">{currentOrg.name}</span>
+              <span className="font-semibold text-slate-200">{currentOrg.name}</span>
             </p>
           )}
         </div>

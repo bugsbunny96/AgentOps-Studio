@@ -9,7 +9,7 @@ export default function NotFoundPage() {
     <div
       style={{
         minHeight: '100vh',
-        background: '#030712',
+        background: '#171717',
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
@@ -25,11 +25,11 @@ export default function NotFoundPage() {
             fontSize: 'clamp(96px, 18vw, 180px)',
             fontWeight: 900,
             lineHeight: 1,
-            background: 'linear-gradient(135deg, #3b82f6 0%, #8b5cf6 50%, #ec4899 100%)',
+            background: 'linear-gradient(135deg, #21F1A8 0%, #0FC98A 50%, #ec4899 100%)',
             WebkitBackgroundClip: 'text',
             WebkitTextFillColor: 'transparent',
             backgroundClip: 'text',
-            filter: 'drop-shadow(0 0 40px rgba(139,92,246,0.35))',
+            filter: 'drop-shadow(0 0 40px rgba(15,201,138,0.35))',
             letterSpacing: '-0.04em',
           }}
         >
@@ -42,7 +42,7 @@ export default function NotFoundPage() {
         style={{
           fontSize: 'clamp(22px, 4vw, 32px)',
           fontWeight: 700,
-          color: '#f8fafc',
+          color: '#fafafa',
           margin: '0 0 12px',
           letterSpacing: '-0.02em',
         }}
@@ -54,7 +54,7 @@ export default function NotFoundPage() {
       <p
         style={{
           fontSize: 16,
-          color: '#64748b',
+          color: '#8a8a8a',
           maxWidth: 380,
           lineHeight: 1.6,
           margin: '0 0 36px',
@@ -71,12 +71,12 @@ export default function NotFoundPage() {
           style={{
             padding: '11px 24px',
             borderRadius: 10,
-            background: 'linear-gradient(135deg, #3b82f6, #8b5cf6)',
-            color: '#fff',
+            background: 'linear-gradient(135deg, #21F1A8, #0FC98A)',
+            color: '#171717',
             textDecoration: 'none',
             fontWeight: 600,
             fontSize: 15,
-            boxShadow: '0 4px 20px rgba(59,130,246,0.3)',
+            boxShadow: '0 4px 20px rgba(33,241,168,0.3)',
           }}
         >
           ← Back to Home
@@ -87,7 +87,7 @@ export default function NotFoundPage() {
             padding: '11px 24px',
             borderRadius: 10,
             border: '1px solid rgba(255,255,255,0.12)',
-            color: '#94a3b8',
+            color: '#a3a3a3',
             textDecoration: 'none',
             fontWeight: 600,
             fontSize: 15,

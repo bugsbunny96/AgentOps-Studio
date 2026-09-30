@@ -72,10 +72,10 @@ const STEPS: ProgressStep[] = [
 
 function PulsingBar({ progress }: { progress: number }) {
   return (
-    <div className="relative h-2 w-full rounded-full bg-slate-100 overflow-hidden">
+    <div className="relative h-2 w-full rounded-full bg-white/[0.06] overflow-hidden">
       {/* animated shimmer */}
       <div
-        className="absolute inset-0 rounded-full bg-gradient-to-r from-brand-400 via-brand-600 to-violet-500 transition-all duration-700 ease-out"
+        className="absolute inset-0 rounded-full bg-gradient-to-r from-brand-400 via-brand-400 to-brand-400 transition-all duration-700 ease-out"
         style={{ width: `${progress}%` }}
       />
       <div
@@ -98,7 +98,7 @@ function OrbitLoader() {
     <div className="relative h-20 w-20 mx-auto">
       {/* Center icon */}
       <div className="absolute inset-0 flex items-center justify-center">
-        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-brand-600 text-white shadow-lg">
+        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-brand-400 text-slate-900 shadow-lg">
           <Zap size={18} />
         </div>
       </div>
@@ -245,29 +245,29 @@ export default function CrawlLoadingPage() {
       <div className="space-y-6" style={{ animation: 'fadeSlideIn 0.3s ease-out' }}>
         {/* Header */}
         <div>
-          <h1 className="text-2xl font-bold text-slate-900">Couldn't scan your website</h1>
-          <p className="mt-1 text-sm text-slate-500">
+          <h1 className="text-2xl font-bold text-slate-50">Couldn't scan your website</h1>
+          <p className="mt-1 text-sm text-slate-400">
             No worries — you can fill in the details manually, or try again with the URL.
           </p>
         </div>
 
         {/* Error card */}
-        <div className="rounded-xl border border-red-200 bg-red-50 px-5 py-4 flex items-start gap-3">
+        <div className="rounded-xl border border-red-500/30 bg-red-500/10 px-5 py-4 flex items-start gap-3">
           <XCircle size={18} className="text-red-500 flex-shrink-0 mt-0.5" />
           <div>
-            <p className="text-sm font-semibold text-red-800">Scan failed</p>
-            <p className="mt-0.5 text-xs text-red-700 leading-relaxed">{errorMessage}</p>
+            <p className="text-sm font-semibold text-red-300">Scan failed</p>
+            <p className="mt-0.5 text-xs text-red-300 leading-relaxed">{errorMessage}</p>
           </div>
         </div>
 
         {/* What was tried */}
-        <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3.5 space-y-1.5">
-          <p className="text-xs font-semibold text-slate-600 uppercase tracking-wide">
+        <div className="rounded-xl border border-white/10 bg-white/[0.03] px-4 py-3.5 space-y-1.5">
+          <p className="text-xs font-semibold text-slate-300 uppercase tracking-wide">
             What we tried
           </p>
-          <p className="text-xs text-slate-500">
+          <p className="text-xs text-slate-400">
             We attempted to reach{' '}
-            <span className="font-medium text-slate-700 underline decoration-dotted">
+            <span className="font-medium text-slate-200 underline decoration-dotted">
               {currentOrg?.websiteUrl ?? 'your website'}
             </span>{' '}
             but couldn't load any pages. This can happen if the site requires login,
@@ -281,9 +281,9 @@ export default function CrawlLoadingPage() {
             type="button"
             onClick={handleRetry}
             disabled={isRetrying}
-            className="w-full flex items-center justify-center gap-2 rounded-md bg-brand-600
-              px-4 py-2.5 text-sm font-semibold text-white shadow-sm
-              hover:bg-brand-700 focus:outline-none focus:ring-2 focus:ring-brand-500
+            className="w-full flex items-center justify-center gap-2 rounded-md bg-brand-400
+              px-4 py-2.5 text-sm font-semibold text-slate-900 shadow-sm
+              hover:bg-brand-300 focus:outline-none focus:ring-2 focus:ring-brand-500
               disabled:opacity-50 disabled:cursor-not-allowed transition"
           >
             <RefreshCw size={15} className={isRetrying ? 'animate-spin' : ''} />
@@ -293,8 +293,8 @@ export default function CrawlLoadingPage() {
             type="button"
             onClick={handleSkip}
             className="w-full flex items-center justify-center gap-2 rounded-md border
-              border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700
-              hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-brand-500
+              border-white/15 bg-surface px-4 py-2.5 text-sm font-semibold text-slate-200
+              hover:bg-white/[0.03] focus:outline-none focus:ring-2 focus:ring-brand-500
               transition"
           >
             Skip and fill in manually
@@ -310,10 +310,10 @@ export default function CrawlLoadingPage() {
     <div className="space-y-8" style={{ animation: 'fadeSlideIn 0.3s ease-out' }}>
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-bold text-slate-900">Scanning your website…</h1>
-        <p className="mt-1 text-sm text-slate-500">
+        <h1 className="text-2xl font-bold text-slate-50">Scanning your website…</h1>
+        <p className="mt-1 text-sm text-slate-400">
           We're reading{' '}
-          <span className="font-medium text-slate-700 underline decoration-dotted">
+          <span className="font-medium text-slate-200 underline decoration-dotted">
             {currentOrg?.websiteUrl ?? 'your website'}
           </span>{' '}
           to build your AI's knowledge base. This takes about 15–30 seconds.
@@ -324,7 +324,7 @@ export default function CrawlLoadingPage() {
       <div className="flex flex-col items-center gap-4 py-2">
         <OrbitLoader />
         <p
-          className="text-sm font-medium text-brand-700"
+          className="text-sm font-medium text-brand-300"
           style={{ animation: 'pulse-soft 2s ease-in-out infinite' }}
         >
           {STEPS[activeStep]?.label}
@@ -353,7 +353,7 @@ export default function CrawlLoadingPage() {
               key={idx}
               className={`flex items-center gap-3 rounded-lg px-3 py-2.5 transition-all duration-300 ${
                 isActive
-                  ? 'bg-brand-50 border border-brand-100'
+                  ? 'bg-brand-400/10 border border-brand-400/30'
                   : isDone
                   ? 'opacity-60'
                   : 'opacity-30'
@@ -363,10 +363,10 @@ export default function CrawlLoadingPage() {
               <span
                 className={`flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full text-sm ${
                   isDone
-                    ? 'bg-emerald-100 text-emerald-600'
+                    ? 'bg-emerald-500/15 text-emerald-300'
                     : isActive
-                    ? 'bg-brand-100 text-brand-600'
-                    : 'bg-slate-100 text-slate-400'
+                    ? 'bg-brand-400/15 text-brand-300'
+                    : 'bg-white/[0.06] text-slate-400'
                 }`}
               >
                 {isDone ? <CheckCircle2 size={14} /> : step.icon}
@@ -377,9 +377,9 @@ export default function CrawlLoadingPage() {
                 <p
                   className={`text-xs font-semibold truncate ${
                     isDone
-                      ? 'text-emerald-700'
+                      ? 'text-emerald-300'
                       : isActive
-                      ? 'text-brand-700'
+                      ? 'text-brand-300'
                       : 'text-slate-400'
                   }`}
                 >
@@ -390,7 +390,7 @@ export default function CrawlLoadingPage() {
               {/* Status dot */}
               {isActive && (
                 <span
-                  className="h-2 w-2 rounded-full bg-brand-500 flex-shrink-0"
+                  className="h-2 w-2 rounded-full bg-brand-400 flex-shrink-0"
                   style={{ animation: 'pulse-soft 1s ease-in-out infinite' }}
                 />
               )}

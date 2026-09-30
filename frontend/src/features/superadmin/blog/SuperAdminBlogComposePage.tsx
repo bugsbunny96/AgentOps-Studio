@@ -29,22 +29,22 @@ function renderMarkdown(md: string): string {
     .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
     .replace(/\*(.+?)\*/g,     '<em>$1</em>')
     .replace(/`(.+?)`/g,       '<code style="background:rgba(255,255,255,0.08);padding:2px 6px;border-radius:4px;font-size:0.9em">$1</code>')
-    .replace(/^> (.+)$/gm,     '<blockquote style="border-left:3px solid #ef4444;margin:12px 0;padding:8px 16px;color:#94a3b8">$1</blockquote>')
-    .replace(/^- (.+)$/gm,     '<li style="margin:4px 0 4px 20px;color:#94a3b8">$1</li>')
-    .replace(/\n\n/g,          '</p><p style="margin:0 0 12px;color:#94a3b8;line-height:1.8">')
+    .replace(/^> (.+)$/gm,     '<blockquote style="border-left:3px solid #21F1A8;margin:12px 0;padding:8px 16px;color:#a3a3a3">$1</blockquote>')
+    .replace(/^- (.+)$/gm,     '<li style="margin:4px 0 4px 20px;color:#a3a3a3">$1</li>')
+    .replace(/\n\n/g,          '</p><p style="margin:0 0 12px;color:#a3a3a3;line-height:1.8">')
     .replace(/^(?!<[hbcl])/gm, '')
     .replace(/^(.+)$/gm, (line) =>
-      line.startsWith('<') ? line : `<p style="margin:0 0 12px;color:#94a3b8;line-height:1.8">${line}</p>`
+      line.startsWith('<') ? line : `<p style="margin:0 0 12px;color:#a3a3a3;line-height:1.8">${line}</p>`
     );
 }
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
 
 const T = {
-  bg: '#07070f', bgS: '#0e0e1a', bgC: 'rgba(255,255,255,0.04)',
+  bg: '#141414', bgS: '#1c1c1c', bgC: 'rgba(255,255,255,0.04)',
   bdr: 'rgba(255,255,255,0.07)', bdrB: 'rgba(255,255,255,0.14)',
   red: '#ef4444', green: '#10b981', amber: '#f59e0b',
-  t1: '#f8fafc', t2: '#94a3b8', t3: '#475569',
+  t1: '#fafafa', t2: '#a3a3a3', t3: '#737373',
 };
 
 const inputStyle: React.CSSProperties = {
@@ -161,7 +161,7 @@ export default function SuperAdminBlogComposePage() {
           <button
             onClick={() => { setServerErr(null); saveMut.mutate({ status: 'published' }); }}
             disabled={saveMut.isPending || !title.trim() || !body.trim()}
-            style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '7px 16px', borderRadius: 8, background: T.red, border: 'none', color: '#fff', fontSize: 12, fontWeight: 700, cursor: 'pointer', opacity: (!title.trim() || !body.trim()) ? 0.5 : 1 }}
+            style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '7px 16px', borderRadius: 8, background: '#21F1A8', border: 'none', color: '#171717', fontSize: 12, fontWeight: 700, cursor: 'pointer', opacity: (!title.trim() || !body.trim()) ? 0.5 : 1 }}
           >
             {saveMut.isPending && <Loader2 size={12} style={{ animation: 'spin 0.8s linear infinite' }} />}
             <Globe size={12} /> Publish Now
@@ -260,7 +260,7 @@ export default function SuperAdminBlogComposePage() {
             {author && <p style={{ fontSize: 12, color: T.t3, margin: '0 0 28px' }}>By {author}</p>}
             <div
               style={{ color: T.t2, fontSize: 14, lineHeight: 1.8 }}
-              dangerouslySetInnerHTML={{ __html: body ? renderMarkdown(body) : '<p style="color:#475569">Nothing to preview yet…</p>' }}
+              dangerouslySetInnerHTML={{ __html: body ? renderMarkdown(body) : '<p style="color:#737373">Nothing to preview yet…</p>' }}
             />
           </div>
         )}

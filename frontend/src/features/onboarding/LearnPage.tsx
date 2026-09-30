@@ -163,8 +163,8 @@ export default function LearnPage() {
     <div className="space-y-8">
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-bold text-slate-900">Does your business have a website?</h1>
-        <p className="mt-1 text-sm text-slate-500">
+        <h1 className="text-2xl font-bold text-slate-50">Does your business have a website?</h1>
+        <p className="mt-1 text-sm text-slate-400">
           We use your website to train the AI on your services, tone, and FAQs — so it answers
           like a real member of your team.
         </p>
@@ -172,7 +172,7 @@ export default function LearnPage() {
 
       {/* Server error */}
       {serverError && (
-        <div className="rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+        <div className="rounded-md border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-300">
           {serverError}
         </div>
       )}
@@ -194,15 +194,15 @@ export default function LearnPage() {
                 className={`w-full flex items-start gap-4 rounded-xl border-2 px-5 py-4 text-left transition
                   ${
                     isSelected
-                      ? 'border-brand-500 bg-brand-50'
-                      : 'border-slate-200 bg-white hover:border-slate-300'
+                      ? 'border-brand-500 bg-brand-400/10'
+                      : 'border-white/10 bg-surface hover:border-white/15'
                   }`}
               >
                 {/* Icon + recommended badge */}
                 <div className="relative mt-0.5">
                   <span
                     className={`flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg transition
-                      ${isSelected ? 'bg-brand-600 text-white' : 'bg-slate-100 text-slate-500'}`}
+                      ${isSelected ? 'bg-brand-400 text-slate-900' : 'bg-white/[0.06] text-slate-400'}`}
                   >
                     {option.icon}
                   </span>
@@ -217,12 +217,12 @@ export default function LearnPage() {
                 <div className="flex-1 min-w-0">
                   <p
                     className={`text-sm font-semibold ${
-                      isSelected ? 'text-brand-700' : 'text-slate-800'
+                      isSelected ? 'text-brand-300' : 'text-slate-100'
                     }`}
                   >
                     {option.title}
                   </p>
-                  <p className="mt-0.5 text-xs text-slate-500 leading-relaxed">
+                  <p className="mt-0.5 text-xs text-slate-400 leading-relaxed">
                     {option.description}
                   </p>
                 </div>
@@ -230,10 +230,10 @@ export default function LearnPage() {
                 {/* Selection indicator */}
                 <span
                   className={`mt-1 flex h-4 w-4 flex-shrink-0 rounded-full border-2 items-center justify-center transition
-                    ${isSelected ? 'border-brand-500 bg-brand-500' : 'border-slate-300'}`}
+                    ${isSelected ? 'border-brand-500 bg-brand-400' : 'border-white/15'}`}
                 >
                   {isSelected && (
-                    <span className="h-1.5 w-1.5 rounded-full bg-white" />
+                    <span className="h-1.5 w-1.5 rounded-full bg-surface" />
                   )}
                 </span>
               </button>
@@ -243,13 +243,13 @@ export default function LearnPage() {
 
         {/* Path error (if submitted with no selection) */}
         {errors.path && (
-          <p className="text-xs text-red-600">{errors.path.message}</p>
+          <p className="text-xs text-red-300">{errors.path.message}</p>
         )}
 
         {/* Website URL input — only for Path A (crawl) */}
         {selectedPath === 'crawl' && (
-          <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 space-y-2">
-            <label htmlFor="website-url" className="block text-sm font-medium text-slate-700">
+          <div className="rounded-xl border border-white/10 bg-white/[0.03] p-4 space-y-2">
+            <label htmlFor="website-url" className="block text-sm font-medium text-slate-200">
               Website URL <span className="text-red-500">*</span>
             </label>
             <input
@@ -258,12 +258,12 @@ export default function LearnPage() {
               autoFocus
               {...register('websiteUrl')}
               placeholder="https://yourcompany.com"
-              className={`w-full rounded-md border px-3 py-2 text-sm shadow-sm outline-none bg-white
+              className={`w-full rounded-md border px-3 py-2 text-sm shadow-sm outline-none bg-surface
                 focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition
-                ${errors.websiteUrl ? 'border-red-400 bg-red-50' : 'border-slate-300'}`}
+                ${errors.websiteUrl ? 'border-red-400 bg-red-500/10' : 'border-white/15'}`}
             />
             {errors.websiteUrl ? (
-              <p className="text-xs text-red-600">{errors.websiteUrl.message}</p>
+              <p className="text-xs text-red-300">{errors.websiteUrl.message}</p>
             ) : (
               <p className="text-xs text-slate-400">
                 Use the full HTTPS address. We'll scan up to 50 public pages to build your AI's
@@ -275,8 +275,8 @@ export default function LearnPage() {
 
         {/* Path B context message */}
         {selectedPath === 'manual' && (
-          <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3">
-            <p className="text-xs text-amber-800">
+          <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3">
+            <p className="text-xs text-amber-300">
               <span className="font-semibold">You're in control.</span> In the next step, you can
               describe your services, business hours, and contact details manually. You can always
               connect your website later from Settings.
@@ -286,8 +286,8 @@ export default function LearnPage() {
 
         {/* Path C context message */}
         {selectedPath === 'no-website' && (
-          <div className="rounded-xl border border-sky-200 bg-sky-50 px-4 py-3">
-            <p className="text-xs text-sky-800">
+          <div className="rounded-xl border border-brand-400/30 bg-brand-400/10 px-4 py-3">
+            <p className="text-xs text-brand-300">
               <span className="font-semibold">That's completely fine.</span> Businesses without
               websites do great with our AI. You'll describe your services in the next step, and
               you can upload documents or add a website later from Settings.
@@ -300,9 +300,9 @@ export default function LearnPage() {
           <button
             type="submit"
             disabled={isSubmitting || !selectedPath}
-            className="w-full flex items-center justify-center gap-2 rounded-md bg-brand-600
-              px-4 py-2.5 text-sm font-semibold text-white shadow-sm
-              hover:bg-brand-700 focus:outline-none focus:ring-2 focus:ring-brand-500
+            className="w-full flex items-center justify-center gap-2 rounded-md bg-brand-400
+              px-4 py-2.5 text-sm font-semibold text-slate-900 shadow-sm
+              hover:bg-brand-300 focus:outline-none focus:ring-2 focus:ring-brand-500
               disabled:opacity-50 disabled:cursor-not-allowed transition"
           >
             {isSubmitting && <Loader2 size={16} className="animate-spin" />}

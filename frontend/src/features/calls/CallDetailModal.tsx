@@ -86,8 +86,8 @@ function resolutionMeta(state: Summary['resolutionState']): { label: string; col
   switch (state) {
     case 'Resolved':       return { label: 'Resolved',        color: '#059669' };
     case 'Transferred':    return { label: 'Transferred',     color: '#d97706' };
-    case 'Needs_Followup': return { label: 'Needs Follow-up', color: '#7c3aed' };
-    default:               return { label: state,             color: '#64748b' };
+    case 'Needs_Followup': return { label: 'Needs Follow-up', color: '#0AA271' };
+    default:               return { label: state,             color: '#8a8a8a' };
   }
 }
 
@@ -107,15 +107,15 @@ function RecordingTab({ call }: { call: Call }) {
 
       {/* Player or placeholder */}
       {call.recordingUrl ? (
-        <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+        <div className="rounded-xl border border-white/10 bg-white/[0.03] p-4">
           <div className="mb-3 flex items-center gap-2">
             <div
               className="flex h-7 w-7 items-center justify-center rounded-lg"
-              style={{ background: 'rgba(99,102,241,.08)', border: '1px solid rgba(99,102,241,.12)' }}
+              style={{ background: 'rgba(33,241,168,.08)', border: '1px solid rgba(33,241,168,.12)' }}
             >
-              <Play size={13} className="text-brand-600" strokeWidth={1.8} />
+              <Play size={13} className="text-brand-300" strokeWidth={1.8} />
             </div>
-            <span className="text-sm font-semibold text-slate-700">Recording</span>
+            <span className="text-sm font-semibold text-slate-200">Recording</span>
           </div>
           {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
           <audio controls className="w-full" src={call.recordingUrl}>
@@ -123,7 +123,7 @@ function RecordingTab({ call }: { call: Call }) {
           </audio>
         </div>
       ) : (
-        <div className="flex items-center gap-3 rounded-xl border border-slate-100 bg-slate-50 px-5 py-4">
+        <div className="flex items-center gap-3 rounded-xl border border-white/10 bg-white/[0.03] px-5 py-4">
           <Play size={15} className="text-slate-300 flex-shrink-0" />
           <p className="text-sm text-slate-400 italic">No recording available for this call.</p>
         </div>
@@ -136,10 +136,10 @@ function StatPill({
   icon, label, value,
 }: { icon: React.ReactNode; label: string; value: string }) {
   return (
-    <div className="flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2">
+    <div className="flex items-center gap-2 rounded-lg border border-white/10 bg-surface px-3 py-2">
       {icon}
       <span className="text-xs text-slate-400">{label}:</span>
-      <span className="text-xs font-semibold text-slate-700">{value}</span>
+      <span className="text-xs font-semibold text-slate-200">{value}</span>
     </div>
   );
 }
@@ -169,16 +169,16 @@ function TranscriptTab({
   if (!transcript) {
     if (callStatus === 'active') {
       return (
-        <div className="flex items-center gap-3 rounded-xl border border-emerald-100 bg-emerald-50 px-4 py-3">
+        <div className="flex items-center gap-3 rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-4 py-3">
           <span className="inline-block h-2 w-2 flex-shrink-0 animate-pulse rounded-full bg-emerald-500" />
-          <p className="text-sm text-emerald-700">
+          <p className="text-sm text-emerald-300">
             Call in progress — transcript will appear here when the call ends.
           </p>
         </div>
       );
     }
     return (
-      <div className="flex items-center gap-3 rounded-xl border border-slate-100 bg-slate-50 px-5 py-4">
+      <div className="flex items-center gap-3 rounded-xl border border-white/10 bg-white/[0.03] px-5 py-4">
         <FileText size={15} className="text-slate-300 flex-shrink-0" />
         <p className="text-sm text-slate-400 italic">No transcript available for this call.</p>
       </div>
@@ -203,7 +203,7 @@ function TranscriptTab({
           style={
             copied
               ? { background: 'rgba(5,150,105,.1)', color: '#059669' }
-              : { background: 'rgba(100,116,139,.06)', color: '#64748b' }
+              : { background: 'rgba(115,115,115,.06)', color: '#8a8a8a' }
           }
         >
           {copied ? <Check size={12} /> : <Copy size={12} />}
@@ -223,7 +223,7 @@ function TranscriptTab({
               className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full text-xs font-bold"
               style={
                 turn.speaker === 'agent'
-                  ? { background: 'rgba(99,102,241,.12)', color: '#4f46e5' }
+                  ? { background: 'rgba(33,241,168,.12)', color: '#0FC98A' }
                   : { background: 'rgba(15,118,110,.1)', color: '#0f766e' }
               }
             >
@@ -235,14 +235,14 @@ function TranscriptTab({
               className="max-w-[78%] rounded-xl px-3.5 py-2.5"
               style={
                 turn.speaker === 'agent'
-                  ? { background: 'rgba(99,102,241,.06)', border: '1px solid rgba(99,102,241,.12)' }
+                  ? { background: 'rgba(33,241,168,.06)', border: '1px solid rgba(33,241,168,.12)' }
                   : { background: 'rgba(241,245,249,1)', border: '1px solid rgba(226,232,240,1)' }
               }
             >
               <div className="mb-1 flex items-center justify-between gap-3">
                 <p
                   className="text-xs font-medium"
-                  style={{ color: turn.speaker === 'agent' ? '#4f46e5' : '#0f766e' }}
+                  style={{ color: turn.speaker === 'agent' ? '#0FC98A' : '#0f766e' }}
                 >
                   {turn.speaker === 'agent' ? 'Agent' : 'Caller'}
                 </p>
@@ -252,7 +252,7 @@ function TranscriptTab({
                   </p>
                 )}
               </div>
-              <p className="text-sm text-slate-700 leading-relaxed">{turn.text}</p>
+              <p className="text-sm text-slate-200 leading-relaxed">{turn.text}</p>
             </div>
           </div>
         ))}
@@ -272,7 +272,7 @@ function ResultTab({
 }) {
   if (!summary) {
     return (
-      <div className="flex items-center gap-3 rounded-xl border border-slate-100 bg-slate-50 px-5 py-4">
+      <div className="flex items-center gap-3 rounded-xl border border-white/10 bg-white/[0.03] px-5 py-4">
         <Lightbulb size={15} className="text-slate-300 flex-shrink-0" />
         <p className="text-sm text-slate-400 italic">
           {callStatus === 'active'
@@ -303,7 +303,7 @@ function ResultTab({
         <p className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-slate-400">
           AI Summary
         </p>
-        <p className="text-sm text-slate-700 leading-relaxed">{summary.summaryText}</p>
+        <p className="text-sm text-slate-200 leading-relaxed">{summary.summaryText}</p>
       </div>
 
       {/* Intent detected */}
@@ -317,7 +317,7 @@ function ResultTab({
               <span
                 key={intent}
                 className="rounded-full px-2.5 py-0.5 text-xs font-medium"
-                style={{ background: 'rgba(99,102,241,.08)', color: '#4f46e5' }}
+                style={{ background: 'rgba(33,241,168,.08)', color: '#0FC98A' }}
               >
                 {intent}
               </span>
@@ -335,7 +335,7 @@ function ResultTab({
           </p>
           <ul className="space-y-2">
             {summary.actionItems.map((item, i) => (
-              <li key={i} className="flex items-start gap-2 text-sm text-slate-700">
+              <li key={i} className="flex items-start gap-2 text-sm text-slate-200">
                 <CheckCircle2 size={13} className="mt-0.5 flex-shrink-0 text-emerald-500" />
                 {item}
               </li>
@@ -392,7 +392,7 @@ export default function CallDetailModal({ callId, onClose }: CallDetailModalProp
     /* Backdrop */
     <div
       className="fixed inset-0 z-50 flex items-center justify-center p-4"
-      style={{ background: 'rgba(15,23,42,.45)', backdropFilter: 'blur(4px)' }}
+      style={{ background: 'rgba(23,23,23,.45)', backdropFilter: 'blur(4px)' }}
       onClick={(e) => {
         if (panelRef.current && !panelRef.current.contains(e.target as Node)) {
           onClose();
@@ -402,27 +402,27 @@ export default function CallDetailModal({ callId, onClose }: CallDetailModalProp
       {/* Panel */}
       <div
         ref={panelRef}
-        className="relative flex w-full max-w-2xl flex-col rounded-2xl bg-white shadow-2xl"
+        className="relative flex w-full max-w-2xl flex-col rounded-2xl bg-surface shadow-2xl"
         style={{ maxHeight: '90vh' }}
       >
 
         {/* ── Modal Header ──────────────────────────────────────────────── */}
-        <div className="flex items-start justify-between gap-4 border-b border-slate-100 px-6 py-4">
+        <div className="flex items-start justify-between gap-4 border-b border-white/10 px-6 py-4">
           <div className="flex items-center gap-3">
             <div
               className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl"
               style={{
-                background: 'linear-gradient(135deg, rgba(99,102,241,.12), rgba(139,92,246,.12))',
-                border: '1px solid rgba(99,102,241,.2)',
+                background: 'linear-gradient(135deg, rgba(33,241,168,.12), rgba(15,201,138,.12))',
+                border: '1px solid rgba(33,241,168,.2)',
               }}
             >
-              <PhoneCall size={16} className="text-brand-600" strokeWidth={1.8} />
+              <PhoneCall size={16} className="text-brand-300" strokeWidth={1.8} />
             </div>
 
             <div>
               {detail ? (
                 <>
-                  <p className="text-sm font-bold text-slate-900 font-mono">
+                  <p className="text-sm font-bold text-slate-50 font-mono">
                     {detail.call.callerNumber}
                   </p>
                   <div className="mt-0.5 flex flex-wrap items-center gap-1.5">
@@ -435,7 +435,7 @@ export default function CallDetailModal({ callId, onClose }: CallDetailModalProp
                       </span>
                     ) : detail.call.status === 'completed' ? (
                       <span className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium"
-                        style={{ background: 'rgba(99,102,241,.1)', color: '#4f46e5' }}>
+                        style={{ background: 'rgba(33,241,168,.1)', color: '#0FC98A' }}>
                         <CheckCircle2 size={10} />
                         Completed
                       </span>
@@ -448,20 +448,20 @@ export default function CallDetailModal({ callId, onClose }: CallDetailModalProp
                     )}
                     {/* Direction chip */}
                     {detail.call.direction === 'Inbound' ? (
-                      <span className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium bg-slate-100 text-slate-600">
+                      <span className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium bg-white/[0.06] text-slate-300">
                         <PhoneIncoming size={10} className="text-emerald-500" />
                         Inbound
                       </span>
                     ) : (
-                      <span className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium bg-slate-100 text-slate-600">
-                        <PhoneOutgoing size={10} className="text-violet-500" />
+                      <span className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium bg-white/[0.06] text-slate-300">
+                        <PhoneOutgoing size={10} className="text-brand-300" />
                         Outbound
                       </span>
                     )}
                   </div>
                 </>
               ) : (
-                <div className="h-4 w-32 animate-pulse rounded bg-slate-100" />
+                <div className="h-4 w-32 animate-pulse rounded bg-white/[0.06]" />
               )}
             </div>
           </div>
@@ -469,7 +469,7 @@ export default function CallDetailModal({ callId, onClose }: CallDetailModalProp
           {/* Close */}
           <button
             onClick={onClose}
-            className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-700"
+            className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg text-slate-400 transition-colors hover:bg-white/[0.06] hover:text-slate-200"
             aria-label="Close"
           >
             <X size={16} />
@@ -477,7 +477,7 @@ export default function CallDetailModal({ callId, onClose }: CallDetailModalProp
         </div>
 
         {/* ── Tab Bar ───────────────────────────────────────────────────── */}
-        <div className="flex border-b border-slate-100 px-6">
+        <div className="flex border-b border-white/10 px-6">
           {TAB_DEFS.map((tab) => (
             <button
               key={tab.id}
@@ -485,8 +485,8 @@ export default function CallDetailModal({ callId, onClose }: CallDetailModalProp
               className="flex items-center gap-1.5 border-b-2 px-4 py-3 text-xs font-semibold transition-colors"
               style={
                 activeTab === tab.id
-                  ? { borderColor: '#4f46e5', color: '#4f46e5' }
-                  : { borderColor: 'transparent', color: '#94a3b8' }
+                  ? { borderColor: '#0FC98A', color: '#0FC98A' }
+                  : { borderColor: 'transparent', color: '#a3a3a3' }
               }
             >
               {tab.icon}
@@ -501,15 +501,15 @@ export default function CallDetailModal({ callId, onClose }: CallDetailModalProp
           {/* Loading */}
           {isLoading && (
             <div className="flex items-center justify-center py-16">
-              <Loader2 size={22} className="animate-spin text-brand-600" />
+              <Loader2 size={22} className="animate-spin text-brand-300" />
             </div>
           )}
 
           {/* Error */}
           {isError && (
-            <div className="flex items-center gap-3 rounded-xl border border-red-100 bg-red-50 px-4 py-3">
+            <div className="flex items-center gap-3 rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3">
               <AlertCircle size={15} className="text-red-500 flex-shrink-0" />
-              <p className="text-sm text-red-700">Failed to load call details.</p>
+              <p className="text-sm text-red-300">Failed to load call details.</p>
             </div>
           )}
 

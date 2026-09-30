@@ -15,10 +15,10 @@ import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 
 const T = {
-  bg: '#030712', bgS: '#0d1524',
+  bg: '#171717', bgS: '#1f1f1f',
   bgC: 'rgba(255,255,255,0.03)', bdr: 'rgba(255,255,255,0.07)', bdrB: 'rgba(255,255,255,0.12)',
-  blue: '#3b82f6', violet: '#8b5cf6', em: '#10b981', amber: '#f59e0b',
-  t1: '#f8fafc', t2: '#94a3b8', t3: '#475569',
+  blue: '#21F1A8', violet: '#0FC98A', em: '#10b981', amber: '#f59e0b',
+  t1: '#fafafa', t2: '#a3a3a3', t3: '#737373',
 };
 
 const pill = (bg: string, color: string, border: string): React.CSSProperties => ({
@@ -98,7 +98,7 @@ export default function WhyUsPage() {
       <section style={{ position: 'relative', overflow: 'hidden', padding: 'clamp(80px,10vw,120px) 24px 72px', textAlign: 'center' }}>
         <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none' }}>
           <div style={{ position: 'absolute', top: '5%', left: '10%', width: 500, height: 500, borderRadius: '50%', background: 'radial-gradient(circle, rgba(16,185,129,0.10) 0%, transparent 70%)', animation: 'wu-float 14s ease-in-out infinite' }} />
-          <div style={{ position: 'absolute', bottom: '10%', right: '5%', width: 350, height: 350, borderRadius: '50%', background: 'radial-gradient(circle, rgba(139,92,246,0.10) 0%, transparent 70%)', animation: 'wu-float 10s ease-in-out infinite reverse' }} />
+          <div style={{ position: 'absolute', bottom: '10%', right: '5%', width: 350, height: 350, borderRadius: '50%', background: 'radial-gradient(circle, rgba(15,201,138,0.10) 0%, transparent 70%)', animation: 'wu-float 10s ease-in-out infinite reverse' }} />
         </div>
         <div style={{ position: 'relative', maxWidth: 720, margin: '0 auto' }}>
           <div style={{ marginBottom: 20 }}>

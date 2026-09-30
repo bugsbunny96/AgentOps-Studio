@@ -79,9 +79,9 @@ function CopyBtn({ text, label }: { text: string; label?: string }) {
   return (
     <button
       onClick={copy}
-      className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200
-        bg-white px-2.5 py-1 text-xs font-medium text-slate-500
-        hover:bg-slate-50 hover:text-slate-800 transition-colors"
+      className="inline-flex items-center gap-1.5 rounded-lg border border-white/10
+        bg-surface px-2.5 py-1 text-xs font-medium text-slate-400
+        hover:bg-white/[0.03] hover:text-slate-100 transition-colors"
     >
       {copied ? <CheckCheck size={11} className="text-emerald-500" /> : <Copy size={11} />}
       {copied ? 'Copied!' : (label ?? 'Copy')}
@@ -181,11 +181,11 @@ function TestCallPanel({
   const isActive = state === 'active' || state === 'agent-speaking';
 
   return (
-    <div className="rounded-2xl border border-slate-200 bg-white overflow-hidden shadow-sm">
-      <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
+    <div className="rounded-2xl border border-white/10 bg-surface overflow-hidden shadow-sm">
+      <div className="px-6 py-4 border-b border-white/10 flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <PhoneCall size={15} className="text-brand-500" />
-          <h3 className="text-sm font-semibold text-slate-800">Browser Test Call</h3>
+          <PhoneCall size={15} className="text-brand-300" />
+          <h3 className="text-sm font-semibold text-slate-100">Browser Test Call</h3>
         </div>
         <span className="text-xs text-slate-400">Uses your browser microphone</span>
       </div>
@@ -195,11 +195,11 @@ function TestCallPanel({
         {(state === 'idle' || state === 'ended' || state === 'error') && (
           <div className="flex flex-col items-center gap-4 py-4">
             <div className="flex h-20 w-20 items-center justify-center rounded-2xl
-              bg-gradient-to-br from-brand-50 to-violet-50 border border-brand-100">
+              bg-gradient-to-br from-brand-400/10 to-brand-400/10 border border-brand-400/30">
               <Bot size={34} strokeWidth={1.5} className="text-brand-400" />
             </div>
             <div className="text-center">
-              <p className="font-semibold text-slate-800">{agentName}</p>
+              <p className="font-semibold text-slate-100">{agentName}</p>
               <p className="text-sm text-slate-400 mt-0.5">
                 {state === 'ended'
                   ? `Test call ended (${fmt(duration)})`
@@ -207,16 +207,16 @@ function TestCallPanel({
               </p>
             </div>
             {state === 'error' && error && (
-              <p className="text-xs text-red-500 flex items-center gap-1.5 bg-red-50
-                rounded-lg px-3 py-2 border border-red-100">
+              <p className="text-xs text-red-500 flex items-center gap-1.5 bg-red-500/10
+                rounded-lg px-3 py-2 border border-red-500/30">
                 <AlertTriangle size={12} className="flex-shrink-0" /> {error}
               </p>
             )}
             <button
               onClick={start}
               className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r
-                from-brand-600 to-violet-600 px-6 py-2.5 text-sm font-semibold text-white
-                shadow-md shadow-brand-500/25 hover:from-brand-700 hover:to-violet-700
+                from-brand-400 to-brand-400 px-6 py-2.5 text-sm font-semibold text-slate-900
+                shadow-md shadow-brand-500/25 hover:from-brand-300 hover:to-brand-300
                 transition-all active:scale-95"
             >
               <PhoneCall size={16} />
@@ -228,8 +228,8 @@ function TestCallPanel({
         {/* Connecting */}
         {state === 'connecting' && (
           <div className="flex flex-col items-center gap-3 py-8">
-            <Loader2 size={32} className="animate-spin text-brand-500" />
-            <p className="text-sm text-slate-500">Connecting to {agentName}…</p>
+            <Loader2 size={32} className="animate-spin text-brand-300" />
+            <p className="text-sm text-slate-400">Connecting to {agentName}…</p>
           </div>
         )}
 
@@ -238,7 +238,7 @@ function TestCallPanel({
           <div className="flex flex-col items-center gap-5 py-4">
             {/* Avatar + sound bars */}
             <div className="relative flex h-24 w-24 items-center justify-center rounded-2xl
-              bg-gradient-to-br from-brand-500 to-violet-600 shadow-lg shadow-brand-500/30">
+              bg-gradient-to-br from-brand-400 to-brand-400 shadow-lg shadow-brand-500/30">
               {state === 'agent-speaking' && (
                 <div className="absolute inset-0 rounded-2xl border-2 border-brand-400
                   animate-ping opacity-40" />
@@ -249,7 +249,7 @@ function TestCallPanel({
             <SoundBars active={state === 'agent-speaking'} />
 
             <div className="text-center">
-              <p className="text-sm font-semibold text-slate-800">
+              <p className="text-sm font-semibold text-slate-100">
                 {state === 'agent-speaking' ? `${agentName} is speaking` : 'Connected'}
               </p>
               <p className="text-xs text-slate-400 font-mono mt-0.5">{fmt(duration)}</p>
@@ -261,8 +261,8 @@ function TestCallPanel({
                 onClick={toggleMute}
                 className={`flex h-11 w-11 items-center justify-center rounded-full border-2
                   transition-all ${muted
-                    ? 'border-amber-300 bg-amber-50 text-amber-600'
-                    : 'border-slate-200 bg-white text-slate-500 hover:bg-slate-50'
+                    ? 'border-amber-500/30 bg-amber-500/10 text-amber-300'
+                    : 'border-white/10 bg-surface text-slate-400 hover:bg-white/[0.03]'
                   }`}
               >
                 {muted ? <MicOff size={18} /> : <Mic size={18} />}
@@ -278,7 +278,7 @@ function TestCallPanel({
             </div>
 
             {muted && (
-              <p className="text-xs text-amber-600 flex items-center gap-1">
+              <p className="text-xs text-amber-300 flex items-center gap-1">
                 <MicOff size={11} /> Microphone muted
               </p>
             )}
@@ -301,10 +301,10 @@ function Section({
   children: React.ReactNode;
 }) {
   return (
-    <div className="rounded-2xl border border-slate-200 bg-white overflow-hidden shadow-sm">
-      <div className="flex items-center gap-2 px-6 py-4 border-b border-slate-100">
-        <Icon size={15} className="text-brand-500" />
-        <h3 className="text-sm font-semibold text-slate-800">{title}</h3>
+    <div className="rounded-2xl border border-white/10 bg-surface overflow-hidden shadow-sm">
+      <div className="flex items-center gap-2 px-6 py-4 border-b border-white/10">
+        <Icon size={15} className="text-brand-300" />
+        <h3 className="text-sm font-semibold text-slate-100">{title}</h3>
       </div>
       <div className="px-6 py-5">{children}</div>
     </div>
@@ -453,15 +453,15 @@ export default function AgentDetailPage() {
     return (
       <div className="space-y-6">
         <div className="flex items-center gap-3">
-          <Link to="/agents" className="flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-800 transition-colors">
+          <Link to="/agents" className="flex items-center gap-1.5 text-sm text-slate-400 hover:text-slate-100 transition-colors">
             <ArrowLeft size={14} /> Agents
           </Link>
         </div>
         <div className="animate-pulse space-y-4">
           <div className="h-44 rounded-2xl bg-gradient-to-r from-slate-100 to-slate-50" />
           <div className="grid grid-cols-2 gap-4">
-            <div className="h-32 rounded-2xl bg-slate-100" />
-            <div className="h-32 rounded-2xl bg-slate-100" />
+            <div className="h-32 rounded-2xl bg-white/[0.06]" />
+            <div className="h-32 rounded-2xl bg-white/[0.06]" />
           </div>
         </div>
       </div>
@@ -471,10 +471,10 @@ export default function AgentDetailPage() {
   if (error || !agent) {
     return (
       <div className="space-y-4">
-        <Link to="/agents" className="flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-800 transition-colors">
+        <Link to="/agents" className="flex items-center gap-1.5 text-sm text-slate-400 hover:text-slate-100 transition-colors">
           <ArrowLeft size={14} /> Agents
         </Link>
-        <div className="rounded-xl border border-red-200 bg-red-50 px-5 py-4 flex items-center gap-3 text-red-700">
+        <div className="rounded-xl border border-red-500/30 bg-red-500/10 px-5 py-4 flex items-center gap-3 text-red-300">
           <AlertTriangle size={16} />
           <div>
             <p className="font-semibold text-sm">Agent not found</p>
@@ -501,12 +501,12 @@ export default function AgentDetailPage() {
       <div className="flex items-center gap-2 text-sm">
         <Link
           to="/agents"
-          className="flex items-center gap-1.5 text-slate-500 hover:text-slate-800 transition-colors"
+          className="flex items-center gap-1.5 text-slate-400 hover:text-slate-100 transition-colors"
         >
           <ArrowLeft size={14} /> Agents
         </Link>
         <span className="text-slate-200">/</span>
-        <span className="font-medium text-slate-800">{agent.name}</span>
+        <span className="font-medium text-slate-100">{agent.name}</span>
       </div>
 
       {/* ── Hero header ──────────────────────────────────────────────── */}
@@ -521,14 +521,14 @@ export default function AgentDetailPage() {
           }} />
         {/* Glow orbs */}
         <div className="pointer-events-none absolute -top-12 -right-12 h-48 w-48
-          rounded-full bg-brand-500 opacity-20 blur-3xl" />
+          rounded-full bg-brand-400 opacity-20 blur-3xl" />
         <div className="pointer-events-none absolute -bottom-12 -left-12 h-40 w-40
-          rounded-full bg-violet-500 opacity-15 blur-3xl" />
+          rounded-full bg-brand-400 opacity-15 blur-3xl" />
 
         <div className="relative flex items-center gap-6 px-8 py-8">
           {/* Bot avatar */}
           <div className="flex-shrink-0 flex h-20 w-20 items-center justify-center rounded-2xl
-            bg-gradient-to-br from-brand-500 to-violet-600 shadow-xl shadow-brand-500/40">
+            bg-gradient-to-br from-brand-400 to-brand-400 shadow-xl shadow-brand-500/40">
             <Bot size={38} strokeWidth={1.5} className="text-white" />
           </div>
 
@@ -551,7 +551,7 @@ export default function AgentDetailPage() {
               {/* Language tags */}
               {langs.map((l) => (
                 <div key={l} className="flex items-center gap-1 rounded-full border
-                  border-brand-500/20 bg-brand-500/10 px-2.5 py-1 text-[11px]
+                  border-brand-500/20 bg-brand-400/10 px-2.5 py-1 text-[11px]
                   font-medium text-brand-300">
                   <Globe size={10} /> {l}
                 </div>
@@ -584,19 +584,19 @@ export default function AgentDetailPage() {
         <div className="lg:col-span-3 space-y-6">
 
           {/* Agent Identity */}
-          <div className="rounded-2xl border border-slate-200 bg-white overflow-hidden shadow-sm">
-            <div className="flex items-center justify-between gap-2 px-6 py-4 border-b border-slate-100">
+          <div className="rounded-2xl border border-white/10 bg-surface overflow-hidden shadow-sm">
+            <div className="flex items-center justify-between gap-2 px-6 py-4 border-b border-white/10">
               <div className="flex items-center gap-2">
-                <Bot size={15} className="text-brand-500" />
-                <h3 className="text-sm font-semibold text-slate-800">Agent Identity</h3>
+                <Bot size={15} className="text-brand-300" />
+                <h3 className="text-sm font-semibold text-slate-100">Agent Identity</h3>
               </div>
               {!editingIdentity ? (
                 canWrite && (
                   <button
                     onClick={startIdentityEdit}
-                    className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200
-                      bg-white px-2.5 py-1 text-xs font-medium text-slate-500
-                      hover:bg-slate-50 hover:text-slate-800 transition-colors"
+                    className="inline-flex items-center gap-1.5 rounded-lg border border-white/10
+                      bg-surface px-2.5 py-1 text-xs font-medium text-slate-400
+                      hover:bg-white/[0.03] hover:text-slate-100 transition-colors"
                   >
                     <Pencil size={11} /> Edit identity
                   </button>
@@ -606,18 +606,18 @@ export default function AgentDetailPage() {
                   <button
                     onClick={cancelIdentityEdit}
                     disabled={savingIdentity}
-                    className="inline-flex items-center gap-1 rounded-lg border border-slate-200
-                      bg-white px-2.5 py-1 text-xs font-medium text-slate-500
-                      hover:bg-slate-50 transition-colors disabled:opacity-50"
+                    className="inline-flex items-center gap-1 rounded-lg border border-white/10
+                      bg-surface px-2.5 py-1 text-xs font-medium text-slate-400
+                      hover:bg-white/[0.03] transition-colors disabled:opacity-50"
                   >
                     <X size={11} /> Cancel
                   </button>
                   <button
                     onClick={() => void saveIdentity()}
                     disabled={savingIdentity}
-                    className="inline-flex items-center gap-1 rounded-lg bg-brand-600
-                      px-2.5 py-1 text-xs font-semibold text-white
-                      hover:bg-brand-700 transition-colors disabled:opacity-50"
+                    className="inline-flex items-center gap-1 rounded-lg bg-brand-400
+                      px-2.5 py-1 text-xs font-semibold text-slate-900
+                      hover:bg-brand-300 transition-colors disabled:opacity-50"
                   >
                     {savingIdentity
                       ? <><Loader2 size={11} className="animate-spin" /> Saving…</>
@@ -630,7 +630,7 @@ export default function AgentDetailPage() {
 
             <div className="px-6 py-5 space-y-4">
               {identitySaveError && (
-                <p className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-600">
+                <p className="rounded-md border border-red-500/30 bg-red-500/10 px-3 py-2 text-xs text-red-300">
                   {identitySaveError}
                 </p>
               )}
@@ -647,8 +647,8 @@ export default function AgentDetailPage() {
                       onChange={(e) => setIdentityName(e.target.value)}
                       maxLength={100}
                       autoFocus
-                      className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5
-                        text-sm font-medium text-slate-800 placeholder:text-slate-400
+                      className="w-full rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2.5
+                        text-sm font-medium text-slate-100 placeholder:text-slate-400
                         focus:outline-none focus:ring-2 focus:ring-brand-500/30 focus:border-brand-400"
                       placeholder="e.g. Aria, Max, Reya…"
                     />
@@ -665,8 +665,8 @@ export default function AgentDetailPage() {
                       onChange={(e) => setIdentityDesc(e.target.value)}
                       rows={4}
                       maxLength={5000}
-                      className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5
-                        text-sm text-slate-800 placeholder:text-slate-400 resize-y
+                      className="w-full rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2.5
+                        text-sm text-slate-100 placeholder:text-slate-400 resize-y
                         focus:outline-none focus:ring-2 focus:ring-brand-500/30 focus:border-brand-400"
                       placeholder="Describe what your business does…"
                     />
@@ -674,17 +674,17 @@ export default function AgentDetailPage() {
                 </div>
               ) : (
                 <div className="space-y-3">
-                  <div className="rounded-xl border border-slate-100 bg-slate-50 px-4 py-3">
+                  <div className="rounded-xl border border-white/10 bg-white/[0.03] px-4 py-3">
                     <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 mb-1">
                       Agent Name
                     </p>
-                    <p className="text-sm font-semibold text-slate-800">{agent.name}</p>
+                    <p className="text-sm font-semibold text-slate-100">{agent.name}</p>
                   </div>
-                  <div className="rounded-xl border border-slate-100 bg-slate-50 px-4 py-3">
+                  <div className="rounded-xl border border-white/10 bg-white/[0.03] px-4 py-3">
                     <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 mb-1">
                       Business Description
                     </p>
-                    <p className="text-sm text-slate-600 leading-relaxed">
+                    <p className="text-sm text-slate-300 leading-relaxed">
                       {businessDescription || (
                         <span className="text-slate-400 italic">No description set</span>
                       )}
@@ -696,19 +696,19 @@ export default function AgentDetailPage() {
           </div>
 
           {/* Voice Configuration */}
-          <div className="rounded-2xl border border-slate-200 bg-white overflow-hidden shadow-sm">
-            <div className="flex items-center justify-between gap-2 px-6 py-4 border-b border-slate-100">
+          <div className="rounded-2xl border border-white/10 bg-surface overflow-hidden shadow-sm">
+            <div className="flex items-center justify-between gap-2 px-6 py-4 border-b border-white/10">
               <div className="flex items-center gap-2">
-                <Volume2 size={15} className="text-brand-500" />
-                <h3 className="text-sm font-semibold text-slate-800">Voice Configuration</h3>
+                <Volume2 size={15} className="text-brand-300" />
+                <h3 className="text-sm font-semibold text-slate-100">Voice Configuration</h3>
               </div>
               {!editingVoice ? (
                 canWrite && (
                   <button
                     onClick={() => setEditingVoice(true)}
-                    className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200
-                      bg-white px-2.5 py-1 text-xs font-medium text-slate-500
-                      hover:bg-slate-50 hover:text-slate-800 transition-colors"
+                    className="inline-flex items-center gap-1.5 rounded-lg border border-white/10
+                      bg-surface px-2.5 py-1 text-xs font-medium text-slate-400
+                      hover:bg-white/[0.03] hover:text-slate-100 transition-colors"
                   >
                     <Pencil size={11} /> Edit voice
                   </button>
@@ -718,18 +718,18 @@ export default function AgentDetailPage() {
                   <button
                     onClick={cancelVoiceEdit}
                     disabled={savingVoice}
-                    className="inline-flex items-center gap-1 rounded-lg border border-slate-200
-                      bg-white px-2.5 py-1 text-xs font-medium text-slate-500
-                      hover:bg-slate-50 transition-colors disabled:opacity-50"
+                    className="inline-flex items-center gap-1 rounded-lg border border-white/10
+                      bg-surface px-2.5 py-1 text-xs font-medium text-slate-400
+                      hover:bg-white/[0.03] transition-colors disabled:opacity-50"
                   >
                     <X size={11} /> Cancel
                   </button>
                   <button
                     onClick={() => void saveVoice()}
                     disabled={savingVoice}
-                    className="inline-flex items-center gap-1 rounded-lg bg-brand-600
-                      px-2.5 py-1 text-xs font-semibold text-white
-                      hover:bg-brand-700 transition-colors disabled:opacity-50"
+                    className="inline-flex items-center gap-1 rounded-lg bg-brand-400
+                      px-2.5 py-1 text-xs font-semibold text-slate-900
+                      hover:bg-brand-300 transition-colors disabled:opacity-50"
                   >
                     {savingVoice
                       ? <><Loader2 size={11} className="animate-spin" /> Saving…</>
@@ -742,7 +742,7 @@ export default function AgentDetailPage() {
 
             <div className="px-6 py-5">
               {voiceSaveError && (
-                <p className="mb-4 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-600">
+                <p className="mb-4 rounded-md border border-red-500/30 bg-red-500/10 px-3 py-2 text-xs text-red-300">
                   {voiceSaveError}
                 </p>
               )}
@@ -773,11 +773,11 @@ export default function AgentDetailPage() {
                       value: langs.join(', '),
                     },
                   ].map(({ label, value }) => (
-                    <div key={label} className="rounded-xl border border-slate-100 bg-slate-50 px-4 py-3">
+                    <div key={label} className="rounded-xl border border-white/10 bg-white/[0.03] px-4 py-3">
                       <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 mb-1">
                         {label}
                       </p>
-                      <p className="text-sm font-semibold text-slate-800">{value}</p>
+                      <p className="text-sm font-semibold text-slate-100">{value}</p>
                     </div>
                   ))}
                 </div>
@@ -791,8 +791,8 @@ export default function AgentDetailPage() {
               <span className="text-xs text-slate-400">{agent.systemPrompt.length.toLocaleString()} characters</span>
               <CopyBtn text={agent.systemPrompt} label="Copy prompt" />
             </div>
-            <div className="rounded-xl border border-slate-100 bg-slate-50 p-4 max-h-80 overflow-y-auto">
-              <pre className="text-[11px] leading-relaxed text-slate-600 whitespace-pre-wrap font-mono">
+            <div className="rounded-xl border border-white/10 bg-white/[0.03] p-4 max-h-80 overflow-y-auto">
+              <pre className="text-[11px] leading-relaxed text-slate-300 whitespace-pre-wrap font-mono">
                 {agent.systemPrompt}
               </pre>
             </div>
@@ -815,9 +815,9 @@ export default function AgentDetailPage() {
               <div className="py-4 text-center space-y-3">
                 <AlertTriangle size={28} className="mx-auto text-amber-400" />
                 <div>
-                  <p className="text-sm font-semibold text-slate-700">VAPI_PUBLIC_KEY not set</p>
+                  <p className="text-sm font-semibold text-slate-200">VAPI_PUBLIC_KEY not set</p>
                   <p className="text-xs text-slate-400 mt-1">
-                    Add your Vapi public key to <code className="font-mono bg-slate-100 px-1 rounded">backend/.env</code> to
+                    Add your Vapi public key to <code className="font-mono bg-white/[0.06] px-1 rounded">backend/.env</code> to
                     enable browser test calls.
                   </p>
                 </div>
@@ -836,9 +836,9 @@ export default function AgentDetailPage() {
                 { label: 'Updated', value: new Date(agent.updatedAt).toLocaleString('en-IN') },
               ].map(({ label, value, mono }) => (
                 <div key={label} className="flex items-start justify-between gap-4 py-2
-                  border-b border-slate-50 last:border-0">
+                  border-b border-white/5 last:border-0">
                   <span className="text-xs font-medium text-slate-400 flex-shrink-0 pt-0.5">{label}</span>
-                  <span className={`text-xs text-slate-700 text-right break-all
+                  <span className={`text-xs text-slate-200 text-right break-all
                     ${mono ? 'font-mono' : 'font-medium'}`}>
                     {value}
                   </span>

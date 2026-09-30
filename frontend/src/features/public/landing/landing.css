@@ -28,8 +28,8 @@
   left: 0;
   height: 2px;
   z-index: 200;
-  background: linear-gradient(90deg, #3b82f6, #8b5cf6);
-  box-shadow: 0 0 8px rgba(139, 92, 246, 0.6);
+  background: linear-gradient(90deg, #21F1A8, #0FC98A);
+  box-shadow: 0 0 8px rgba(15,201,138, 0.6);
   transform-origin: left;
   transition: transform 0.1s linear;
 }
@@ -48,8 +48,8 @@
   padding: 1px;
   background: radial-gradient(
     220px circle at var(--sx) var(--sy),
-    rgba(96, 165, 250, 0.55),
-    rgba(139, 92, 246, 0.25) 45%,
+    rgba(124,247,203, 0.55),
+    rgba(15,201,138, 0.25) 45%,
     transparent 70%
   );
   -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);

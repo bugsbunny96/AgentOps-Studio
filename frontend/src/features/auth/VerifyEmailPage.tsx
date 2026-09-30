@@ -25,17 +25,17 @@ type PagePhase =
 
 function Shell({ children }: { children: React.ReactNode }) {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-slate-50 p-6">
+    <div className="flex min-h-screen items-center justify-center bg-white/[0.03] p-6">
       <div className="w-full max-w-md">
         {/* Brand */}
         <div className="flex items-center justify-center gap-2.5 mb-8">
           <div
             className="flex h-8 w-8 items-center justify-center rounded-xl"
-            style={{ background: 'linear-gradient(135deg, #6366f1, #8b5cf6)' }}
+            style={{ background: 'linear-gradient(135deg, #21F1A8, #0FC98A)' }}
           >
             <Mail size={15} className="text-white" />
           </div>
-          <span className="text-base font-bold text-slate-900">AgentOps Studio</span>
+          <span className="text-base font-bold text-slate-50">AgentOps Studio</span>
         </div>
         {children}
       </div>
@@ -85,9 +85,9 @@ export default function VerifyEmailPage() {
   if (phase.phase === 'verifying') {
     return (
       <Shell>
-        <div className="rounded-2xl border border-slate-200 bg-white p-8 text-center shadow-sm">
-          <Loader2 size={36} className="mx-auto mb-4 animate-spin text-brand-500" />
-          <p className="text-sm font-medium text-slate-700">Verifying your email…</p>
+        <div className="rounded-2xl border border-white/10 bg-surface p-8 text-center shadow-sm">
+          <Loader2 size={36} className="mx-auto mb-4 animate-spin text-brand-300" />
+          <p className="text-sm font-medium text-slate-200">Verifying your email…</p>
           <p className="mt-1 text-xs text-slate-400">This will only take a moment.</p>
         </div>
       </Shell>
@@ -98,14 +98,14 @@ export default function VerifyEmailPage() {
   if (phase.phase === 'success') {
     return (
       <Shell>
-        <div className="rounded-2xl border border-slate-200 bg-white p-8 text-center shadow-sm">
+        <div className="rounded-2xl border border-white/10 bg-surface p-8 text-center shadow-sm">
           <div className="flex justify-center mb-5">
-            <div className="flex h-14 w-14 items-center justify-center rounded-full bg-green-50 border border-green-100">
+            <div className="flex h-14 w-14 items-center justify-center rounded-full bg-green-500/10 border border-green-500/30">
               <CheckCircle2 size={28} className="text-green-500" />
             </div>
           </div>
-          <h1 className="text-lg font-semibold text-slate-900">Email verified!</h1>
-          <p className="mt-2 text-sm text-slate-500 leading-relaxed">
+          <h1 className="text-lg font-semibold text-slate-50">Email verified!</h1>
+          <p className="mt-2 text-sm text-slate-400 leading-relaxed">
             Your account is now active.{' '}
             {nextPath
               ? 'Sign in to continue accepting your invitation.'
@@ -113,8 +113,8 @@ export default function VerifyEmailPage() {
           </p>
           <button
             onClick={() => navigate(buildLoginUrl())}
-            className="mt-6 w-full rounded-xl bg-brand-600 px-4 py-2.5 text-sm font-semibold
-              text-white hover:bg-brand-700 transition-colors shadow-sm"
+            className="mt-6 w-full rounded-xl bg-brand-400 px-4 py-2.5 text-sm font-semibold
+              text-slate-900 hover:bg-brand-300 transition-colors shadow-sm"
           >
             Sign in →
           </button>
@@ -126,26 +126,26 @@ export default function VerifyEmailPage() {
   // ── Error ──────────────────────────────────────────────────────────────────
   return (
     <Shell>
-      <div className="rounded-2xl border border-slate-200 bg-white p-8 text-center shadow-sm">
+      <div className="rounded-2xl border border-white/10 bg-surface p-8 text-center shadow-sm">
         <div className="flex justify-center mb-5">
-          <div className="flex h-14 w-14 items-center justify-center rounded-full bg-red-50 border border-red-100">
+          <div className="flex h-14 w-14 items-center justify-center rounded-full bg-red-500/10 border border-red-500/30">
             <XCircle size={28} className="text-red-400" />
           </div>
         </div>
-        <h1 className="text-lg font-semibold text-slate-900">Verification failed</h1>
-        <p className="mt-2 text-sm text-slate-500">{phase.message}</p>
+        <h1 className="text-lg font-semibold text-slate-50">Verification failed</h1>
+        <p className="mt-2 text-sm text-slate-400">{phase.message}</p>
         <div className="mt-6 space-y-2">
           <button
             onClick={() => navigate('/login')}
-            className="w-full rounded-xl bg-brand-600 px-4 py-2.5 text-sm font-semibold
-              text-white hover:bg-brand-700 transition-colors"
+            className="w-full rounded-xl bg-brand-400 px-4 py-2.5 text-sm font-semibold
+              text-slate-900 hover:bg-brand-300 transition-colors"
           >
             Go to Sign In
           </button>
           <button
             onClick={() => navigate('/register')}
-            className="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm
-              font-medium text-slate-600 hover:bg-slate-50 transition-colors"
+            className="w-full rounded-xl border border-white/10 bg-surface px-4 py-2.5 text-sm
+              font-medium text-slate-300 hover:bg-white/[0.03] transition-colors"
           >
             Create a new account
           </button>

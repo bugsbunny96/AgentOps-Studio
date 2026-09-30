@@ -27,21 +27,21 @@ import api from '@/utils/api';
 
 // ─── Design tokens (mirrors DashboardLayout + DashboardPage) ─────────────────
 const T = {
-  bg:    '#030712',
-  bgS:   '#0d1524',
+  bg:    '#171717',
+  bgS:   '#1f1f1f',
   bgC:   'rgba(255,255,255,0.035)',
   bgCH:  'rgba(255,255,255,0.06)',
   bdr:   'rgba(255,255,255,0.07)',
   bdrH:  'rgba(255,255,255,0.15)',
-  blue:  '#3b82f6',
-  blueL: '#60a5fa',
-  violet:'#8b5cf6',
+  blue:  '#21F1A8',
+  blueL: '#7CF7CB',
+  violet:'#0FC98A',
   em:    '#10b981',
   amb:   '#f59e0b',
   rose:  '#f43f5e',
-  t1:    '#f8fafc',
-  t2:    '#94a3b8',
-  t3:    '#475569',
+  t1:    '#fafafa',
+  t2:    '#a3a3a3',
+  t3:    '#737373',
 };
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -101,7 +101,7 @@ const PLANS: Array<{
     targetPlan:  'starter',
     accentRgb:   '100,116,139',
     accentColor: T.t2,
-    badgeBg:     'rgba(100,116,139,0.2)',
+    badgeBg:     'rgba(115,115,115,0.2)',
     badgeBdr:    T.bdr,
   },
   {
@@ -127,8 +127,8 @@ const PLANS: Array<{
     targetPlan:  'growth',
     accentRgb:   '59,130,246',
     accentColor: T.blueL,
-    badgeBg:     'rgba(59,130,246,0.15)',
-    badgeBdr:    'rgba(59,130,246,0.3)',
+    badgeBg:     'rgba(33,241,168,0.15)',
+    badgeBdr:    'rgba(33,241,168,0.3)',
   },
   {
     id:          'enterprise',
@@ -153,9 +153,9 @@ const PLANS: Array<{
     highlight:   false,
     targetPlan:  'enterprise',
     accentRgb:   '139,92,246',
-    accentColor: '#a78bfa',
-    badgeBg:     'rgba(139,92,246,0.15)',
-    badgeBdr:    'rgba(139,92,246,0.3)',
+    accentColor: '#5CF4BF',
+    badgeBg:     'rgba(15,201,138,0.15)',
+    badgeBdr:    'rgba(15,201,138,0.3)',
   },
 ];
 
@@ -314,15 +314,15 @@ function PlanCard({
       border: isCurrent
         ? `1px solid rgba(${plan.accentRgb},0.4)`
         : plan.highlight
-          ? `1px solid rgba(59,130,246,0.3)`
+          ? `1px solid rgba(33,241,168,0.3)`
           : `1px solid ${T.bdr}`,
       background: isCurrent
         ? `rgba(${plan.accentRgb},0.06)`
         : plan.highlight
-          ? 'rgba(59,130,246,0.06)'
+          ? 'rgba(33,241,168,0.06)'
           : T.bgC,
       boxShadow: plan.highlight && !isCurrent
-        ? '0 0 40px rgba(59,130,246,0.1)'
+        ? '0 0 40px rgba(33,241,168,0.1)'
         : isCurrent
           ? `0 0 30px rgba(${plan.accentRgb},0.08)`
           : 'none',
@@ -333,8 +333,8 @@ function PlanCard({
       {plan.highlight && !isCurrent && (
         <div style={{
           position: 'absolute', top: -1, left: '50%', transform: 'translateX(-50%)',
-          background: 'linear-gradient(135deg, #3b82f6, #8b5cf6)',
-          color: '#fff', fontSize: 9, fontWeight: 700,
+          background: 'linear-gradient(135deg, #21F1A8, #0FC98A)',
+          color: '#171717', fontSize: 9, fontWeight: 700,
           padding: '3px 12px', borderRadius: '0 0 8px 8px',
           letterSpacing: '.1em', textTransform: 'uppercase',
         }}>
@@ -426,13 +426,13 @@ function PlanCard({
             display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
             padding: '9px 16px', borderRadius: 9, border: 'none',
             background: plan.highlight
-              ? 'linear-gradient(135deg, #3b82f6, #8b5cf6)'
+              ? 'linear-gradient(135deg, #21F1A8, #0FC98A)'
               : `rgba(${plan.accentRgb},0.15)`,
             color: plan.highlight ? '#fff' : plan.accentColor,
             fontSize: 12, fontWeight: 700, cursor: upgrading ? 'not-allowed' : 'pointer',
             opacity: upgrading ? 0.6 : 1,
             transition: 'opacity 0.2s',
-            boxShadow: plan.highlight ? '0 0 20px rgba(59,130,246,0.25)' : 'none',
+            boxShadow: plan.highlight ? '0 0 20px rgba(33,241,168,0.25)' : 'none',
           }}
         >
           {isLoading ? (
@@ -594,7 +594,7 @@ export default function BillingPage() {
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '48px 0' }}>
           <div style={{
             width: 28, height: 28, borderRadius: '50%',
-            border: '3px solid rgba(59,130,246,0.2)',
+            border: '3px solid rgba(33,241,168,0.2)',
             borderTopColor: T.blue,
             animation: 'bilSpin 0.7s linear infinite',
           }} />
@@ -620,18 +620,18 @@ export default function BillingPage() {
               width: 40, height: 40, borderRadius: 11, flexShrink: 0,
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               background: currentPlan === 'enterprise'
-                ? 'rgba(139,92,246,0.15)'
+                ? 'rgba(15,201,138,0.15)'
                 : currentPlan === 'growth'
-                  ? 'rgba(59,130,246,0.15)'
+                  ? 'rgba(33,241,168,0.15)'
                   : 'rgba(16,185,129,0.1)',
               border: `1px solid ${
-                currentPlan === 'enterprise' ? 'rgba(139,92,246,0.25)'
-                : currentPlan === 'growth' ? 'rgba(59,130,246,0.25)'
+                currentPlan === 'enterprise' ? 'rgba(15,201,138,0.25)'
+                : currentPlan === 'growth' ? 'rgba(33,241,168,0.25)'
                 : 'rgba(16,185,129,0.15)'
               }`,
             }}>
               {currentPlan === 'enterprise'
-                ? <Building2 size={18} style={{ color: '#a78bfa' }} />
+                ? <Building2 size={18} style={{ color: '#5CF4BF' }} />
                 : currentPlan === 'growth'
                   ? <Zap size={18} style={{ color: T.blueL }} />
                   : <CreditCard size={18} style={{ color: T.em }} />}
@@ -673,8 +673,8 @@ export default function BillingPage() {
                 style={{
                   display: 'flex', alignItems: 'center', gap: 5,
                   padding: '7px 12px', borderRadius: 8,
-                  background: 'rgba(59,130,246,0.08)',
-                  border: '1px solid rgba(59,130,246,0.2)',
+                  background: 'rgba(33,241,168,0.08)',
+                  border: '1px solid rgba(33,241,168,0.2)',
                   color: T.blueL, fontSize: 12, fontWeight: 600,
                   cursor: portalMutation.isPending ? 'not-allowed' : 'pointer',
                   opacity: portalMutation.isPending ? 0.65 : 1,
@@ -748,7 +748,7 @@ export default function BillingPage() {
           <div style={{
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             width: 22, height: 22, borderRadius: 6,
-            background: 'rgba(59,130,246,0.15)', border: '1px solid rgba(59,130,246,0.25)',
+            background: 'rgba(33,241,168,0.15)', border: '1px solid rgba(33,241,168,0.25)',
           }}>
             <BarChart3 size={11} style={{ color: T.blueL }} />
           </div>

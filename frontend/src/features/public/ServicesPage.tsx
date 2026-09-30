@@ -14,10 +14,10 @@ import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 
 const T = {
-  bg: '#030712', bgS: '#0d1524',
+  bg: '#171717', bgS: '#1f1f1f',
   bgC: 'rgba(255,255,255,0.03)', bdr: 'rgba(255,255,255,0.07)', bdrB: 'rgba(255,255,255,0.12)',
-  blue: '#3b82f6', violet: '#8b5cf6', em: '#10b981', amber: '#f59e0b',
-  t1: '#f8fafc', t2: '#94a3b8', t3: '#475569',
+  blue: '#21F1A8', violet: '#0FC98A', em: '#10b981', amber: '#f59e0b',
+  t1: '#fafafa', t2: '#a3a3a3', t3: '#737373',
 };
 
 const pill = (bg: string, color: string, border: string): React.CSSProperties => ({
@@ -93,8 +93,8 @@ export default function ServicesPage() {
       {/* Hero */}
       <section style={{ position: 'relative', overflow: 'hidden', padding: 'clamp(80px,10vw,120px) 24px 80px', textAlign: 'center' }}>
         <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none' }}>
-          <div style={{ position: 'absolute', top: '10%', left: '15%', width: 400, height: 400, borderRadius: '50%', background: 'radial-gradient(circle, rgba(59,130,246,0.12) 0%, transparent 70%)', animation: 'sp-float 12s ease-in-out infinite' }} />
-          <div style={{ position: 'absolute', top: '20%', right: '10%', width: 300, height: 300, borderRadius: '50%', background: 'radial-gradient(circle, rgba(139,92,246,0.10) 0%, transparent 70%)', animation: 'sp-float 9s ease-in-out infinite reverse' }} />
+          <div style={{ position: 'absolute', top: '10%', left: '15%', width: 400, height: 400, borderRadius: '50%', background: 'radial-gradient(circle, rgba(33,241,168,0.12) 0%, transparent 70%)', animation: 'sp-float 12s ease-in-out infinite' }} />
+          <div style={{ position: 'absolute', top: '20%', right: '10%', width: 300, height: 300, borderRadius: '50%', background: 'radial-gradient(circle, rgba(15,201,138,0.10) 0%, transparent 70%)', animation: 'sp-float 9s ease-in-out infinite reverse' }} />
         </div>
         <div style={{ position: 'relative', maxWidth: 700, margin: '0 auto' }}>
           <div style={{ marginBottom: 20 }}>
@@ -158,7 +158,7 @@ export default function ServicesPage() {
             <Reveal key={step.n} delay={i * 80}>
               <div style={{ display: 'flex', gap: 24, paddingBottom: i < STEPS.length - 1 ? 36 : 0 }}>
                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', flexShrink: 0 }}>
-                  <div style={{ width: 44, height: 44, borderRadius: '50%', background: `linear-gradient(135deg, ${T.em}, ${T.blue})`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, fontWeight: 800, color: '#fff' }}>{step.n}</div>
+                  <div style={{ width: 44, height: 44, borderRadius: '50%', background: `linear-gradient(135deg, ${T.em}, ${T.blue})`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, fontWeight: 800, color: '#171717' }}>{step.n}</div>
                   {i < STEPS.length - 1 && <div style={{ width: 2, flex: 1, minHeight: 28, background: `linear-gradient(to bottom, ${T.em}50, transparent)`, marginTop: 6 }} />}
                 </div>
                 <div style={{ paddingTop: 8 }}>

@@ -26,7 +26,7 @@ export function SuperAdminGuard({ children }: Props) {
       <div style={{
         display: 'flex', height: '100vh',
         alignItems: 'center', justifyContent: 'center',
-        background: '#0a0a0f', color: '#94a3b8', fontSize: 13,
+        background: '#0a0a0f', color: '#a3a3a3', fontSize: 13,
       }}>
         Verifying session…
       </div>

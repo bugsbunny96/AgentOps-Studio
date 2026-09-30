@@ -159,7 +159,7 @@ export default function VoiceSelector({ value, onChange, disabled = false }: Voi
 
       {/* ── Provider tabs ───────────────────────────────────────────────────── */}
       <div>
-        <p className="block text-sm font-medium text-slate-700 mb-2">Voice provider</p>
+        <p className="block text-sm font-medium text-slate-200 mb-2">Voice provider</p>
         <div className="flex flex-wrap gap-2">
           {VOICE_CATALOG.map((p) => (
             <button
@@ -168,13 +168,13 @@ export default function VoiceSelector({ value, onChange, disabled = false }: Voi
               onClick={() => handleProviderChange(p.id)}
               className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition
                 ${value.voiceProvider === p.id
-                  ? 'border-brand-500 bg-brand-50 text-brand-700'
-                  : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-50'
+                  ? 'border-brand-500 bg-brand-400/10 text-brand-300'
+                  : 'border-white/10 bg-surface text-slate-300 hover:border-white/15 hover:bg-white/[0.03]'
                 }`}
             >
               {p.label}
               <span className={`rounded px-1 py-0.5 text-[10px] font-semibold uppercase tracking-wide
-                ${value.voiceProvider === p.id ? 'bg-brand-100 text-brand-700' : 'bg-slate-100 text-slate-500'}`}>
+                ${value.voiceProvider === p.id ? 'bg-brand-400/15 text-brand-300' : 'bg-white/[0.06] text-slate-400'}`}>
                 {p.badge}
               </span>
             </button>
@@ -185,7 +185,7 @@ export default function VoiceSelector({ value, onChange, disabled = false }: Voi
         {/* Language compatibility warning — Deepgram Aura is English-only */}
         {value.voiceProvider === 'deepgram' &&
           value.supportedLanguages.some((l) => l !== 'en-US') && (
-          <div className="mt-2 flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-700">
+          <div className="mt-2 flex items-start gap-2 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs text-amber-300">
             <span className="mt-0.5 flex-shrink-0">⚠️</span>
             <span>
               <strong>Deepgram Aura is English-only.</strong> Your agent has non-English languages selected.
@@ -200,7 +200,7 @@ export default function VoiceSelector({ value, onChange, disabled = false }: Voi
           const selectedVoice = provider.voices.find((v) => v.id === value.voiceId);
           if (selectedVoice && selectedVoice.supportsHindi === false) {
             return (
-              <div className="mt-2 flex items-start gap-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700">
+              <div className="mt-2 flex items-start gap-2 rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-xs text-red-300">
                 <span className="mt-0.5 flex-shrink-0">🚨</span>
                 <span>
                   <strong>"{selectedVoice.name}" cannot speak Hindi or Punjabi.</strong>{' '}
@@ -216,7 +216,7 @@ export default function VoiceSelector({ value, onChange, disabled = false }: Voi
 
         {/* Key-required notice for providers that need Vapi dashboard setup */}
         {!provider.noKeyRequired && (
-          <div className="mt-2 flex items-start gap-2 rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-xs text-blue-700">
+          <div className="mt-2 flex items-start gap-2 rounded-lg border border-brand-400/30 bg-brand-400/10 px-3 py-2 text-xs text-brand-300">
             <span className="mt-0.5 flex-shrink-0">ℹ️</span>
             <span>
               {provider.label} requires your API key configured in the{' '}
@@ -228,9 +228,9 @@ export default function VoiceSelector({ value, onChange, disabled = false }: Voi
 
       {/* ── Voice grid ─────────────────────────────────────────────────────── */}
       <div>
-        <p className="block text-sm font-medium text-slate-700 mb-2">Voice</p>
+        <p className="block text-sm font-medium text-slate-200 mb-2">Voice</p>
         {previewError && (
-          <p className="mb-2 text-xs text-amber-600">{previewError}</p>
+          <p className="mb-2 text-xs text-amber-300">{previewError}</p>
         )}
         <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
           {provider.voices.map((voice) => {
@@ -244,35 +244,35 @@ export default function VoiceSelector({ value, onChange, disabled = false }: Voi
                 onClick={() => handleVoiceChange(voice.id)}
                 className={`relative flex cursor-pointer items-start gap-3 rounded-lg border-2 px-3 py-3 transition
                   ${isSelected
-                    ? 'border-brand-500 bg-brand-50'
-                    : 'border-slate-200 bg-white hover:border-slate-300'
+                    ? 'border-brand-500 bg-brand-400/10'
+                    : 'border-white/10 bg-surface hover:border-white/15'
                   }`}
               >
                 {/* Selection indicator */}
                 <span
                   className={`mt-0.5 flex h-4 w-4 flex-shrink-0 items-center justify-center rounded-full border-2 transition
-                    ${isSelected ? 'border-brand-500 bg-brand-500' : 'border-slate-300'}`}
+                    ${isSelected ? 'border-brand-500 bg-brand-400' : 'border-white/15'}`}
                 >
                   {isSelected && (
-                    <span className="h-1.5 w-1.5 rounded-full bg-white" />
+                    <span className="h-1.5 w-1.5 rounded-full bg-surface" />
                   )}
                 </span>
 
                 {/* Text */}
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-1.5 flex-wrap">
-                    <span className={`text-sm font-medium ${isSelected ? 'text-brand-700' : 'text-slate-700'}`}>
+                    <span className={`text-sm font-medium ${isSelected ? 'text-brand-300' : 'text-slate-200'}`}>
                       {voice.name}
                     </span>
                     <span className={`text-[10px] font-medium uppercase tracking-wide px-1 rounded
-                      ${voice.gender === 'female' ? 'bg-pink-50 text-pink-600'
-                        : voice.gender === 'male' ? 'bg-blue-50 text-blue-600'
-                        : 'bg-slate-100 text-slate-500'}`}>
+                      ${voice.gender === 'female' ? 'bg-pink-500/10 text-pink-300'
+                        : voice.gender === 'male' ? 'bg-brand-400/10 text-brand-300'
+                        : 'bg-white/[0.06] text-slate-400'}`}>
                       {voice.gender}
                     </span>
                     <span className="text-[10px] text-slate-400">{voice.accent}</span>
                   </div>
-                  <p className="mt-0.5 text-xs text-slate-500">{voice.description}</p>
+                  <p className="mt-0.5 text-xs text-slate-400">{voice.description}</p>
                 </div>
 
                 {/* Play/Pause preview button — available for OpenAI and Deepgram */}
@@ -286,8 +286,8 @@ export default function VoiceSelector({ value, onChange, disabled = false }: Voi
                     title={isThisPlaying ? 'Stop preview' : 'Preview voice'}
                     className={`flex-shrink-0 flex h-7 w-7 items-center justify-center rounded-full border transition
                       ${isThisPlaying || isThisLoading
-                        ? 'border-brand-500 bg-brand-500 text-white'
-                        : 'border-slate-200 bg-white text-slate-500 hover:border-brand-400 hover:text-brand-500'
+                        ? 'border-brand-500 bg-brand-400 text-slate-900'
+                        : 'border-white/10 bg-surface text-slate-400 hover:border-brand-400 hover:text-brand-700'
                       }`}
                   >
                     {isThisLoading ? (
@@ -309,7 +309,7 @@ export default function VoiceSelector({ value, onChange, disabled = false }: Voi
                       );
                     }}
                     title={`${provider.label} preview: make a test call to hear this voice`}
-                    className="flex-shrink-0 flex h-7 w-7 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-400 hover:border-slate-300 hover:text-slate-500 transition"
+                    className="flex-shrink-0 flex h-7 w-7 items-center justify-center rounded-full border border-white/10 bg-surface text-slate-400 hover:border-white/15 hover:text-slate-400 transition"
                   >
                     <Volume2 size={12} />
                   </button>
@@ -327,7 +327,7 @@ export default function VoiceSelector({ value, onChange, disabled = false }: Voi
 
       {/* ── Language multi-select ────────────────────────────────────────────── */}
       <div>
-        <p className="block text-sm font-medium text-slate-700 mb-1">
+        <p className="block text-sm font-medium text-slate-200 mb-1">
           Supported languages <span className="text-red-500">*</span>
         </p>
         <p className="text-xs text-slate-400 mb-2">
@@ -343,15 +343,15 @@ export default function VoiceSelector({ value, onChange, disabled = false }: Voi
                 onClick={() => toggleLanguage(code)}
                 className={`w-full flex items-center justify-between rounded-lg border-2 px-4 py-3 text-left transition
                   ${isChecked
-                    ? 'border-brand-500 bg-brand-50'
-                    : 'border-slate-200 bg-white hover:border-slate-300'
+                    ? 'border-brand-500 bg-brand-400/10'
+                    : 'border-white/10 bg-surface hover:border-white/15'
                   }`}
               >
                 <div className="flex items-center gap-3">
                   {/* Checkbox indicator */}
                   <span
                     className={`h-4 w-4 flex-shrink-0 rounded border-2 flex items-center justify-center transition
-                      ${isChecked ? 'border-brand-500 bg-brand-500' : 'border-slate-300'}`}
+                      ${isChecked ? 'border-brand-500 bg-brand-400' : 'border-white/15'}`}
                   >
                     {isChecked && (
                       <svg viewBox="0 0 10 8" className="h-2.5 w-2.5 text-white fill-current">
@@ -362,7 +362,7 @@ export default function VoiceSelector({ value, onChange, disabled = false }: Voi
                   </span>
                   <span className="text-base">{flag}</span>
                   <span>
-                    <span className={`text-sm font-medium ${isChecked ? 'text-brand-700' : 'text-slate-700'}`}>
+                    <span className={`text-sm font-medium ${isChecked ? 'text-brand-300' : 'text-slate-200'}`}>
                       {label}
                     </span>
                     <span className="ml-2 text-xs text-slate-400">{sublabel}</span>
@@ -373,7 +373,7 @@ export default function VoiceSelector({ value, onChange, disabled = false }: Voi
           })}
         </div>
         {value.supportedLanguages.length === 0 && (
-          <p className="mt-2 text-xs text-red-600">Select at least one language</p>
+          <p className="mt-2 text-xs text-red-300">Select at least one language</p>
         )}
       </div>
 

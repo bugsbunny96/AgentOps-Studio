@@ -70,8 +70,8 @@ function resolutionLabel(state: Summary['resolutionState']): { label: string; co
   switch (state) {
     case 'Resolved':        return { label: 'Resolved',         color: '#059669' };
     case 'Transferred':     return { label: 'Transferred',      color: '#d97706' };
-    case 'Needs_Followup':  return { label: 'Needs Follow-up',  color: '#7c3aed' };
-    default:                return { label: state,              color: '#64748b' };
+    case 'Needs_Followup':  return { label: 'Needs Follow-up',  color: '#0AA271' };
+    default:                return { label: state,              color: '#8a8a8a' };
   }
 }
 
@@ -103,23 +103,23 @@ function formatTurnOffset(firstTimestamp: string, thisTimestamp: string): string
 
 function HeroCard({ call }: { call: Call }) {
   return (
-    <div className="rounded-2xl border border-slate-200 bg-white p-6">
+    <div className="rounded-2xl border border-white/10 bg-surface p-6">
       <div className="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
         {/* Left: caller + meta */}
         <div className="flex items-start gap-4">
           <div
             className="flex h-14 w-14 flex-shrink-0 items-center justify-center rounded-2xl"
             style={{
-              background: 'linear-gradient(135deg, rgba(99,102,241,.12), rgba(139,92,246,.12))',
-              border: '1px solid rgba(99,102,241,.2)',
+              background: 'linear-gradient(135deg, rgba(33,241,168,.12), rgba(15,201,138,.12))',
+              border: '1px solid rgba(33,241,168,.2)',
             }}
           >
-            <PhoneCall size={24} className="text-brand-600" strokeWidth={1.8} />
+            <PhoneCall size={24} className="text-brand-300" strokeWidth={1.8} />
           </div>
           <div>
             <p className="text-xs text-slate-400 mb-0.5">Caller</p>
-            <p className="text-lg font-bold text-slate-900 font-mono">{call.callerNumber}</p>
-            <p className="mt-1 text-xs text-slate-500">{formatDateFull(call.createdAt)}</p>
+            <p className="text-lg font-bold text-slate-50 font-mono">{call.callerNumber}</p>
+            <p className="mt-1 text-xs text-slate-400">{formatDateFull(call.createdAt)}</p>
           </div>
         </div>
 
@@ -134,7 +134,7 @@ function HeroCard({ call }: { call: Call }) {
             </span>
           ) : call.status === 'completed' ? (
             <span className="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium"
-              style={{ background: 'rgba(99,102,241,.1)', color: '#4f46e5' }}>
+              style={{ background: 'rgba(33,241,168,.1)', color: '#0FC98A' }}>
               <CheckCircle2 size={12} />
               Completed
             </span>
@@ -148,13 +148,13 @@ function HeroCard({ call }: { call: Call }) {
 
           {/* Direction */}
           {call.direction === 'Inbound' ? (
-            <span className="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium bg-slate-100 text-slate-600">
+            <span className="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium bg-white/[0.06] text-slate-300">
               <PhoneIncoming size={12} className="text-emerald-500" />
               Inbound
             </span>
           ) : (
-            <span className="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium bg-slate-100 text-slate-600">
-              <PhoneOutgoing size={12} className="text-violet-500" />
+            <span className="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium bg-white/[0.06] text-slate-300">
+              <PhoneOutgoing size={12} className="text-brand-300" />
               Outbound
             </span>
           )}
@@ -163,7 +163,7 @@ function HeroCard({ call }: { call: Call }) {
           {call.endedReason && call.status !== 'active' && (
             <span
               className="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium"
-              style={{ background: 'rgba(100,116,139,.08)', color: '#475569' }}
+              style={{ background: 'rgba(115,115,115,.08)', color: '#737373' }}
               title={call.endedReason}
             >
               {humanizeEndedReason(call.endedReason)}
@@ -173,7 +173,7 @@ function HeroCard({ call }: { call: Call }) {
       </div>
 
       {/* Stats row */}
-      <div className="mt-5 grid grid-cols-2 gap-4 border-t border-slate-100 pt-5 sm:grid-cols-3">
+      <div className="mt-5 grid grid-cols-2 gap-4 border-t border-white/10 pt-5 sm:grid-cols-3">
         <Stat label="Duration" value={formatDuration(call.duration)} icon={<Clock size={14} className="text-slate-400" />} />
         {call.recordingUrl && (
           <Stat label="Recording" value="Available" icon={<Play size={14} className="text-slate-400" />} />
@@ -187,7 +187,7 @@ function Stat({ label, value, icon }: { label: string; value: string; icon: Reac
   return (
     <div>
       <p className="text-xs text-slate-400">{label}</p>
-      <p className="mt-0.5 flex items-center gap-1 text-sm font-semibold text-slate-700">
+      <p className="mt-0.5 flex items-center gap-1 text-sm font-semibold text-slate-200">
         {icon}
         {value}
       </p>
@@ -199,15 +199,15 @@ function Stat({ label, value, icon }: { label: string; value: string; icon: Reac
 
 function RecordingPlayer({ url }: { url: string }) {
   return (
-    <div className="rounded-2xl border border-slate-200 bg-white p-5">
+    <div className="rounded-2xl border border-white/10 bg-surface p-5">
       <div className="mb-4 flex items-center gap-2">
         <div
           className="flex h-8 w-8 items-center justify-center rounded-lg"
-          style={{ background: 'rgba(99,102,241,.08)', border: '1px solid rgba(99,102,241,.12)' }}
+          style={{ background: 'rgba(33,241,168,.08)', border: '1px solid rgba(33,241,168,.12)' }}
         >
-          <Play size={14} className="text-brand-600" strokeWidth={1.8} />
+          <Play size={14} className="text-brand-300" strokeWidth={1.8} />
         </div>
-        <h2 className="text-sm font-semibold text-slate-800">Recording</h2>
+        <h2 className="text-sm font-semibold text-slate-100">Recording</h2>
       </div>
       {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
       <audio controls className="w-full" src={url}>
@@ -234,8 +234,8 @@ function TranscriptViewer({ transcript }: { transcript: Transcript }) {
 
   if (transcript.turns.length === 0) {
     return (
-      <div className="rounded-2xl border border-slate-200 bg-white p-5">
-        <SectionHeader icon={<FileText size={14} className="text-brand-600" />} title="Transcript" />
+      <div className="rounded-2xl border border-white/10 bg-surface p-5">
+        <SectionHeader icon={<FileText size={14} className="text-brand-300" />} title="Transcript" />
         <p className="mt-4 text-sm text-slate-400 italic">No transcript turns recorded for this call.</p>
       </div>
     );
@@ -244,17 +244,17 @@ function TranscriptViewer({ transcript }: { transcript: Transcript }) {
   const firstTs = transcript.turns[0]?.timestamp ?? '';
 
   return (
-    <div className="rounded-2xl border border-slate-200 bg-white p-5">
+    <div className="rounded-2xl border border-white/10 bg-surface p-5">
       {/* Header row: title + copy button */}
       <div className="flex items-center justify-between mb-4">
-        <SectionHeader icon={<Mic size={14} className="text-brand-600" />} title="Transcript" />
+        <SectionHeader icon={<Mic size={14} className="text-brand-300" />} title="Transcript" />
         <button
           onClick={handleCopy}
           className="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium transition-colors"
           style={
             copied
               ? { background: 'rgba(5,150,105,.1)', color: '#059669' }
-              : { background: 'rgba(100,116,139,.06)', color: '#64748b' }
+              : { background: 'rgba(115,115,115,.06)', color: '#8a8a8a' }
           }
           title="Copy transcript"
         >
@@ -274,7 +274,7 @@ function TranscriptViewer({ transcript }: { transcript: Transcript }) {
               className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full text-xs font-bold"
               style={
                 turn.speaker === 'agent'
-                  ? { background: 'rgba(99,102,241,.12)', color: '#4f46e5' }
+                  ? { background: 'rgba(33,241,168,.12)', color: '#0FC98A' }
                   : { background: 'rgba(15,118,110,.1)', color: '#0f766e' }
               }
             >
@@ -286,14 +286,14 @@ function TranscriptViewer({ transcript }: { transcript: Transcript }) {
               className="max-w-[75%] rounded-xl px-3.5 py-2.5"
               style={
                 turn.speaker === 'agent'
-                  ? { background: 'rgba(99,102,241,.06)', border: '1px solid rgba(99,102,241,.12)' }
+                  ? { background: 'rgba(33,241,168,.06)', border: '1px solid rgba(33,241,168,.12)' }
                   : { background: 'rgba(241,245,249,1)', border: '1px solid rgba(226,232,240,1)' }
               }
             >
               {/* Speaker label + timestamp */}
               <div className="flex items-center justify-between gap-3 mb-1">
                 <p className="text-xs font-medium"
-                  style={{ color: turn.speaker === 'agent' ? '#4f46e5' : '#0f766e' }}>
+                  style={{ color: turn.speaker === 'agent' ? '#0FC98A' : '#0f766e' }}>
                   {turn.speaker === 'agent' ? 'Agent' : 'Caller'}
                 </p>
                 {turn.timestamp && firstTs && (
@@ -302,7 +302,7 @@ function TranscriptViewer({ transcript }: { transcript: Transcript }) {
                   </p>
                 )}
               </div>
-              <p className="text-sm text-slate-700 leading-relaxed">{turn.text}</p>
+              <p className="text-sm text-slate-200 leading-relaxed">{turn.text}</p>
             </div>
           </div>
         ))}
@@ -317,9 +317,9 @@ function SummaryCard({ summary }: { summary: Summary }) {
   const res = resolutionLabel(summary.resolutionState);
 
   return (
-    <div className="rounded-2xl border border-slate-200 bg-white p-5">
+    <div className="rounded-2xl border border-white/10 bg-surface p-5">
       <div className="flex items-center justify-between mb-4">
-        <SectionHeader icon={<Lightbulb size={14} className="text-brand-600" />} title="AI Summary" />
+        <SectionHeader icon={<Lightbulb size={14} className="text-brand-300" />} title="AI Summary" />
         <span
           className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium"
           style={{ background: `${res.color}1a`, color: res.color }}
@@ -329,7 +329,7 @@ function SummaryCard({ summary }: { summary: Summary }) {
         </span>
       </div>
 
-      <p className="text-sm text-slate-700 leading-relaxed mb-5">{summary.summaryText}</p>
+      <p className="text-sm text-slate-200 leading-relaxed mb-5">{summary.summaryText}</p>
 
       {summary.intentDetected.length > 0 && (
         <div className="mb-4">
@@ -339,7 +339,7 @@ function SummaryCard({ summary }: { summary: Summary }) {
               <span
                 key={intent}
                 className="rounded-full px-2.5 py-0.5 text-xs font-medium"
-                style={{ background: 'rgba(99,102,241,.08)', color: '#4f46e5' }}
+                style={{ background: 'rgba(33,241,168,.08)', color: '#0FC98A' }}
               >
                 {intent}
               </span>
@@ -356,7 +356,7 @@ function SummaryCard({ summary }: { summary: Summary }) {
           </p>
           <ul className="space-y-1.5">
             {summary.actionItems.map((item, i) => (
-              <li key={i} className="flex items-start gap-2 text-sm text-slate-700">
+              <li key={i} className="flex items-start gap-2 text-sm text-slate-200">
                 <CheckCircle2 size={13} className="mt-0.5 flex-shrink-0 text-emerald-500" />
                 {item}
               </li>
@@ -373,11 +373,11 @@ function SectionHeader({ icon, title }: { icon: React.ReactNode; title: string }
     <div className="flex items-center gap-2">
       <div
         className="flex h-8 w-8 items-center justify-center rounded-lg"
-        style={{ background: 'rgba(99,102,241,.08)', border: '1px solid rgba(99,102,241,.12)' }}
+        style={{ background: 'rgba(33,241,168,.08)', border: '1px solid rgba(33,241,168,.12)' }}
       >
         {icon}
       </div>
-      <h2 className="text-sm font-semibold text-slate-800">{title}</h2>
+      <h2 className="text-sm font-semibold text-slate-100">{title}</h2>
     </div>
   );
 }
@@ -386,11 +386,11 @@ function SectionHeader({ icon, title }: { icon: React.ReactNode; title: string }
 
 function TranscriptLiveState() {
   return (
-    <div className="rounded-2xl border border-slate-200 bg-white p-5">
-      <SectionHeader icon={<Mic size={14} className="text-brand-600" />} title="Transcript" />
-      <div className="mt-4 flex items-center gap-3 rounded-xl border border-emerald-100 bg-emerald-50 px-4 py-3">
+    <div className="rounded-2xl border border-white/10 bg-surface p-5">
+      <SectionHeader icon={<Mic size={14} className="text-brand-300" />} title="Transcript" />
+      <div className="mt-4 flex items-center gap-3 rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-4 py-3">
         <span className="inline-block h-2 w-2 flex-shrink-0 animate-pulse rounded-full bg-emerald-500" />
-        <p className="text-sm text-emerald-700">
+        <p className="text-sm text-emerald-300">
           Call in progress — transcript will appear here when the call ends.
         </p>
       </div>
@@ -400,8 +400,8 @@ function TranscriptLiveState() {
 
 function TranscriptEmpty() {
   return (
-    <div className="rounded-2xl border border-slate-200 bg-white p-5">
-      <SectionHeader icon={<FileText size={14} className="text-brand-600" />} title="Transcript" />
+    <div className="rounded-2xl border border-white/10 bg-surface p-5">
+      <SectionHeader icon={<FileText size={14} className="text-brand-300" />} title="Transcript" />
       <p className="mt-4 text-sm text-slate-400 italic">
         No transcript available for this call.
       </p>
@@ -430,13 +430,13 @@ export default function CallDetailPage() {
       <div className="flex items-center gap-2">
         <Link
           to="/calls"
-          className="flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-800 transition-colors"
+          className="flex items-center gap-1.5 text-sm text-slate-400 hover:text-slate-100 transition-colors"
         >
           <ArrowLeft size={14} />
           Calls
         </Link>
         <span className="text-slate-200">/</span>
-        <span className="text-sm font-medium text-slate-700 font-mono">
+        <span className="text-sm font-medium text-slate-200 font-mono">
           {id ? `${id.slice(0, 8)}…` : 'Call Detail'}
         </span>
       </div>
@@ -444,15 +444,15 @@ export default function CallDetailPage() {
       {/* Loading */}
       {isLoading && (
         <div className="flex items-center justify-center py-20">
-          <Loader2 size={24} className="animate-spin text-brand-600" />
+          <Loader2 size={24} className="animate-spin text-brand-300" />
         </div>
       )}
 
       {/* Error */}
       {isError && (
-        <div className="flex items-center gap-3 rounded-xl border border-red-100 bg-red-50 px-5 py-4">
+        <div className="flex items-center gap-3 rounded-xl border border-red-500/30 bg-red-500/10 px-5 py-4">
           <AlertCircle size={16} className="text-red-500 flex-shrink-0" />
-          <p className="text-sm text-red-700">Failed to load call details. Please go back and try again.</p>
+          <p className="text-sm text-red-300">Failed to load call details. Please go back and try again.</p>
         </div>
       )}
 
@@ -485,8 +485,8 @@ export default function CallDetailPage() {
                 {summary ? (
                   <SummaryCard summary={summary} />
                 ) : (
-                  <div className="rounded-2xl border border-slate-200 bg-white p-5">
-                    <SectionHeader icon={<Lightbulb size={14} className="text-brand-600" />} title="AI Summary" />
+                  <div className="rounded-2xl border border-white/10 bg-surface p-5">
+                    <SectionHeader icon={<Lightbulb size={14} className="text-brand-300" />} title="AI Summary" />
                     <p className="mt-4 text-sm text-slate-400 italic">
                       {call.status === 'active'
                         ? 'Summary will be generated when the call ends.'

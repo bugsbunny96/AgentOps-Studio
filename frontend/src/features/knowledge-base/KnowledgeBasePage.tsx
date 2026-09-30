@@ -88,9 +88,9 @@ function getQualityFlags(doc: KbDoc): QualityFlag[] {
 }
 
 const FLAG_META: Record<QualityFlag, { label: string; tip: string; cls: string }> = {
-  too_short: { label: 'Too short', tip: 'Less than 40 chars — may not be useful to the agent', cls: 'bg-red-50 text-red-600 border-red-100' },
-  large: { label: 'Large', tip: 'Content will be truncated in the system prompt', cls: 'bg-amber-50 text-amber-600 border-amber-100' },
-  stale: { label: 'Stale', tip: 'Website page not refreshed in >30 days', cls: 'bg-slate-100 text-slate-500 border-slate-200' },
+  too_short: { label: 'Too short', tip: 'Less than 40 chars — may not be useful to the agent', cls: 'bg-red-500/10 text-red-300 border-red-500/30' },
+  large: { label: 'Large', tip: 'Content will be truncated in the system prompt', cls: 'bg-amber-500/10 text-amber-300 border-amber-500/30' },
+  stale: { label: 'Stale', tip: 'Website page not refreshed in >30 days', cls: 'bg-white/[0.06] text-slate-400 border-white/10' },
 };
 
 // ─── API helpers ───────────────────────────────────────────────────────────────
@@ -132,15 +132,15 @@ async function triggerResync() {
 // ─── Shared sub-components ────────────────────────────────────────────────────
 
 function Skeleton({ className = '' }: { className?: string }) {
-  return <div className={`animate-pulse rounded bg-slate-100 ${className}`} />;
+  return <div className={`animate-pulse rounded bg-white/[0.06] ${className}`} />;
 }
 
 function SourceBadge({ type }: { type: KbDoc['sourceType'] }) {
   const map = {
-    website_page: { label: 'Web page', icon: Globe, cls: 'bg-blue-50 text-blue-700 border-blue-100' },
-    website_crawl: { label: 'Website KB', icon: Globe, cls: 'bg-sky-50 text-sky-700 border-sky-100' },
-    manual_text: { label: 'Manual', icon: FileText, cls: 'bg-violet-50 text-violet-700 border-violet-100' },
-    faq_import: { label: 'FAQ', icon: HelpCircle, cls: 'bg-amber-50 text-amber-700 border-amber-100' },
+    website_page: { label: 'Web page', icon: Globe, cls: 'bg-brand-400/10 text-brand-300 border-brand-400/30' },
+    website_crawl: { label: 'Website KB', icon: Globe, cls: 'bg-brand-400/10 text-brand-300 border-brand-400/30' },
+    manual_text: { label: 'Manual', icon: FileText, cls: 'bg-brand-400/10 text-brand-300 border-brand-400/30' },
+    faq_import: { label: 'FAQ', icon: HelpCircle, cls: 'bg-amber-500/10 text-amber-300 border-amber-500/30' },
   };
   const { label, icon: Icon, cls } = map[type];
   return (
@@ -164,7 +164,7 @@ function CategoryBadge({ slug }: { slug: string }) {
     .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
     .join(' ');
   return (
-    <span className="inline-flex items-center rounded border border-slate-100 bg-slate-50 px-1.5 py-0.5 text-[10px] font-medium text-slate-500">
+    <span className="inline-flex items-center rounded border border-white/10 bg-white/[0.03] px-1.5 py-0.5 text-[10px] font-medium text-slate-400">
       {label}
     </span>
   );
@@ -237,31 +237,31 @@ function DocModal({ mode, initial, onClose }: DocModalProps) {
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 px-4"
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
-      <div className="w-full max-w-xl rounded-2xl bg-white shadow-2xl">
-        <div className="flex items-center justify-between border-b border-slate-100 px-6 py-4">
-          <h2 className="text-base font-semibold text-slate-800">
+      <div className="w-full max-w-xl rounded-2xl bg-surface shadow-2xl">
+        <div className="flex items-center justify-between border-b border-white/10 px-6 py-4">
+          <h2 className="text-base font-semibold text-slate-100">
             {mode === 'add' ? 'Add knowledge document' : 'Edit document'}
           </h2>
-          <button onClick={onClose} className="flex h-7 w-7 items-center justify-center rounded-full text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition" aria-label="Close">
+          <button onClick={onClose} className="flex h-7 w-7 items-center justify-center rounded-full text-slate-400 hover:bg-white/[0.06] hover:text-slate-300 transition" aria-label="Close">
             <XIcon size={14} />
           </button>
         </div>
 
         <form onSubmit={handleSubmit} className="px-6 py-5 space-y-4">
           <div>
-            <label className="mb-1 block text-xs font-medium text-slate-600">Title</label>
+            <label className="mb-1 block text-xs font-medium text-slate-300">Title</label>
             <input
               type="text"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder="e.g. Cancellation Policy"
               maxLength={300}
-              className="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm text-slate-800 placeholder:text-slate-400 outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100 transition"
+              className="w-full rounded-lg border border-white/10 px-3 py-2.5 text-sm text-slate-100 placeholder:text-slate-400 outline-none focus:border-brand-400 focus:ring-2 focus:ring-brand-400/30 transition"
             />
           </div>
 
           <div>
-            <label className="mb-1 block text-xs font-medium text-slate-600">
+            <label className="mb-1 block text-xs font-medium text-slate-300">
               Content <span className="ml-1 text-slate-400 font-normal">({content.length.toLocaleString()}/50,000)</span>
             </label>
             <textarea
@@ -270,21 +270,21 @@ function DocModal({ mode, initial, onClose }: DocModalProps) {
               placeholder="Paste the text your agent should know…"
               rows={9}
               maxLength={50_000}
-              className="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm text-slate-800 placeholder:text-slate-400 outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100 transition resize-y font-mono"
+              className="w-full rounded-lg border border-white/10 px-3 py-2.5 text-sm text-slate-100 placeholder:text-slate-400 outline-none focus:border-brand-400 focus:ring-2 focus:ring-brand-400/30 transition resize-y font-mono"
             />
           </div>
 
           {error && (
-            <p className="flex items-center gap-2 rounded-lg bg-red-50 px-3 py-2 text-xs text-red-700">
+            <p className="flex items-center gap-2 rounded-lg bg-red-500/10 px-3 py-2 text-xs text-red-300">
               <AlertCircle size={13} /> {error}
             </p>
           )}
 
           <div className="flex justify-end gap-3 pt-1">
-            <button type="button" onClick={onClose} className="rounded-lg border border-slate-200 px-4 py-2 text-sm text-slate-600 hover:bg-slate-50 transition">
+            <button type="button" onClick={onClose} className="rounded-lg border border-white/10 px-4 py-2 text-sm text-slate-300 hover:bg-white/[0.03] transition">
               Cancel
             </button>
-            <button type="submit" disabled={isPending} className="flex items-center gap-2 rounded-lg bg-violet-600 px-4 py-2 text-sm font-medium text-white hover:bg-violet-700 disabled:opacity-60 transition">
+            <button type="submit" disabled={isPending} className="flex items-center gap-2 rounded-lg bg-brand-400 px-4 py-2 text-sm font-medium text-slate-900 hover:bg-brand-300 disabled:opacity-60 transition">
               {isPending && <Loader2 size={14} className="animate-spin" />}
               {mode === 'add' ? 'Save document' : 'Save changes'}
             </button>
@@ -316,13 +316,13 @@ function DocDetailModal({ doc, onClose, onEdit }: { doc: KbDoc; onClose: () => v
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
       <div
-        className="flex w-full max-w-2xl flex-col rounded-2xl bg-white shadow-2xl"
+        className="flex w-full max-w-2xl flex-col rounded-2xl bg-surface shadow-2xl"
         style={{ maxHeight: '90vh' }}
       >
         {/* Header */}
-        <div className="flex items-start justify-between border-b border-slate-100 px-6 py-4 flex-shrink-0">
+        <div className="flex items-start justify-between border-b border-white/10 px-6 py-4 flex-shrink-0">
           <div className="min-w-0 pr-4">
-            <h2 className="text-base font-semibold text-slate-800 truncate">{doc.title}</h2>
+            <h2 className="text-base font-semibold text-slate-100 truncate">{doc.title}</h2>
             <div className="mt-1.5 flex items-center gap-2 flex-wrap">
               <SourceBadge type={doc.sourceType} />
               <StatusDot status={doc.status} />
@@ -332,7 +332,7 @@ function DocDetailModal({ doc, onClose, onEdit }: { doc: KbDoc; onClose: () => v
                   href={doc.sourceUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="truncate text-xs text-blue-500 hover:underline max-w-xs"
+                  className="truncate text-xs text-brand-300 hover:underline max-w-xs"
                 >
                   {doc.sourceUrl}
                 </a>
@@ -341,7 +341,7 @@ function DocDetailModal({ doc, onClose, onEdit }: { doc: KbDoc; onClose: () => v
           </div>
           <button
             onClick={onClose}
-            className="flex-shrink-0 flex h-7 w-7 items-center justify-center rounded-full text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition"
+            className="flex-shrink-0 flex h-7 w-7 items-center justify-center rounded-full text-slate-400 hover:bg-white/[0.06] hover:text-slate-300 transition"
             aria-label="Close"
           >
             <XIcon size={14} />
@@ -349,9 +349,9 @@ function DocDetailModal({ doc, onClose, onEdit }: { doc: KbDoc; onClose: () => v
         </div>
 
         {/* Meta row */}
-        <div className="flex gap-6 border-b border-slate-50 bg-slate-50/60 px-6 py-3 text-xs text-slate-500 flex-shrink-0">
-          <span>Created: <span className="font-medium text-slate-700">{fmt(doc.createdAt)}</span></span>
-          <span>Updated: <span className="font-medium text-slate-700">{fmt(doc.updatedAt)}</span></span>
+        <div className="flex gap-6 border-b border-white/5 bg-slate-50/60 px-6 py-3 text-xs text-slate-400 flex-shrink-0">
+          <span>Created: <span className="font-medium text-slate-200">{fmt(doc.createdAt)}</span></span>
+          <span>Updated: <span className="font-medium text-slate-200">{fmt(doc.updatedAt)}</span></span>
         </div>
 
         {/* Scrollable content */}
@@ -363,7 +363,7 @@ function DocDetailModal({ doc, onClose, onEdit }: { doc: KbDoc; onClose: () => v
               ))}
             </div>
           ) : full ? (
-            <pre className="whitespace-pre-wrap font-mono text-xs text-slate-700 leading-relaxed">
+            <pre className="whitespace-pre-wrap font-mono text-xs text-slate-200 leading-relaxed">
               {full.content}
             </pre>
           ) : (
@@ -373,7 +373,7 @@ function DocDetailModal({ doc, onClose, onEdit }: { doc: KbDoc; onClose: () => v
 
         {/* Footer */}
         {full && (
-          <div className="flex items-center justify-between border-t border-slate-100 bg-slate-50/60 px-6 py-3 flex-shrink-0">
+          <div className="flex items-center justify-between border-t border-white/10 bg-slate-50/60 px-6 py-3 flex-shrink-0">
             <span className="text-[11px] text-slate-400">
               {full.content.length.toLocaleString()} chars · ~{full.tokenEstimate.toLocaleString()} tokens
             </span>
@@ -381,14 +381,14 @@ function DocDetailModal({ doc, onClose, onEdit }: { doc: KbDoc; onClose: () => v
               {doc.sourceType === 'manual_text' && onEdit && (
                 <button
                   onClick={() => { onClose(); onEdit(); }}
-                  className="flex items-center gap-1.5 rounded-lg bg-violet-600 px-4 py-2 text-sm font-medium text-white hover:bg-violet-700 transition"
+                  className="flex items-center gap-1.5 rounded-lg bg-brand-400 px-4 py-2 text-sm font-medium text-slate-900 hover:bg-brand-300 transition"
                 >
                   <Pencil size={12} /> Edit
                 </button>
               )}
               <button
                 onClick={onClose}
-                className="rounded-lg border border-slate-200 px-4 py-2 text-sm text-slate-600 hover:bg-slate-100 transition"
+                className="rounded-lg border border-white/10 px-4 py-2 text-sm text-slate-300 hover:bg-white/[0.06] transition"
               >
                 Close
               </button>
@@ -470,11 +470,11 @@ function FileUploadModal({ onClose }: { onClose: () => void }) {
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 px-4"
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
-      <div className="w-full max-w-xl rounded-2xl bg-white shadow-2xl">
+      <div className="w-full max-w-xl rounded-2xl bg-surface shadow-2xl">
         {/* Header */}
-        <div className="flex items-center justify-between border-b border-slate-100 px-6 py-4">
-          <h2 className="text-base font-semibold text-slate-800">Upload document</h2>
-          <button onClick={onClose} className="flex h-7 w-7 items-center justify-center rounded-full text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition" aria-label="Close">
+        <div className="flex items-center justify-between border-b border-white/10 px-6 py-4">
+          <h2 className="text-base font-semibold text-slate-100">Upload document</h2>
+          <button onClick={onClose} className="flex h-7 w-7 items-center justify-center rounded-full text-slate-400 hover:bg-white/[0.06] hover:text-slate-300 transition" aria-label="Close">
             <XIcon size={14} />
           </button>
         </div>
@@ -487,25 +487,25 @@ function FileUploadModal({ onClose }: { onClose: () => void }) {
             onDrop={handleDrop}
             onClick={() => fileInputRef.current?.click()}
             className={`cursor-pointer rounded-xl border-2 border-dashed px-6 py-8 text-center transition ${isDragging
-                ? 'border-violet-400 bg-violet-50'
+                ? 'border-brand-400 bg-brand-400/10'
                 : content
-                  ? 'border-emerald-300 bg-emerald-50'
-                  : 'border-slate-200 bg-slate-50 hover:border-violet-300 hover:bg-violet-50/40'
+                  ? 'border-emerald-500/30 bg-emerald-500/10'
+                  : 'border-white/10 bg-white/[0.03] hover:border-brand-400/30 hover:bg-brand-400/10'
               }`}
           >
             {content ? (
               <div className="space-y-1">
                 <CheckCircle2 size={24} className="mx-auto text-emerald-500" />
-                <p className="text-sm font-medium text-slate-700">{fileName}</p>
-                <p className="text-xs text-slate-500">
+                <p className="text-sm font-medium text-slate-200">{fileName}</p>
+                <p className="text-xs text-slate-400">
                   {content.length.toLocaleString()} chars · ~{Math.ceil(content.length / 4).toLocaleString()} tokens
                 </p>
-                <p className="text-xs text-violet-500 mt-1">Click to replace</p>
+                <p className="text-xs text-brand-300 mt-1">Click to replace</p>
               </div>
             ) : (
               <div className="space-y-1.5">
                 <Upload size={24} className="mx-auto text-slate-300" />
-                <p className="text-sm font-medium text-slate-600">
+                <p className="text-sm font-medium text-slate-300">
                   {isDragging ? 'Drop file here' : 'Drag & drop or click to browse'}
                 </p>
                 <p className="text-xs text-slate-400">
@@ -523,7 +523,7 @@ function FileUploadModal({ onClose }: { onClose: () => void }) {
           />
 
           {fileError && (
-            <p className="flex items-center gap-2 rounded-lg bg-red-50 px-3 py-2 text-xs text-red-700">
+            <p className="flex items-center gap-2 rounded-lg bg-red-500/10 px-3 py-2 text-xs text-red-300">
               <AlertCircle size={13} /> {fileError}
             </p>
           )}
@@ -531,14 +531,14 @@ function FileUploadModal({ onClose }: { onClose: () => void }) {
           {/* Title (shown after file load) */}
           {content && (
             <div>
-              <label className="mb-1 block text-xs font-medium text-slate-600">Document title</label>
+              <label className="mb-1 block text-xs font-medium text-slate-300">Document title</label>
               <input
                 type="text"
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
                 placeholder="e.g. Pricing FAQ"
                 maxLength={300}
-                className="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm text-slate-800 placeholder:text-slate-400 outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100 transition"
+                className="w-full rounded-lg border border-white/10 px-3 py-2.5 text-sm text-slate-100 placeholder:text-slate-400 outline-none focus:border-brand-400 focus:ring-2 focus:ring-brand-400/30 transition"
               />
             </div>
           )}
@@ -546,27 +546,27 @@ function FileUploadModal({ onClose }: { onClose: () => void }) {
           {/* Content preview (shown after file load) */}
           {content && (
             <div>
-              <label className="mb-1 block text-xs font-medium text-slate-600">Preview</label>
-              <pre className="max-h-36 overflow-y-auto rounded-lg border border-slate-100 bg-slate-50 p-3 font-mono text-[11px] text-slate-600 leading-relaxed whitespace-pre-wrap">
+              <label className="mb-1 block text-xs font-medium text-slate-300">Preview</label>
+              <pre className="max-h-36 overflow-y-auto rounded-lg border border-white/10 bg-white/[0.03] p-3 font-mono text-[11px] text-slate-300 leading-relaxed whitespace-pre-wrap">
                 {content.slice(0, 800)}{content.length > 800 ? '\n…' : ''}
               </pre>
             </div>
           )}
 
           {saveError && (
-            <p className="flex items-center gap-2 rounded-lg bg-red-50 px-3 py-2 text-xs text-red-700">
+            <p className="flex items-center gap-2 rounded-lg bg-red-500/10 px-3 py-2 text-xs text-red-300">
               <AlertCircle size={13} /> {saveError}
             </p>
           )}
 
           <div className="flex justify-end gap-3 pt-1">
-            <button type="button" onClick={onClose} className="rounded-lg border border-slate-200 px-4 py-2 text-sm text-slate-600 hover:bg-slate-50 transition">
+            <button type="button" onClick={onClose} className="rounded-lg border border-white/10 px-4 py-2 text-sm text-slate-300 hover:bg-white/[0.03] transition">
               Cancel
             </button>
             <button
               onClick={() => void handleSave()}
               disabled={!content || saving}
-              className="flex items-center gap-2 rounded-lg bg-violet-600 px-4 py-2 text-sm font-medium text-white hover:bg-violet-700 disabled:opacity-60 transition"
+              className="flex items-center gap-2 rounded-lg bg-brand-400 px-4 py-2 text-sm font-medium text-slate-900 hover:bg-brand-300 disabled:opacity-60 transition"
             >
               {saving && <Loader2 size={14} className="animate-spin" />}
               Save to Knowledge Base
@@ -596,25 +596,25 @@ function DeleteConfirmModal({
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4"
       onClick={(e) => { if (e.target === e.currentTarget) onCancel(); }}
     >
-      <div className="w-full max-w-sm rounded-2xl bg-white shadow-2xl">
+      <div className="w-full max-w-sm rounded-2xl bg-surface shadow-2xl">
         <div className="px-6 pt-6 pb-5 text-center">
           {/* Warning icon */}
-          <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-red-50">
+          <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-red-500/10">
             <AlertTriangle size={22} className="text-red-500" />
           </div>
 
-          <h2 className="text-base font-semibold text-slate-800">Delete document?</h2>
-          <p className="mt-2 text-sm text-slate-500 leading-relaxed">
-            <span className="font-medium text-slate-700">"{docTitle}"</span> will be permanently
+          <h2 className="text-base font-semibold text-slate-100">Delete document?</h2>
+          <p className="mt-2 text-sm text-slate-400 leading-relaxed">
+            <span className="font-medium text-slate-200">"{docTitle}"</span> will be permanently
             removed from your Knowledge Base. This cannot be undone.
           </p>
         </div>
 
-        <div className="flex gap-3 border-t border-slate-100 px-6 py-4">
+        <div className="flex gap-3 border-t border-white/10 px-6 py-4">
           <button
             onClick={onCancel}
             disabled={isDeleting}
-            className="flex-1 rounded-lg border border-slate-200 py-2.5 text-sm font-medium text-slate-600 hover:bg-slate-50 transition disabled:opacity-50"
+            className="flex-1 rounded-lg border border-white/10 py-2.5 text-sm font-medium text-slate-300 hover:bg-white/[0.03] transition disabled:opacity-50"
           >
             Cancel
           </button>
@@ -676,7 +676,7 @@ function DocRow({ doc, onEdit: _onEdit, onDelete, onView, isDeleting, canWrite }
       >
         {/* Title + category + quality flags */}
         <div className="min-w-0">
-          <p className="truncate text-sm font-medium text-slate-800">{doc.title}</p>
+          <p className="truncate text-sm font-medium text-slate-100">{doc.title}</p>
           <div className="mt-0.5 flex items-center gap-1 flex-wrap">
             {/* Category badge — only on website_page and manual_text docs.
               website_crawl docs use the category name as the title itself. */}
@@ -715,7 +715,7 @@ function DocRow({ doc, onEdit: _onEdit, onDelete, onView, isDeleting, canWrite }
           <button
             onClick={(e) => { e.stopPropagation(); onView(doc); }}
             title="View document"
-            className="flex h-7 w-7 items-center justify-center rounded-lg text-blue-400 transition hover:bg-blue-50 hover:text-blue-600"
+            className="flex h-7 w-7 items-center justify-center rounded-lg text-brand-300 transition hover:bg-brand-400/10 hover:text-brand-300"
             aria-label="View document"
           >
             <Eye size={13} />
@@ -726,7 +726,7 @@ function DocRow({ doc, onEdit: _onEdit, onDelete, onView, isDeleting, canWrite }
             onClick={(e) => void handleDownload(e)}
             disabled={downloading || doc.status !== 'ready'}
             title={doc.sourceType === 'website_crawl' ? 'Download CrawledWebsite.md' : 'Download as .md'}
-            className="flex h-7 w-7 items-center justify-center rounded-lg text-emerald-400 transition hover:bg-emerald-50 hover:text-emerald-600 disabled:opacity-40"
+            className="flex h-7 w-7 items-center justify-center rounded-lg text-emerald-400 transition hover:bg-emerald-500/10 hover:text-emerald-200 disabled:opacity-40"
             aria-label="Download document"
           >
             {downloading ? <Loader2 size={13} className="animate-spin" /> : <Download size={13} />}
@@ -737,7 +737,7 @@ function DocRow({ doc, onEdit: _onEdit, onDelete, onView, isDeleting, canWrite }
             <button
               onClick={(e) => { e.stopPropagation(); setShowDeleteConfirm(true); }}
               disabled={isDeleting}
-              className="flex h-7 w-7 items-center justify-center rounded-lg text-red-400 transition hover:bg-red-50 hover:text-red-600 disabled:opacity-50"
+              className="flex h-7 w-7 items-center justify-center rounded-lg text-red-400 transition hover:bg-red-500/10 hover:text-red-200 disabled:opacity-50"
               aria-label="Delete document"
             >
               {isDeleting ? <Loader2 size={13} className="animate-spin" /> : <Trash2 size={13} />}
@@ -792,16 +792,16 @@ function CrawlPagePicker({ pages, onRemove, canWrite }: PagePickerProps) {
   if (pages.length === 0) return null;
 
   return (
-    <div className="rounded-2xl border border-slate-100 bg-white overflow-hidden">
+    <div className="rounded-2xl border border-white/10 bg-surface overflow-hidden">
       <button
         onClick={() => setOpen((v) => !v)}
-        className="flex w-full items-center justify-between px-5 py-4 text-left transition hover:bg-slate-50"
+        className="flex w-full items-center justify-between px-5 py-4 text-left transition hover:bg-white/[0.03]"
       >
         <div className="flex items-center gap-3">
-          <Globe size={16} className="text-blue-500" />
+          <Globe size={16} className="text-brand-300" />
           <div>
-            <p className="text-sm font-semibold text-slate-800">Crawled website pages</p>
-            <p className="text-xs text-slate-500">
+            <p className="text-sm font-semibold text-slate-100">Crawled website pages</p>
+            <p className="text-xs text-slate-400">
               {pages.length} page{pages.length !== 1 ? 's' : ''} imported — uncheck to exclude from agent context
             </p>
           </div>
@@ -810,23 +810,23 @@ function CrawlPagePicker({ pages, onRemove, canWrite }: PagePickerProps) {
       </button>
 
       {open && (
-        <div className="border-t border-slate-100">
+        <div className="border-t border-white/10">
           {canWrite && (
-            <div className="flex items-center justify-between border-b border-slate-50 px-5 py-2.5">
+            <div className="flex items-center justify-between border-b border-white/5 px-5 py-2.5">
               <label className="flex items-center gap-2 cursor-pointer">
                 <input
                   type="checkbox"
-                  className="rounded border-slate-300 text-violet-600 focus:ring-violet-400"
+                  className="rounded border-white/15 text-brand-300 focus:ring-brand-400"
                   checked={selected.size === pages.length && pages.length > 0}
                   onChange={toggleAll}
                 />
-                <span className="text-xs text-slate-500">Select all</span>
+                <span className="text-xs text-slate-400">Select all</span>
               </label>
               {selected.size > 0 && (
                 <button
                   onClick={() => void handleRemove()}
                   disabled={removing}
-                  className="flex items-center gap-1.5 rounded-lg bg-red-50 border border-red-100 px-3 py-1.5 text-xs font-medium text-red-600 hover:bg-red-100 transition disabled:opacity-50"
+                  className="flex items-center gap-1.5 rounded-lg bg-red-500/10 border border-red-500/30 px-3 py-1.5 text-xs font-medium text-red-300 hover:bg-red-500/15 transition disabled:opacity-50"
                 >
                   {removing ? <Loader2 size={11} className="animate-spin" /> : <Trash2 size={11} />}
                   Remove {selected.size} page{selected.size !== 1 ? 's' : ''}
@@ -835,20 +835,20 @@ function CrawlPagePicker({ pages, onRemove, canWrite }: PagePickerProps) {
             </div>
           )}
 
-          <div className="divide-y divide-slate-50 max-h-64 overflow-y-auto">
+          <div className="divide-y divide-white/5 max-h-64 overflow-y-auto">
             {pages.map((page) => (
               <label
                 key={page.id}
-                className="flex items-center gap-3 px-5 py-3 cursor-pointer hover:bg-slate-50 transition"
+                className="flex items-center gap-3 px-5 py-3 cursor-pointer hover:bg-white/[0.03] transition"
               >
                 <input
                   type="checkbox"
-                  className="rounded border-slate-300 text-violet-600 focus:ring-violet-400"
+                  className="rounded border-white/15 text-brand-300 focus:ring-brand-400"
                   checked={selected.has(page.id)}
                   onChange={() => toggle(page.id)}
                 />
                 <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm text-slate-700">{page.title}</p>
+                  <p className="truncate text-sm text-slate-200">{page.title}</p>
                   {page.sourceUrl && (
                     <p className="truncate text-[10px] text-slate-400">{page.sourceUrl}</p>
                   )}
@@ -1030,18 +1030,18 @@ function BusinessInfoSection({ lastCrawledAt, onSaved }: BusinessInfoSectionProp
       : `${org.businessHours.start} – ${org.businessHours.end}`
     : undefined;
 
-  const inputCls = 'w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 placeholder:text-slate-400 outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100 transition';
-  const labelCls = 'mb-1 block text-xs font-medium text-slate-600';
+  const inputCls = 'w-full rounded-lg border border-white/10 bg-surface px-3 py-2 text-sm text-slate-200 placeholder:text-slate-400 outline-none focus:border-brand-400 focus:ring-2 focus:ring-brand-400/30 transition';
+  const labelCls = 'mb-1 block text-xs font-medium text-slate-300';
 
   return (
-    <div className="rounded-2xl border border-slate-100 bg-white overflow-hidden">
+    <div className="rounded-2xl border border-white/10 bg-surface overflow-hidden">
       {/* Header */}
-      <div className="flex items-center justify-between px-5 py-4 border-b border-slate-50">
+      <div className="flex items-center justify-between px-5 py-4 border-b border-white/5">
         <div className="flex items-center gap-2">
           <Settings2 size={15} className="text-slate-400" />
-          <h2 className="text-sm font-semibold text-slate-700">Business Information</h2>
+          <h2 className="text-sm font-semibold text-slate-200">Business Information</h2>
           {lastCrawledAt && !editing && (
-            <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 border border-emerald-200 px-2 py-0.5 text-[10px] font-semibold text-emerald-700">
+            <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/10 border border-emerald-500/30 px-2 py-0.5 text-[10px] font-semibold text-emerald-300">
               <Sparkles size={9} /> Auto-filled from website
             </span>
           )}
@@ -1049,7 +1049,7 @@ function BusinessInfoSection({ lastCrawledAt, onSaved }: BusinessInfoSectionProp
         {!editing && (
           <button
             onClick={() => { setEditing(true); setSaved(false); }}
-            className="flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-50 transition"
+            className="flex items-center gap-1.5 rounded-lg border border-white/10 bg-surface px-3 py-1.5 text-xs font-medium text-slate-300 hover:bg-white/[0.03] transition"
           >
             <Pencil size={11} /> Edit
           </button>
@@ -1058,14 +1058,14 @@ function BusinessInfoSection({ lastCrawledAt, onSaved }: BusinessInfoSectionProp
 
       {/* Saved banner */}
       {saved && (
-        <div className="flex items-center gap-2 bg-emerald-50 border-b border-emerald-100 px-5 py-2.5 text-xs text-emerald-700">
+        <div className="flex items-center gap-2 bg-emerald-500/10 border-b border-emerald-500/30 px-5 py-2.5 text-xs text-emerald-300">
           <CheckCircle2 size={13} /> Business information saved successfully.
         </div>
       )}
 
       {/* Auto-fill info banner (only when crawled and not in edit mode) */}
       {lastCrawledAt && !editing && (
-        <div className="flex items-center gap-2 bg-sky-50 border-b border-sky-100 px-5 py-2.5 text-xs text-sky-700">
+        <div className="flex items-center gap-2 bg-brand-400/10 border-b border-brand-400/30 px-5 py-2.5 text-xs text-brand-300">
           <Globe size={12} className="flex-shrink-0" />
           Fields below were pre-filled from your website crawl. You can edit them at any time.
         </div>
@@ -1075,17 +1075,17 @@ function BusinessInfoSection({ lastCrawledAt, onSaved }: BusinessInfoSectionProp
       <div className="px-5 py-4">
         {!editing ? (
           /* ── Read-only view ── */
-          <div className="space-y-0 divide-y divide-slate-50">
+          <div className="space-y-0 divide-y divide-white/5">
             {org?.businessDescription && (
               <div className="py-2.5">
                 <span className="text-xs font-medium text-slate-400 block mb-1">Description</span>
-                <p className="text-sm text-slate-700 leading-relaxed line-clamp-3">{org.businessDescription}</p>
+                <p className="text-sm text-slate-200 leading-relaxed line-clamp-3">{org.businessDescription}</p>
               </div>
             )}
             {svcCount > 0 && (
               <div className="flex items-start justify-between gap-4 py-2.5">
                 <span className="text-xs font-medium text-slate-400 w-32 flex-shrink-0">Services ({svcCount})</span>
-                <span className="text-sm text-slate-700 text-right">
+                <span className="text-sm text-slate-200 text-right">
                   {[...org!.services.slice(0, 3), ...(svcCount > 3 ? [`+${svcCount - 3} more`] : [])].join(', ')}
                 </span>
               </div>
@@ -1093,25 +1093,25 @@ function BusinessInfoSection({ lastCrawledAt, onSaved }: BusinessInfoSectionProp
             {hoursDisplay && (
               <div className="flex items-start justify-between gap-4 py-2.5">
                 <span className="text-xs font-medium text-slate-400 w-32 flex-shrink-0">Business hours</span>
-                <span className="text-sm text-slate-700 text-right">{hoursDisplay}</span>
+                <span className="text-sm text-slate-200 text-right">{hoursDisplay}</span>
               </div>
             )}
             {org?.contactDetails?.email && (
               <div className="flex items-start justify-between gap-4 py-2.5">
                 <span className="text-xs font-medium text-slate-400 w-32 flex-shrink-0">Email</span>
-                <span className="text-sm text-slate-700 text-right">{org.contactDetails.email}</span>
+                <span className="text-sm text-slate-200 text-right">{org.contactDetails.email}</span>
               </div>
             )}
             {org?.contactDetails?.phone && (
               <div className="flex items-start justify-between gap-4 py-2.5">
                 <span className="text-xs font-medium text-slate-400 w-32 flex-shrink-0">Phone</span>
-                <span className="text-sm text-slate-700 text-right">{org.contactDetails.phone}</span>
+                <span className="text-sm text-slate-200 text-right">{org.contactDetails.phone}</span>
               </div>
             )}
             {locCount > 0 && (
               <div className="flex items-start justify-between gap-4 py-2.5">
                 <span className="text-xs font-medium text-slate-400 w-32 flex-shrink-0">Locations ({locCount})</span>
-                <span className="text-sm text-slate-700 text-right">{org!.locations.join(', ')}</span>
+                <span className="text-sm text-slate-200 text-right">{org!.locations.join(', ')}</span>
               </div>
             )}
             {faqCount > 0 && (
@@ -1121,9 +1121,9 @@ function BusinessInfoSection({ lastCrawledAt, onSaved }: BusinessInfoSectionProp
                 </span>
                 <div className="space-y-2">
                   {org!.faqs.map((faq, i) => (
-                    <div key={i} className="rounded-lg border border-slate-100 bg-slate-50 px-3 py-2">
-                      <p className="text-xs font-medium text-slate-700">{faq.question}</p>
-                      <p className="mt-0.5 text-xs text-slate-500 leading-relaxed">{faq.answer}</p>
+                    <div key={i} className="rounded-lg border border-white/10 bg-white/[0.03] px-3 py-2">
+                      <p className="text-xs font-medium text-slate-200">{faq.question}</p>
+                      <p className="mt-0.5 text-xs text-slate-400 leading-relaxed">{faq.answer}</p>
                     </div>
                   ))}
                 </div>
@@ -1143,7 +1143,7 @@ function BusinessInfoSection({ lastCrawledAt, onSaved }: BusinessInfoSectionProp
           /* ── Edit form ── */
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-5 mt-1">
             {serverErr && (
-              <div className="flex items-center gap-2 rounded-lg bg-red-50 border border-red-100 px-4 py-2.5 text-sm text-red-700">
+              <div className="flex items-center gap-2 rounded-lg bg-red-500/10 border border-red-500/30 px-4 py-2.5 text-sm text-red-300">
                 <AlertCircle size={14} /> {serverErr}
               </div>
             )}
@@ -1159,7 +1159,7 @@ function BusinessInfoSection({ lastCrawledAt, onSaved }: BusinessInfoSectionProp
               <label className={labelCls}>Services / Products</label>
               <div className="flex flex-wrap gap-1.5 mb-2">
                 {serviceFields.map((f, i) => (
-                  <span key={f.id} className="inline-flex items-center gap-1 rounded-full bg-violet-50 border border-violet-100 px-2.5 py-0.5 text-xs text-violet-700">
+                  <span key={f.id} className="inline-flex items-center gap-1 rounded-full bg-brand-400/10 border border-brand-400/30 px-2.5 py-0.5 text-xs text-brand-300">
                     <input {...register(`services.${i}.value`)} className="bg-transparent outline-none w-auto max-w-[120px] text-xs" />
                     <button type="button" onClick={() => removeService(i)}><XIcon size={10} /></button>
                   </span>
@@ -1173,7 +1173,7 @@ function BusinessInfoSection({ lastCrawledAt, onSaved }: BusinessInfoSectionProp
                   placeholder="Add a service and press Enter"
                   className={inputCls}
                 />
-                <button type="button" onClick={addService} className="flex-shrink-0 rounded-lg border border-slate-200 px-3 py-2 text-xs text-slate-600 hover:bg-slate-50 transition">
+                <button type="button" onClick={addService} className="flex-shrink-0 rounded-lg border border-white/10 px-3 py-2 text-xs text-slate-300 hover:bg-white/[0.03] transition">
                   <Plus size={13} />
                 </button>
               </div>
@@ -1182,8 +1182,8 @@ function BusinessInfoSection({ lastCrawledAt, onSaved }: BusinessInfoSectionProp
             {/* 4. Business hours */}
             <div>
               <label className={labelCls}>Business hours</label>
-              <label className="flex items-center gap-2 text-sm text-slate-700 mb-2 cursor-pointer">
-                <input type="checkbox" {...register('isOpen24Hours')} className="rounded border-slate-300 text-violet-600 focus:ring-violet-400" />
+              <label className="flex items-center gap-2 text-sm text-slate-200 mb-2 cursor-pointer">
+                <input type="checkbox" {...register('isOpen24Hours')} className="rounded border-white/15 text-brand-300 focus:ring-brand-400" />
                 Open 24 hours
               </label>
               {!isOpen24Hours && (
@@ -1200,7 +1200,7 @@ function BusinessInfoSection({ lastCrawledAt, onSaved }: BusinessInfoSectionProp
               <div>
                 <label className={labelCls}>Contact email</label>
                 <input {...register('contactEmail')} type="email" placeholder="hello@yourcompany.com" className={inputCls} />
-                {errors.contactEmail && <p className="mt-1 text-xs text-red-600">{errors.contactEmail.message}</p>}
+                {errors.contactEmail && <p className="mt-1 text-xs text-red-300">{errors.contactEmail.message}</p>}
               </div>
               <div>
                 <label className={labelCls}>Contact phone</label>
@@ -1214,7 +1214,7 @@ function BusinessInfoSection({ lastCrawledAt, onSaved }: BusinessInfoSectionProp
               {locationFields.map((f, i) => (
                 <div key={f.id} className="flex gap-2 mb-1.5">
                   <input {...register(`locations.${i}.value`)} className={`${inputCls} flex-1`} />
-                  <button type="button" onClick={() => removeLocation(i)} className="flex-shrink-0 rounded-lg border border-slate-200 px-2 text-slate-400 hover:text-red-500 transition">
+                  <button type="button" onClick={() => removeLocation(i)} className="flex-shrink-0 rounded-lg border border-white/10 px-2 text-slate-400 hover:text-red-500 transition">
                     <XIcon size={13} />
                   </button>
                 </div>
@@ -1227,7 +1227,7 @@ function BusinessInfoSection({ lastCrawledAt, onSaved }: BusinessInfoSectionProp
                   placeholder="Add a location and press Enter"
                   className={inputCls}
                 />
-                <button type="button" onClick={addLocation} className="flex-shrink-0 rounded-lg border border-slate-200 px-3 py-2 text-xs text-slate-600 hover:bg-slate-50 transition">
+                <button type="button" onClick={addLocation} className="flex-shrink-0 rounded-lg border border-white/10 px-3 py-2 text-xs text-slate-300 hover:bg-white/[0.03] transition">
                   <Plus size={13} />
                 </button>
               </div>
@@ -1238,7 +1238,7 @@ function BusinessInfoSection({ lastCrawledAt, onSaved }: BusinessInfoSectionProp
               <button
                 type="button"
                 onClick={() => setFaqsOpen((v) => !v)}
-                className="flex items-center gap-1.5 text-xs font-medium text-slate-600 hover:text-violet-700 transition"
+                className="flex items-center gap-1.5 text-xs font-medium text-slate-300 hover:text-brand-200 transition"
               >
                 {faqsOpen ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
                 FAQs {faqFields.length > 0 ? `(${faqFields.length})` : ''}
@@ -1246,7 +1246,7 @@ function BusinessInfoSection({ lastCrawledAt, onSaved }: BusinessInfoSectionProp
               {faqsOpen && (
                 <div className="mt-3 space-y-3">
                   {faqFields.map((f, i) => (
-                    <div key={f.id} className="rounded-xl border border-slate-100 bg-slate-50 p-3 space-y-2">
+                    <div key={f.id} className="rounded-xl border border-white/10 bg-white/[0.03] p-3 space-y-2">
                       <div className="flex items-start justify-between gap-2">
                         <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wide mt-0.5">Q{i + 1}</span>
                         <button type="button" onClick={() => removeFaq(i)} className="text-slate-300 hover:text-red-400 transition"><XIcon size={12} /></button>
@@ -1259,7 +1259,7 @@ function BusinessInfoSection({ lastCrawledAt, onSaved }: BusinessInfoSectionProp
                     <button
                       type="button"
                       onClick={() => appendFaq({ question: '', answer: '' })}
-                      className="flex items-center gap-1.5 text-xs text-violet-600 hover:text-violet-800 transition"
+                      className="flex items-center gap-1.5 text-xs text-brand-300 hover:text-brand-200 transition"
                     >
                       <Plus size={12} /> Add FAQ
                     </button>
@@ -1269,11 +1269,11 @@ function BusinessInfoSection({ lastCrawledAt, onSaved }: BusinessInfoSectionProp
             </div>
 
             {/* Form actions */}
-            <div className="flex items-center gap-3 pt-1 border-t border-slate-50">
+            <div className="flex items-center gap-3 pt-1 border-t border-white/5">
               <button
                 type="submit"
                 disabled={saving}
-                className="flex items-center gap-1.5 rounded-lg bg-violet-600 px-4 py-2 text-sm font-medium text-white shadow-sm transition hover:bg-violet-700 disabled:opacity-50"
+                className="flex items-center gap-1.5 rounded-lg bg-brand-400 px-4 py-2 text-sm font-medium text-slate-900 shadow-sm transition hover:bg-brand-300 disabled:opacity-50"
               >
                 {saving && <Loader2 size={13} className="animate-spin" />}
                 {saving ? 'Saving…' : 'Save'}
@@ -1281,7 +1281,7 @@ function BusinessInfoSection({ lastCrawledAt, onSaved }: BusinessInfoSectionProp
               <button
                 type="button"
                 onClick={() => { setEditing(false); setServerErr(null); }}
-                className="rounded-lg border border-slate-200 px-4 py-2 text-sm text-slate-600 hover:bg-slate-50 transition"
+                className="rounded-lg border border-white/10 px-4 py-2 text-sm text-slate-300 hover:bg-white/[0.03] transition"
               >
                 Cancel
               </button>
@@ -1423,8 +1423,8 @@ export default function KnowledgeBasePage() {
       {/* ── Header ──────────────────────────────────────────────────── */}
       <div className="flex items-start justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Knowledge Base</h1>
-          <p className="mt-1 text-sm text-slate-500">Documents your agent draws on when answering calls.</p>
+          <h1 className="text-2xl font-bold text-slate-50 tracking-tight">Knowledge Base</h1>
+          <p className="mt-1 text-sm text-slate-400">Documents your agent draws on when answering calls.</p>
         </div>
 
         {canWrite && (
@@ -1434,7 +1434,7 @@ export default function KnowledgeBasePage() {
                 onClick={() => resyncMutation.mutate()}
                 disabled={resyncMutation.isPending || crawling}
                 title={crawling ? 'Crawl in progress' : 'Pull latest content from your website'}
-                className="flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-600 shadow-sm transition hover:bg-slate-50 disabled:opacity-50"
+                className="flex items-center gap-1.5 rounded-lg border border-white/10 bg-surface px-3 py-2 text-sm text-slate-300 shadow-sm transition hover:bg-white/[0.03] disabled:opacity-50"
               >
                 <RefreshCw size={14} className={crawling ? 'animate-spin' : ''} />
                 {crawling ? 'Syncing…' : 'Re-sync website'}
@@ -1445,7 +1445,7 @@ export default function KnowledgeBasePage() {
             <div className="relative" ref={addBtnRef}>
               <button
                 onClick={() => setShowAddMenu((v) => !v)}
-                className="flex items-center gap-1.5 rounded-lg bg-violet-600 px-3 py-2 text-sm font-medium text-white shadow-sm transition hover:bg-violet-700"
+                className="flex items-center gap-1.5 rounded-lg bg-brand-400 px-3 py-2 text-sm font-medium text-slate-900 shadow-sm transition hover:bg-brand-300"
               >
                 <Plus size={14} />
                 Add document
@@ -1456,25 +1456,25 @@ export default function KnowledgeBasePage() {
               </button>
 
               {showAddMenu && (
-                <div className="absolute right-0 top-full z-20 mt-1.5 w-56 rounded-xl border border-slate-200 bg-white shadow-xl overflow-hidden">
+                <div className="absolute right-0 top-full z-20 mt-1.5 w-56 rounded-xl border border-white/10 bg-surface shadow-xl overflow-hidden">
                   <button
                     onClick={() => { setShowUpload(true); setShowAddMenu(false); }}
-                    className="flex w-full items-center gap-3 px-4 py-3 text-left text-sm transition hover:bg-violet-50"
+                    className="flex w-full items-center gap-3 px-4 py-3 text-left text-sm transition hover:bg-brand-400/10"
                   >
                     <Upload size={15} className="flex-shrink-0 text-slate-400" />
                     <div>
-                      <p className="font-medium text-slate-700">Upload file</p>
+                      <p className="font-medium text-slate-200">Upload file</p>
                       <p className="text-[11px] text-slate-400">Drag & drop .txt, .md, .csv</p>
                     </div>
                   </button>
-                  <div className="border-t border-slate-100" />
+                  <div className="border-t border-white/10" />
                   <button
                     onClick={() => { setModal({ mode: 'add' }); setShowAddMenu(false); }}
-                    className="flex w-full items-center gap-3 px-4 py-3 text-left text-sm transition hover:bg-violet-50"
+                    className="flex w-full items-center gap-3 px-4 py-3 text-left text-sm transition hover:bg-brand-400/10"
                   >
                     <FileText size={15} className="flex-shrink-0 text-slate-400" />
                     <div>
-                      <p className="font-medium text-slate-700">Enter manually</p>
+                      <p className="font-medium text-slate-200">Enter manually</p>
                       <p className="text-[11px] text-slate-400">Paste or type text directly</p>
                     </div>
                   </button>
@@ -1487,17 +1487,17 @@ export default function KnowledgeBasePage() {
 
       {/* ── Banners ─────────────────────────────────────────────────── */}
       {resyncMsg && (
-        <div className="flex items-center gap-2 rounded-lg bg-violet-50 border border-violet-100 px-4 py-2.5 text-sm text-violet-700">
+        <div className="flex items-center gap-2 rounded-lg bg-brand-400/10 border border-brand-400/30 px-4 py-2.5 text-sm text-brand-300">
           <CheckCircle2 size={14} /> {resyncMsg}
         </div>
       )}
       {resyncError && (
-        <div className="flex items-center gap-2 rounded-lg bg-red-50 border border-red-100 px-4 py-2.5 text-sm text-red-700">
+        <div className="flex items-center gap-2 rounded-lg bg-red-500/10 border border-red-500/30 px-4 py-2.5 text-sm text-red-300">
           <AlertCircle size={14} /> {resyncError}
         </div>
       )}
       {crawling && !resyncMsg && (
-        <div className="flex items-center gap-2 rounded-lg bg-amber-50 border border-amber-100 px-4 py-2.5 text-sm text-amber-700">
+        <div className="flex items-center gap-2 rounded-lg bg-amber-500/10 border border-amber-500/30 px-4 py-2.5 text-sm text-amber-300">
           <Loader2 size={14} className="animate-spin" />
           Website crawl in progress — new KB documents will appear shortly.
         </div>
@@ -1507,9 +1507,9 @@ export default function KnowledgeBasePage() {
       {!statusLoading && status && (
         <div className="grid grid-cols-3 gap-4">
           {/* Total documents — with plan limit if available */}
-          <div className="rounded-xl border border-slate-100 bg-white p-4">
+          <div className="rounded-xl border border-white/10 bg-surface p-4">
             <div className="flex items-baseline gap-2">
-              <p className="text-2xl font-bold text-slate-900">{status.total}</p>
+              <p className="text-2xl font-bold text-slate-50">{status.total}</p>
               {billingStatus?.kbDocs?.limit != null && billingStatus.kbDocs.limit > 0 && (
                 <span className={`text-sm font-medium ${
                   status.total >= billingStatus.kbDocs.limit
@@ -1522,17 +1522,17 @@ export default function KnowledgeBasePage() {
                 </span>
               )}
             </div>
-            <p className="mt-0.5 text-xs text-slate-500">
+            <p className="mt-0.5 text-xs text-slate-400">
               Total documents
               {billingStatus?.isInTrial && (
-                <span className="ml-1 inline-flex items-center rounded-full bg-blue-50 px-1.5 py-0.5 text-[9px] font-semibold text-blue-600">
+                <span className="ml-1 inline-flex items-center rounded-full bg-brand-400/10 px-1.5 py-0.5 text-[9px] font-semibold text-brand-300">
                   Trial
                 </span>
               )}
             </p>
             {/* Limit progress bar */}
             {billingStatus?.kbDocs?.limit != null && billingStatus.kbDocs.limit > 0 && (
-              <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-slate-100">
+              <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-white/[0.06]">
                 <div
                   className={`h-full rounded-full transition-all ${
                     status.total >= billingStatus.kbDocs.limit
@@ -1551,9 +1551,9 @@ export default function KnowledgeBasePage() {
             { label: 'Ready', value: status.readyCount },
             { label: 'Processing', value: status.pendingCount },
           ].map(({ label, value }) => (
-            <div key={label} className="rounded-xl border border-slate-100 bg-white p-4">
-              <p className="text-2xl font-bold text-slate-900">{value}</p>
-              <p className="mt-0.5 text-xs text-slate-500">{label}</p>
+            <div key={label} className="rounded-xl border border-white/10 bg-surface p-4">
+              <p className="text-2xl font-bold text-slate-50">{value}</p>
+              <p className="mt-0.5 text-xs text-slate-400">{label}</p>
             </div>
           ))}
         </div>
@@ -1564,12 +1564,12 @@ export default function KnowledgeBasePage() {
        billingStatus.kbDocs.limit > 0 &&
        status &&
        status.total >= billingStatus.kbDocs.limit && (
-        <div className="flex items-center gap-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3">
-          <AlertCircle size={15} className="flex-shrink-0 text-amber-600" />
-          <p className="text-sm text-amber-800">
+        <div className="flex items-center gap-3 rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3">
+          <AlertCircle size={15} className="flex-shrink-0 text-amber-300" />
+          <p className="text-sm text-amber-300">
             You've reached your {billingStatus.kbDocs.limit}-document limit on the{' '}
             <strong>{billingStatus.isInTrial ? 'Basic (Trial)' : billingStatus.effectivePlan}</strong> plan.{' '}
-            <a href="/billing" className="font-semibold underline hover:text-amber-900">Upgrade</a> to add more.
+            <a href="/billing" className="font-semibold underline hover:text-amber-200">Upgrade</a> to add more.
           </p>
         </div>
       )}
@@ -1589,12 +1589,12 @@ export default function KnowledgeBasePage() {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search documents…"
-            className="w-full rounded-xl border border-slate-200 bg-white py-2.5 pl-9 pr-4 text-sm text-slate-700 placeholder:text-slate-400 outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100 transition"
+            className="w-full rounded-xl border border-white/10 bg-surface py-2.5 pl-9 pr-4 text-sm text-slate-200 placeholder:text-slate-400 outline-none focus:border-brand-400 focus:ring-2 focus:ring-brand-400/30 transition"
           />
           {search && (
             <button
               onClick={() => setSearch('')}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-300"
             >
               <XIcon size={14} />
             </button>
@@ -1603,10 +1603,10 @@ export default function KnowledgeBasePage() {
       )}
 
       {/* ── Document table ──────────────────────────────────────────── */}
-      <div className="rounded-2xl border border-slate-100 bg-white overflow-hidden">
+      <div className="rounded-2xl border border-white/10 bg-surface overflow-hidden">
         {/* Table header — 5 columns matching ROW_COLS */}
         <div
-          className="grid items-center gap-3 border-b border-slate-100 px-5 py-3"
+          className="grid items-center gap-3 border-b border-white/10 px-5 py-3"
           style={{ gridTemplateColumns: ROW_COLS }}
         >
           <span className="text-xs font-semibold uppercase tracking-wider text-slate-400">Document</span>
@@ -1618,7 +1618,7 @@ export default function KnowledgeBasePage() {
 
         {/* Skeletons */}
         {docsLoading && (
-          <div className="divide-y divide-slate-50">
+          <div className="divide-y divide-white/5">
             {[0, 1, 2, 3].map((i) => (
               <div key={i} className="grid items-center gap-3 px-5 py-4" style={{ gridTemplateColumns: ROW_COLS }}>
                 <Skeleton className="h-4 w-3/4" />
@@ -1641,19 +1641,19 @@ export default function KnowledgeBasePage() {
             <div
               className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl"
               style={{
-                background: 'linear-gradient(135deg, rgba(99,102,241,.12), rgba(139,92,246,.12))',
-                border: '1px solid rgba(99,102,241,.2)',
+                background: 'linear-gradient(135deg, rgba(33,241,168,.12), rgba(15,201,138,.12))',
+                border: '1px solid rgba(33,241,168,.2)',
               }}
             >
               {isSearching
-                ? <Search size={22} className="text-violet-400" />
-                : <BookOpen size={22} className="text-violet-400" strokeWidth={1.8} />}
+                ? <Search size={22} className="text-brand-400" />
+                : <BookOpen size={22} className="text-brand-400" strokeWidth={1.8} />}
             </div>
-            <p className="text-sm font-semibold text-slate-700">
+            <p className="text-sm font-semibold text-slate-200">
               {isSearching ? `No documents matching "${search}"` : 'No documents yet'}
             </p>
             {!isSearching && (
-              <p className="mt-1 max-w-xs text-xs text-slate-500 leading-relaxed">
+              <p className="mt-1 max-w-xs text-xs text-slate-400 leading-relaxed">
                 {status?.crawlEnabled && status?.websiteUrl
                   ? 'Click "Re-sync website" to import pages, or add a document manually.'
                   : 'Add your first document so your agent can answer questions accurately.'}
@@ -1664,7 +1664,7 @@ export default function KnowledgeBasePage() {
 
         {/* Document rows */}
         {!docsLoading && displayDocs.length > 0 && (
-          <div className="divide-y divide-slate-50">
+          <div className="divide-y divide-white/5">
             {displayDocs.map((doc) => (
               <DocRow
                 key={doc.id}
@@ -1693,7 +1693,7 @@ export default function KnowledgeBasePage() {
       {status?.websiteUrl && (
         <p className="flex items-center gap-1.5 text-xs text-slate-400">
           <Globe size={11} />
-          Synced from <span className="font-medium text-slate-500">{status.websiteUrl}</span>
+          Synced from <span className="font-medium text-slate-400">{status.websiteUrl}</span>
           {status.lastCrawledAt && (
             <> · Last synced {new Date(status.lastCrawledAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}</>
           )}

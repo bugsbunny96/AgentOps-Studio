@@ -2,8 +2,8 @@ import { color, maxW } from '../tokens';
 import { GradientText, Pill, Reveal, SectionEyebrow, SectionHeading, SpotlightCard } from '../primitives';
 
 const HOW_STEPS = [
-  { num: 1, colorBg: 'rgba(59,130,246,.15)', colorFg: color.blueLight, colorBdr: 'rgba(59,130,246,.25)', title: 'Create your workspace', body: 'Enter your business name, industry, and timezone. Your AI workspace is ready in seconds.', time: '~30 seconds' },
-  { num: 2, colorBg: 'rgba(139,92,246,.15)', colorFg: color.violetLight, colorBdr: 'rgba(139,92,246,.25)', title: 'Configure your agent', body: 'Add your website, FAQs, services, and business hours. Your AI learns everything in minutes.', time: '~10 minutes' },
+  { num: 1, colorBg: 'rgba(33,241,168,.15)', colorFg: color.blueLight, colorBdr: 'rgba(33,241,168,.25)', title: 'Create your workspace', body: 'Enter your business name, industry, and timezone. Your AI workspace is ready in seconds.', time: '~30 seconds' },
+  { num: 2, colorBg: 'rgba(15,201,138,.15)', colorFg: color.violetLight, colorBdr: 'rgba(15,201,138,.25)', title: 'Configure your agent', body: 'Add your website, FAQs, services, and business hours. Your AI learns everything in minutes.', time: '~10 minutes' },
   { num: 3, colorBg: 'rgba(16,185,129,.15)', colorFg: color.emerald, colorBdr: 'rgba(16,185,129,.25)', title: 'Go live, instantly', body: 'Assign your existing phone number, choose languages, and launch. Calls handled from minute one.', time: '~2 minutes' },
 ];
 

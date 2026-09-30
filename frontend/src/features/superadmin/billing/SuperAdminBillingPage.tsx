@@ -37,11 +37,11 @@ interface BillingData {
 // ─── Design tokens ────────────────────────────────────────────────────────────
 
 const T = {
-  bg: '#07070f', bgS: '#0e0e1a', bgC: 'rgba(255,255,255,0.04)',
+  bg: '#141414', bgS: '#1c1c1c', bgC: 'rgba(255,255,255,0.04)',
   bdr: 'rgba(255,255,255,0.07)', bdrB: 'rgba(255,255,255,0.12)',
   red: '#ef4444', redL: '#fca5a5', green: '#10b981', amber: '#f59e0b',
-  blue: '#3b82f6', violet: '#8b5cf6',
-  t1: '#f8fafc', t2: '#94a3b8', t3: '#475569',
+  blue: '#21F1A8', violet: '#0FC98A',
+  t1: '#fafafa', t2: '#a3a3a3', t3: '#737373',
 };
 
 const PLAN_COLOR: Record<string, string> = {
@@ -199,7 +199,7 @@ function PlanOverrideModal({
             onClick={handleSave}
             disabled={isPending || !orgId || !plan}
             style={{
-              padding: '9px 20px', borderRadius: 8, background: T.red, border: 'none',
+              padding: '9px 20px', borderRadius: 8, background: '#21F1A8', border: 'none',
               color: '#fff', fontSize: 13, fontWeight: 700, cursor: 'pointer',
               display: 'flex', alignItems: 'center', gap: 8,
               opacity: (!orgId || !plan) ? 0.5 : 1,
@@ -277,7 +277,7 @@ export default function SuperAdminBillingPage() {
           <h2 style={{ fontSize: 15, fontWeight: 700, color: T.t1, margin: 0 }}>Plan Distribution</h2>
           <button
             onClick={() => setModalOrgId('')}
-            style={{ padding: '7px 16px', borderRadius: 8, background: T.red, border: 'none', color: '#fff', fontSize: 12, fontWeight: 700, cursor: 'pointer' }}
+            style={{ padding: '7px 16px', borderRadius: 8, background: '#21F1A8', border: 'none', color: '#171717', fontSize: 12, fontWeight: 700, cursor: 'pointer' }}
           >
             + Override Plan
           </button>

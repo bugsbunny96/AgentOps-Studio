@@ -5,9 +5,9 @@ import api from '@/utils/api';
 const T = {
   bgC: 'rgba(255,255,255,0.04)',
   bdr: 'rgba(255,255,255,0.07)',
-  t1:  '#f8fafc',
-  t2:  '#94a3b8',
-  t3:  '#475569',
+  t1:  '#fafafa',
+  t2:  '#a3a3a3',
+  t3:  '#737373',
   red: '#ef4444',
 };
 
@@ -29,8 +29,8 @@ interface AuditResponse {
 }
 
 const ACTION_COLOR: Record<string, string> = {
-  SA_LOGIN:               '#60a5fa',
-  SA_LOGOUT:              '#94a3b8',
+  SA_LOGIN:               '#7CF7CB',
+  SA_LOGOUT:              '#a3a3a3',
   SA_ORG_IMPERSONATE:     '#f59e0b',
   SA_ORG_EXIT_IMPERSONATION: '#10b981',
   SA_USER_SUSPEND:        '#ef4444',

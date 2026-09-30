@@ -122,31 +122,31 @@ function ItemFormModal({ mode, initial, onClose, onSaved }: {
   const inputStyle: React.CSSProperties = {
     width: '100%', padding: '9px 12px', borderRadius: 8,
     background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)',
-    color: '#f1f5f9', fontSize: 13, outline: 'none',
+    color: '#f5f5f5', fontSize: 13, outline: 'none',
   };
-  const labelStyle: React.CSSProperties = { fontSize: 11, fontWeight: 600, color: '#94a3b8', display: 'block', marginBottom: 6 };
+  const labelStyle: React.CSSProperties = { fontSize: 11, fontWeight: 600, color: '#a3a3a3', display: 'block', marginBottom: 6 };
 
   return (
     <div style={{
       position: 'fixed', inset: 0, zIndex: 9999,
       display: 'flex', alignItems: 'center', justifyContent: 'center',
-      background: 'rgba(3,7,18,0.85)', backdropFilter: 'blur(8px)',
+      background: 'rgba(23,23,23,0.85)', backdropFilter: 'blur(8px)',
     }}>
       <div style={{
         width: 480, maxHeight: '90vh', overflowY: 'auto', borderRadius: 20,
-        background: '#0d1524', border: '1px solid rgba(255,255,255,0.07)',
-        boxShadow: '0 0 60px rgba(59,130,246,0.15)',
+        background: '#1f1f1f', border: '1px solid rgba(255,255,255,0.07)',
+        boxShadow: '0 0 60px rgba(33,241,168,0.15)',
       }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '20px 24px', borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <div style={{ width: 32, height: 32, borderRadius: 9, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(59,130,246,0.15)', border: '1px solid rgba(59,130,246,0.25)' }}>
-              <Boxes size={15} style={{ color: '#60a5fa' }} />
+            <div style={{ width: 32, height: 32, borderRadius: 9, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(33,241,168,0.15)', border: '1px solid rgba(33,241,168,0.25)' }}>
+              <Boxes size={15} style={{ color: '#7CF7CB' }} />
             </div>
-            <p style={{ fontSize: 14, fontWeight: 700, color: '#f8fafc', margin: 0 }}>
+            <p style={{ fontSize: 14, fontWeight: 700, color: '#fafafa', margin: 0 }}>
               {mode === 'create' ? 'Add Catalog Item' : `Edit ${initial.itemId}`}
             </p>
           </div>
-          <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#475569', display: 'flex' }}>
+          <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#737373', display: 'flex' }}>
             <X size={16} />
           </button>
         </div>
@@ -202,7 +202,7 @@ function ItemFormModal({ mode, initial, onClose, onSaved }: {
           <div style={{ display: 'flex', gap: 10, marginTop: 6 }}>
             <button
               onClick={onClose}
-              style={{ flex: 1, padding: '10px', borderRadius: 8, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)', color: '#94a3b8', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}
+              style={{ flex: 1, padding: '10px', borderRadius: 8, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)', color: '#a3a3a3', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}
             >
               Cancel
             </button>
@@ -211,7 +211,7 @@ function ItemFormModal({ mode, initial, onClose, onSaved }: {
               disabled={!isValid || mutation.isPending}
               style={{
                 flex: 1, padding: '10px', borderRadius: 8, border: 'none',
-                background: 'linear-gradient(135deg, #3b82f6, #8b5cf6)', color: '#fff',
+                background: 'linear-gradient(135deg, #21F1A8, #0FC98A)', color: '#171717',
                 fontSize: 13, fontWeight: 600, cursor: isValid && !mutation.isPending ? 'pointer' : 'default',
                 opacity: isValid && !mutation.isPending ? 1 : 0.5,
                 display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
@@ -231,14 +231,14 @@ function ItemFormModal({ mode, initial, onClose, onSaved }: {
 function DeleteConfirmModal({ item, onClose, onDeleted }: { item: CatalogItem; onClose: () => void; onDeleted: () => void }) {
   const mutation = useMutation({ mutationFn: () => deleteItem(item.itemId), onSuccess: onDeleted });
   return (
-    <div style={{ position: 'fixed', inset: 0, zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(3,7,18,0.85)', backdropFilter: 'blur(8px)' }}>
-      <div style={{ width: 380, borderRadius: 16, background: '#0d1524', border: '1px solid rgba(255,255,255,0.07)', padding: 24 }}>
-        <p style={{ fontSize: 15, fontWeight: 700, color: '#f8fafc', margin: '0 0 8px' }}>Remove "{item.name}"?</p>
-        <p style={{ fontSize: 12.5, color: '#94a3b8', margin: '0 0 20px', lineHeight: 1.6 }}>
+    <div style={{ position: 'fixed', inset: 0, zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(23,23,23,0.85)', backdropFilter: 'blur(8px)' }}>
+      <div style={{ width: 380, borderRadius: 16, background: '#1f1f1f', border: '1px solid rgba(255,255,255,0.07)', padding: 24 }}>
+        <p style={{ fontSize: 15, fontWeight: 700, color: '#fafafa', margin: '0 0 8px' }}>Remove "{item.name}"?</p>
+        <p style={{ fontSize: 12.5, color: '#a3a3a3', margin: '0 0 20px', lineHeight: 1.6 }}>
           This item ({item.itemId}) will be deactivated and hidden from your catalog and your AI agent's product list. This can be reversed later via support.
         </p>
         <div style={{ display: 'flex', gap: 10 }}>
-          <button onClick={onClose} style={{ flex: 1, padding: '9px', borderRadius: 8, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)', color: '#94a3b8', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
+          <button onClick={onClose} style={{ flex: 1, padding: '9px', borderRadius: 8, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)', color: '#a3a3a3', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
             Cancel
           </button>
           <button
@@ -277,7 +277,7 @@ export default function CatalogPage() {
   if (isLoading) {
     return (
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: 320 }}>
-        <Loader2 size={28} style={{ color: '#3b82f6', animation: 'spin 1s linear infinite' }} />
+        <Loader2 size={28} style={{ color: '#21F1A8', animation: 'spin 1s linear infinite' }} />
       </div>
     );
   }
@@ -296,8 +296,8 @@ export default function CatalogPage() {
       {/* Header */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
         <div>
-          <h2 style={{ fontSize: 22, fontWeight: 700, color: '#f1f5f9', margin: 0 }}>Catalog</h2>
-          <p style={{ fontSize: 13, color: '#64748b', margin: '4px 0 0' }}>
+          <h2 style={{ fontSize: 22, fontWeight: 700, color: '#f5f5f5', margin: 0 }}>Catalog</h2>
+          <p style={{ fontSize: 13, color: '#8a8a8a', margin: '4px 0 0' }}>
             {items.length} item{items.length !== 1 ? 's' : ''} — used by your AI agent to quote prices and take orders
           </p>
         </div>
@@ -305,7 +305,7 @@ export default function CatalogPage() {
           onClick={() => setModal({ mode: 'create' })}
           style={{
             display: 'flex', alignItems: 'center', gap: 6, padding: '9px 16px', borderRadius: 9,
-            background: 'linear-gradient(135deg, #3b82f6, #8b5cf6)', border: 'none', color: '#fff',
+            background: 'linear-gradient(135deg, #21F1A8, #0FC98A)', border: 'none', color: '#171717',
             fontSize: 13, fontWeight: 600, cursor: 'pointer',
           }}
         >
@@ -322,9 +322,9 @@ export default function CatalogPage() {
               onClick={() => setCategoryFilter(c)}
               style={{
                 padding: '5px 12px', borderRadius: 999, fontSize: 11.5, fontWeight: 600, cursor: 'pointer',
-                background: categoryFilter === c ? 'rgba(59,130,246,0.18)' : 'rgba(255,255,255,0.04)',
-                border: `1px solid ${categoryFilter === c ? 'rgba(59,130,246,0.35)' : 'rgba(255,255,255,0.08)'}`,
-                color: categoryFilter === c ? '#60a5fa' : '#94a3b8',
+                background: categoryFilter === c ? 'rgba(33,241,168,0.18)' : 'rgba(255,255,255,0.04)',
+                border: `1px solid ${categoryFilter === c ? 'rgba(33,241,168,0.35)' : 'rgba(255,255,255,0.08)'}`,
+                color: categoryFilter === c ? '#7CF7CB' : '#a3a3a3',
               }}
             >
               {c === 'all' ? 'All Categories' : c}
@@ -336,15 +336,15 @@ export default function CatalogPage() {
       {/* Empty state */}
       {filtered.length === 0 ? (
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 16, height: 280, border: '1px dashed rgba(255,255,255,0.1)', borderRadius: 16 }}>
-          <PackageX size={40} style={{ color: '#334155' }} />
-          <p style={{ color: '#64748b', fontSize: 15 }}>{items.length === 0 ? 'No catalog items yet' : 'No items in this category'}</p>
+          <PackageX size={40} style={{ color: '#404040' }} />
+          <p style={{ color: '#8a8a8a', fontSize: 15 }}>{items.length === 0 ? 'No catalog items yet' : 'No items in this category'}</p>
         </div>
       ) : (
-        <div style={{ background: '#0f1729', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 14, overflow: 'hidden' }}>
+        <div style={{ background: '#1f1f1f', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 14, overflow: 'hidden' }}>
           <div style={{
             display: 'grid', gridTemplateColumns: '90px 1fr 170px 110px 90px 70px 76px',
             padding: '10px 20px', borderBottom: '1px solid rgba(255,255,255,0.06)',
-            fontSize: 11, fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', color: '#475569',
+            fontSize: 11, fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', color: '#737373',
           }}>
             <span>Item ID</span>
             <span>Name / Brand</span>
@@ -361,19 +361,19 @@ export default function CatalogPage() {
               padding: '13px 20px', alignItems: 'center',
               borderBottom: '1px solid rgba(255,255,255,0.04)',
             }}>
-              <span style={{ fontSize: 12, fontWeight: 700, color: '#3b82f6', fontFamily: 'ui-monospace, "SF Mono", monospace' }}>{item.itemId}</span>
+              <span style={{ fontSize: 12, fontWeight: 700, color: '#21F1A8', fontFamily: 'ui-monospace, "SF Mono", monospace' }}>{item.itemId}</span>
               <div style={{ minWidth: 0 }}>
-                <p style={{ fontSize: 13, fontWeight: 600, color: '#e2e8f0', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.name}</p>
-                {item.brand && <p style={{ fontSize: 11, color: '#64748b', margin: '2px 0 0' }}>{item.brand}</p>}
+                <p style={{ fontSize: 13, fontWeight: 600, color: '#e5e5e5', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.name}</p>
+                {item.brand && <p style={{ fontSize: 11, color: '#8a8a8a', margin: '2px 0 0' }}>{item.brand}</p>}
               </div>
-              <span style={{ fontSize: 11.5, color: '#94a3b8' }}>{item.category}</span>
-              <span style={{ fontSize: 13, fontWeight: 700, color: '#f1f5f9', fontFamily: 'ui-monospace, "SF Mono", monospace' }}>{formatCurrency(item.price)}</span>
-              <span style={{ fontSize: 12.5, fontWeight: 600, color: item.stock === 0 ? '#f87171' : item.stock < 10 ? '#f59e0b' : '#94a3b8' }}>
+              <span style={{ fontSize: 11.5, color: '#a3a3a3' }}>{item.category}</span>
+              <span style={{ fontSize: 13, fontWeight: 700, color: '#f5f5f5', fontFamily: 'ui-monospace, "SF Mono", monospace' }}>{formatCurrency(item.price)}</span>
+              <span style={{ fontSize: 12.5, fontWeight: 600, color: item.stock === 0 ? '#f87171' : item.stock < 10 ? '#f59e0b' : '#a3a3a3' }}>
                 {item.stock}
               </span>
-              <span style={{ fontSize: 11.5, color: '#64748b' }}>{item.unit}</span>
+              <span style={{ fontSize: 11.5, color: '#8a8a8a' }}>{item.unit}</span>
               <div style={{ display: 'flex', gap: 6, justifyContent: 'flex-end' }}>
-                <button onClick={() => setModal({ mode: 'edit', item })} title="Edit item" style={{ background: 'rgba(59,130,246,0.1)', border: '1px solid rgba(59,130,246,0.2)', borderRadius: 6, width: 26, height: 26, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#60a5fa' }}>
+                <button onClick={() => setModal({ mode: 'edit', item })} title="Edit item" style={{ background: 'rgba(33,241,168,0.1)', border: '1px solid rgba(33,241,168,0.2)', borderRadius: 6, width: 26, height: 26, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#7CF7CB' }}>
                   <Pencil size={12} />
                 </button>
                 <button onClick={() => setDeleteTarget(item)} title="Remove item" style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.15)', borderRadius: 6, width: 26, height: 26, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#f87171' }}>

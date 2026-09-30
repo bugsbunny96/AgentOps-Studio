@@ -87,7 +87,7 @@ async function deleteMember(membershipId: string) {
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 const ROLE_STYLE: Record<string, { color: string; bg: string; border: string }> = {
-  Owner:  { color: '#4f46e5', bg: 'rgba(99,102,241,.1)',  border: 'rgba(99,102,241,.2)' },
+  Owner:  { color: '#0FC98A', bg: 'rgba(33,241,168,.1)',  border: 'rgba(33,241,168,.2)' },
   Member: { color: '#0891b2', bg: 'rgba(8,145,178,.1)',   border: 'rgba(8,145,178,.2)'  },
 };
 
@@ -157,9 +157,9 @@ function PermissionsEditor({
   return (
     <div className="space-y-1.5">
       {/* Dashboard is always visible and always read-only (no sensitive actions) */}
-      <div className="flex items-center justify-between rounded-lg border border-slate-100 bg-slate-50 px-3 py-2.5">
+      <div className="flex items-center justify-between rounded-lg border border-white/10 bg-white/[0.03] px-3 py-2.5">
         <div>
-          <p className="text-sm font-medium text-slate-700">Dashboard</p>
+          <p className="text-sm font-medium text-slate-200">Dashboard</p>
           <p className="text-[11px] text-slate-400">Overview — always visible to all members</p>
         </div>
         <span className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">Always on</span>
@@ -176,20 +176,20 @@ function PermissionsEditor({
             className={[
               'flex w-full items-center justify-between rounded-lg border px-3 py-2.5 text-left transition-colors',
               full
-                ? 'border-brand-200 bg-brand-50'
-                : 'border-slate-100 bg-white hover:bg-slate-50',
+                ? 'border-brand-400/30 bg-brand-400/10'
+                : 'border-white/10 bg-surface hover:bg-white/[0.03]',
             ].join(' ')}
           >
             <div className="min-w-0 flex-1 mr-3">
               <div className="flex items-center gap-2">
-                <p className={`text-sm font-medium ${full ? 'text-brand-800' : 'text-slate-700'}`}>{label}</p>
+                <p className={`text-sm font-medium ${full ? 'text-brand-300' : 'text-slate-200'}`}>{label}</p>
                 <span className={[
                   'text-[10px] font-semibold rounded-full px-1.5 py-0.5 tracking-wide',
                   full
-                    ? 'bg-brand-100 text-brand-700'
+                    ? 'bg-brand-400/15 text-brand-300'
                     : hiddenWhenFalse
-                    ? 'bg-slate-200 text-slate-500'
-                    : 'bg-slate-100 text-slate-500',
+                    ? 'bg-white/10 text-slate-400'
+                    : 'bg-white/[0.06] text-slate-400',
                 ].join(' ')}>
                   {stateLabel}
                 </span>
@@ -198,7 +198,7 @@ function PermissionsEditor({
             </div>
             <div className={[
               'flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-md border-2 transition-colors',
-              full ? 'border-brand-600 bg-brand-600' : 'border-slate-300 bg-white',
+              full ? 'border-brand-600 bg-brand-400' : 'border-white/15 bg-surface',
             ].join(' ')}>
               {full && <Check size={11} className="text-white" strokeWidth={3} />}
             </div>
@@ -243,15 +243,15 @@ function InviteModal({ open, onClose }: { open: boolean; onClose: () => void }) 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
       <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative w-full max-w-md rounded-2xl border border-slate-200 bg-white shadow-xl p-6 max-h-[90vh] overflow-y-auto">
+      <div className="relative w-full max-w-md rounded-2xl border border-white/10 bg-surface shadow-xl p-6 max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between mb-5">
           <div>
-            <h2 className="text-lg font-semibold text-slate-900">Invite a team member</h2>
+            <h2 className="text-lg font-semibold text-slate-50">Invite a team member</h2>
             <p className="text-xs text-slate-400 mt-0.5">They'll join as a Member with the access you set below.</p>
           </div>
           <button
             onClick={onClose}
-            className="rounded-lg p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition-colors"
+            className="rounded-lg p-1 text-slate-400 hover:bg-white/[0.06] hover:text-slate-300 transition-colors"
           >
             <X size={18} />
           </button>
@@ -259,26 +259,26 @@ function InviteModal({ open, onClose }: { open: boolean; onClose: () => void }) 
 
         <form onSubmit={handleSubmit} className="space-y-5">
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1.5">Email address</label>
+            <label className="block text-sm font-medium text-slate-200 mb-1.5">Email address</label>
             <input
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="colleague@company.com"
-              className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-sm
-                text-slate-900 placeholder-slate-400 outline-none focus:border-brand-500 focus:ring-2
-                focus:ring-brand-100 transition-colors"
+              className="w-full rounded-xl border border-white/10 bg-white/[0.03] px-3.5 py-2.5 text-sm
+                text-slate-50 placeholder-slate-500 outline-none focus:border-brand-500 focus:ring-2
+                focus:ring-brand-400/30 transition-colors"
               autoFocus
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-2">Section access</label>
+            <label className="block text-sm font-medium text-slate-200 mb-2">Section access</label>
             <PermissionsEditor value={permissions} onChange={setPermissions} />
           </div>
 
           {error && (
-            <p className="rounded-xl bg-red-50 border border-red-100 px-3.5 py-2.5 text-sm text-red-600">
+            <p className="rounded-xl bg-red-500/10 border border-red-500/30 px-3.5 py-2.5 text-sm text-red-300">
               {error}
             </p>
           )}
@@ -287,16 +287,16 @@ function InviteModal({ open, onClose }: { open: boolean; onClose: () => void }) 
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm
-                font-medium text-slate-600 hover:bg-slate-50 transition-colors"
+              className="flex-1 rounded-xl border border-white/10 bg-surface px-4 py-2.5 text-sm
+                font-medium text-slate-300 hover:bg-white/[0.03] transition-colors"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={mutation.isPending}
-              className="flex-1 rounded-xl bg-brand-600 px-4 py-2.5 text-sm font-medium text-white
-                hover:bg-brand-700 disabled:opacity-60 transition-colors"
+              className="flex-1 rounded-xl bg-brand-400 px-4 py-2.5 text-sm font-medium text-slate-900
+                hover:bg-brand-300 disabled:opacity-60 transition-colors"
             >
               {mutation.isPending ? 'Sending…' : 'Send Invitation'}
             </button>
@@ -331,15 +331,15 @@ function EditPermissionsModal({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
       <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative w-full max-w-md rounded-2xl border border-slate-200 bg-white shadow-xl p-6 max-h-[90vh] overflow-y-auto">
+      <div className="relative w-full max-w-md rounded-2xl border border-white/10 bg-surface shadow-xl p-6 max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between mb-5">
           <div>
-            <h2 className="text-lg font-semibold text-slate-900">Edit permissions</h2>
+            <h2 className="text-lg font-semibold text-slate-50">Edit permissions</h2>
             <p className="text-xs text-slate-400 mt-0.5">{member.name} · {member.email}</p>
           </div>
           <button
             onClick={onClose}
-            className="rounded-lg p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition-colors"
+            className="rounded-lg p-1 text-slate-400 hover:bg-white/[0.06] hover:text-slate-300 transition-colors"
           >
             <X size={18} />
           </button>
@@ -352,16 +352,16 @@ function EditPermissionsModal({
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm
-                font-medium text-slate-600 hover:bg-slate-50 transition-colors"
+              className="flex-1 rounded-xl border border-white/10 bg-surface px-4 py-2.5 text-sm
+                font-medium text-slate-300 hover:bg-white/[0.03] transition-colors"
             >
               Cancel
             </button>
             <button
               onClick={() => mutation.mutate()}
               disabled={mutation.isPending}
-              className="flex-1 rounded-xl bg-brand-600 px-4 py-2.5 text-sm font-medium text-white
-                hover:bg-brand-700 disabled:opacity-60 transition-colors"
+              className="flex-1 rounded-xl bg-brand-400 px-4 py-2.5 text-sm font-medium text-slate-900
+                hover:bg-brand-300 disabled:opacity-60 transition-colors"
             >
               {mutation.isPending ? 'Saving…' : 'Save permissions'}
             </button>
@@ -393,13 +393,13 @@ function RemoveConfirmModal({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
       <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative w-full max-w-sm rounded-2xl border border-slate-200 bg-white shadow-xl p-6">
+      <div className="relative w-full max-w-sm rounded-2xl border border-white/10 bg-surface shadow-xl p-6">
         <div className="flex flex-col items-center text-center gap-3 mb-5">
-          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-red-50 border border-red-100">
+          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-red-500/10 border border-red-500/30">
             <Trash2 size={20} className="text-red-500" />
           </div>
-          <h2 className="text-base font-semibold text-slate-900">Remove team member?</h2>
-          <p className="text-sm text-slate-500">
+          <h2 className="text-base font-semibold text-slate-50">Remove team member?</h2>
+          <p className="text-sm text-slate-400">
             <strong>{member.name}</strong> ({member.email}) will lose all access to your workspace.
             This action cannot be undone.
           </p>
@@ -407,8 +407,8 @@ function RemoveConfirmModal({
         <div className="flex gap-3">
           <button
             onClick={onClose}
-            className="flex-1 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm
-              font-medium text-slate-600 hover:bg-slate-50 transition-colors"
+            className="flex-1 rounded-xl border border-white/10 bg-surface px-4 py-2.5 text-sm
+              font-medium text-slate-300 hover:bg-white/[0.03] transition-colors"
           >
             Cancel
           </button>
@@ -436,7 +436,7 @@ function PermissionPills({ permissions, role }: { permissions: MemberPermissions
   return (
     <div className="flex flex-wrap gap-1">
       {/* Dashboard is always visible */}
-      <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-medium text-slate-400">
+      <span className="rounded-full bg-white/[0.06] px-2 py-0.5 text-[10px] font-medium text-slate-400">
         Dashboard
       </span>
       {PERMISSION_OPTIONS.map(({ key, label, hiddenWhenFalse }) => {
@@ -449,8 +449,8 @@ function PermissionPills({ permissions, role }: { permissions: MemberPermissions
             className={[
               'rounded-full px-2 py-0.5 text-[10px] font-medium',
               full
-                ? 'bg-brand-50 text-brand-700'
-                : 'bg-slate-100 text-slate-400',
+                ? 'bg-brand-400/10 text-brand-300'
+                : 'bg-white/[0.06] text-slate-400',
             ].join(' ')}
             title={full ? `${label}: full access` : `${label}: read-only`}
           >
@@ -501,15 +501,15 @@ export default function TeamPage() {
   if (isLoading) {
     return (
       <div className="space-y-8 animate-pulse">
-        <div className="h-8 w-48 rounded-lg bg-slate-100" />
-        <div className="h-64 rounded-2xl bg-slate-100" />
+        <div className="h-8 w-48 rounded-lg bg-white/[0.06]" />
+        <div className="h-64 rounded-2xl bg-white/[0.06]" />
       </div>
     );
   }
 
   if (error || !data) {
     return (
-      <div className="rounded-2xl border border-red-100 bg-red-50 p-6 text-sm text-red-600">
+      <div className="rounded-2xl border border-red-500/30 bg-red-500/10 p-6 text-sm text-red-300">
         Failed to load team data. Please refresh.
       </div>
     );
@@ -528,8 +528,8 @@ export default function TeamPage() {
       {/* Page header */}
       <div className="flex items-start justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Team</h1>
-          <p className="mt-1 text-sm text-slate-500">
+          <h1 className="text-2xl font-bold text-slate-50 tracking-tight">Team</h1>
+          <p className="mt-1 text-sm text-slate-400">
             {members.length} member{members.length !== 1 ? 's' : ''}
             {billingStatus?.teamMembers?.limit != null && billingStatus.teamMembers.limit > 0 && (
               <span className={`ml-1 font-medium ${
@@ -546,8 +546,8 @@ export default function TeamPage() {
         {(isOwner || canManageTeam) && (
           <button
             onClick={() => setShowInvite(true)}
-            className="flex items-center gap-2 rounded-xl bg-brand-600 px-4 py-2.5
-              text-sm font-medium text-white hover:bg-brand-700 transition-colors shadow-sm"
+            className="flex items-center gap-2 rounded-xl bg-brand-400 px-4 py-2.5
+              text-sm font-medium text-slate-900 hover:bg-brand-300 transition-colors shadow-sm"
           >
             <UserPlus size={14} />
             Invite Member
@@ -559,23 +559,23 @@ export default function TeamPage() {
       {billingStatus?.teamMembers?.limit != null &&
        billingStatus.teamMembers.limit > 0 &&
        (members.length - 1) >= billingStatus.teamMembers.limit && (
-        <div className="flex items-center gap-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3">
-          <AlertCircle size={15} className="flex-shrink-0 text-amber-600" />
-          <p className="text-sm text-amber-800">
+        <div className="flex items-center gap-3 rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3">
+          <AlertCircle size={15} className="flex-shrink-0 text-amber-300" />
+          <p className="text-sm text-amber-300">
             You've reached your {billingStatus.teamMembers.limit}-member limit on the{' '}
             <strong>{billingStatus.isInTrial ? 'Basic (Trial)' : billingStatus.effectivePlan}</strong> plan.{' '}
-            <a href="/billing" className="font-semibold underline hover:text-amber-900">Upgrade</a> to add more members.
+            <a href="/billing" className="font-semibold underline hover:text-amber-200">Upgrade</a> to add more members.
           </p>
         </div>
       )}
 
       {/* Members table */}
-      <div className="rounded-2xl border border-slate-200 bg-white overflow-hidden">
-        <div className="border-b border-slate-100 px-6 py-4">
-          <h2 className="text-sm font-semibold text-slate-700">Members</h2>
+      <div className="rounded-2xl border border-white/10 bg-surface overflow-hidden">
+        <div className="border-b border-white/10 px-6 py-4">
+          <h2 className="text-sm font-semibold text-slate-200">Members</h2>
         </div>
 
-        <div className="divide-y divide-slate-100">
+        <div className="divide-y divide-white/10">
           {members.map((m) => {
             const isMe      = m.userId === currentUser?.id;
             const canEdit   = (isOwner || canManageTeam) && !isMe && m.role !== 'Owner';
@@ -588,7 +588,7 @@ export default function TeamPage() {
                 <div
                   className="flex h-9 w-9 flex-shrink-0 items-center justify-center
                     rounded-full text-sm font-bold text-white"
-                  style={{ background: 'linear-gradient(135deg, #6366f1, #8b5cf6)' }}
+                  style={{ background: 'linear-gradient(135deg, #21F1A8, #0FC98A)' }}
                 >
                   {initials}
                 </div>
@@ -596,9 +596,9 @@ export default function TeamPage() {
                 {/* Name / email / permissions */}
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2">
-                    <span className="text-sm font-medium text-slate-900 truncate">{m.name}</span>
+                    <span className="text-sm font-medium text-slate-50 truncate">{m.name}</span>
                     {isMe && (
-                      <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-medium text-slate-500">
+                      <span className="rounded-full bg-white/[0.06] px-2 py-0.5 text-[10px] font-medium text-slate-400">
                         You
                       </span>
                     )}
@@ -625,7 +625,7 @@ export default function TeamPage() {
                     <button
                       onClick={() => setEditTarget(m)}
                       title="Edit permissions"
-                      className="rounded-lg p-1.5 text-slate-400 hover:bg-brand-50 hover:text-brand-600 transition-colors"
+                      className="rounded-lg p-1.5 text-slate-400 hover:bg-brand-400/10 hover:text-brand-200 transition-colors"
                     >
                       <Pencil size={14} />
                     </button>
@@ -634,7 +634,7 @@ export default function TeamPage() {
                     <button
                       onClick={() => setRemoveTarget(m)}
                       title="Remove member"
-                      className="rounded-lg p-1.5 text-slate-400 hover:bg-red-50 hover:text-red-500 transition-colors"
+                      className="rounded-lg p-1.5 text-slate-400 hover:bg-red-500/10 hover:text-red-500 transition-colors"
                     >
                       <Trash2 size={14} />
                     </button>
@@ -649,28 +649,28 @@ export default function TeamPage() {
 
       {/* Pending invitations */}
       {invitations.length > 0 && (
-        <div className="rounded-2xl border border-slate-200 bg-white overflow-hidden">
-          <div className="border-b border-slate-100 px-6 py-4">
+        <div className="rounded-2xl border border-white/10 bg-surface overflow-hidden">
+          <div className="border-b border-white/10 px-6 py-4">
             <div className="flex items-center gap-2">
-              <h2 className="text-sm font-semibold text-slate-700">Pending Invitations</h2>
-              <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-bold text-amber-700">
+              <h2 className="text-sm font-semibold text-slate-200">Pending Invitations</h2>
+              <span className="rounded-full bg-amber-500/15 px-2 py-0.5 text-[11px] font-bold text-amber-300">
                 {invitations.length}
               </span>
             </div>
           </div>
 
-          <div className="divide-y divide-slate-100">
+          <div className="divide-y divide-white/10">
             {invitations.map((inv) => (
               <div key={inv.id} className="flex items-center gap-4 px-6 py-4">
                 {/* Icon */}
                 <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full
-                  bg-amber-50 border border-amber-100">
+                  bg-amber-500/10 border border-amber-500/30">
                   <Mail size={14} className="text-amber-500" />
                 </div>
 
                 {/* Email + permissions */}
                 <div className="min-w-0 flex-1">
-                  <p className="text-sm font-medium text-slate-900 truncate">{inv.email}</p>
+                  <p className="text-sm font-medium text-slate-50 truncate">{inv.email}</p>
                   <div className="flex items-center gap-1.5 mt-0.5">
                     <Clock size={10} className="text-slate-400" />
                     <span className="text-xs text-slate-400">{expiryLabel(inv.expiresAt)}</span>
@@ -692,7 +692,7 @@ export default function TeamPage() {
                       onClick={() => resendMutation.mutate(inv.id)}
                       disabled={resendMutation.isPending}
                       title="Resend invitation"
-                      className="rounded-lg p-1.5 text-slate-400 hover:bg-brand-50 hover:text-brand-600 transition-colors"
+                      className="rounded-lg p-1.5 text-slate-400 hover:bg-brand-400/10 hover:text-brand-200 transition-colors"
                     >
                       <RefreshCw size={14} />
                     </button>
@@ -700,7 +700,7 @@ export default function TeamPage() {
                       onClick={() => revokeMutation.mutate(inv.id)}
                       disabled={revokeMutation.isPending}
                       title="Revoke invitation"
-                      className="rounded-lg p-1.5 text-slate-400 hover:bg-red-50 hover:text-red-500 transition-colors"
+                      className="rounded-lg p-1.5 text-slate-400 hover:bg-red-500/10 hover:text-red-500 transition-colors"
                     >
                       <X size={14} />
                     </button>
@@ -734,7 +734,7 @@ export default function TeamPage() {
             return (
               <div
                 key={role}
-                className="flex items-start gap-3 rounded-xl border border-slate-100 bg-white p-3"
+                className="flex items-start gap-3 rounded-xl border border-white/10 bg-surface p-3"
               >
                 <div
                   className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-lg mt-0.5 text-sm"
@@ -744,7 +744,7 @@ export default function TeamPage() {
                 </div>
                 <div>
                   <RoleBadge role={role} />
-                  <p className="mt-1 text-[11px] text-slate-500 leading-tight">{desc}</p>
+                  <p className="mt-1 text-[11px] text-slate-400 leading-tight">{desc}</p>
                 </div>
               </div>
             );

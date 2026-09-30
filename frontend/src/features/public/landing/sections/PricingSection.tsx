@@ -4,7 +4,7 @@ import { GradientText, Pill, Reveal, SectionEyebrow, SectionHeading, cardStyle }
 
 const PLANS = [
   {
-    badge: 'Basic', badgeBg: 'rgba(100,116,139,.2)', badgeColor: color.text2, badgeBdr: color.border,
+    badge: 'Basic', badgeBg: 'rgba(115,115,115,.2)', badgeColor: color.text2, badgeBdr: color.border,
     price: '₹9,999', per: 'per month + GST',
     desc: 'For solo shops with under 10 calls/day.',
     features: ['1 AI assistant', '500 minutes / month', '1 voice (Hindi/English)', 'Google Sheets + WhatsApp alerts'],
@@ -12,7 +12,7 @@ const PLANS = [
     cta: 'Start Free Trial', ctaStyle: 'outline' as const, featured: false,
   },
   {
-    badge: 'Standard · Most Popular', badgeBg: 'rgba(59,130,246,.15)', badgeColor: color.blueLight, badgeBdr: 'rgba(59,130,246,.3)',
+    badge: 'Standard · Most Popular', badgeBg: 'rgba(33,241,168,.15)', badgeColor: color.blueLight, badgeBdr: 'rgba(33,241,168,.3)',
     price: '₹17,999', per: 'per month + GST',
     desc: 'For active businesses handling 10–30 calls/day.',
     features: ['3 AI assistants', '1,000 minutes / month', 'Order capture & appointment booking', 'CRM + n8n + Razorpay', 'Call trends & sentiment analysis'],
@@ -20,7 +20,7 @@ const PLANS = [
     cta: 'Start Free Trial', ctaStyle: 'primary' as const, featured: true,
   },
   {
-    badge: 'Pro', badgeBg: 'rgba(139,92,246,.15)', badgeColor: color.violetLight, badgeBdr: 'rgba(139,92,246,.3)',
+    badge: 'Pro', badgeBg: 'rgba(15,201,138,.15)', badgeColor: color.violetLight, badgeBdr: 'rgba(15,201,138,.3)',
     price: '₹25,999', per: 'per month + GST',
     desc: 'For multi-branch, high-volume operations.',
     features: ['5 AI assistants', '1,500 minutes / month', 'All voices + custom cloning', 'Unlimited integrations', 'Dedicated account manager'],
@@ -50,9 +50,9 @@ export function PricingSection() {
                 style={{
                   ...cardStyle({ padding: 28, display: 'flex', flexDirection: 'column', height: '100%' }),
                   ...(featured ? {
-                    background: 'rgba(59,130,246,.07)',
-                    border: '1px solid rgba(59,130,246,.3)',
-                    boxShadow: '0 0 36px rgba(59,130,246,.12), 0 0 0 1px rgba(139,92,246,.2)',
+                    background: 'rgba(33,241,168,.07)',
+                    border: '1px solid rgba(33,241,168,.3)',
+                    boxShadow: '0 0 36px rgba(33,241,168,.12), 0 0 0 1px rgba(15,201,138,.2)',
                     transform: 'scale(1.02)',
                   } : {}),
                 }}
@@ -85,7 +85,7 @@ export function PricingSection() {
                     width: '100%', padding: '9px 16px', borderRadius: 8, fontSize: 13, fontWeight: 600,
                     textDecoration: 'none', transition: 'transform 0.2s',
                     ...(ctaStyle === 'primary'
-                      ? { background: 'linear-gradient(135deg, #3b82f6, #8b5cf6)', color: '#fff', border: 'none' }
+                      ? { background: 'linear-gradient(135deg, #21F1A8, #0FC98A)', color: '#171717', border: 'none' }
                       : { background: 'transparent', color: color.text1, border: `1px solid ${color.borderStrong}` }),
                   }}
                 >
