@@ -46,3 +46,10 @@ coverage/
 
 # ── Vite ───────────────────────────────────────────────────────────────
 frontend/.vite/
+
+# Vapi eval run outputs
+scripts/vapi-evals/results/
+
+# Local LLM usage/cost exports (not source)
+/completions_usage_*.csv
+/cost_*.csv
