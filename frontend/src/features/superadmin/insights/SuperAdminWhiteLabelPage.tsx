@@ -10,12 +10,12 @@ import { useNavigate, useParams } from 'react-router-dom';
 import api from '@/utils/api';
 
 const T = {
-  bg: '#07070f', bgS: '#0e0e1a', bgC: 'rgba(255,255,255,0.04)',
+  bg: '#141414', bgS: '#1c1c1c', bgC: 'rgba(255,255,255,0.04)',
   bdr: 'rgba(255,255,255,0.07)', bdrB: 'rgba(255,255,255,0.12)',
   red: '#ef4444', redD: 'rgba(239,68,68,0.12)',
-  blue: '#3b82f6', blueD: 'rgba(59,130,246,0.12)',
+  blue: '#21F1A8', blueD: 'rgba(33,241,168,0.12)',
   green: '#22c55e', greenD: 'rgba(34,197,94,0.12)',
-  t1: '#f8fafc', t2: '#94a3b8', t3: '#475569',
+  t1: '#fafafa', t2: '#a3a3a3', t3: '#737373',
 };
 
 interface WhiteLabelConfig {
@@ -28,7 +28,7 @@ interface WhiteLabelConfig {
 }
 
 const defaultForm: WhiteLabelConfig = {
-  companyName: '', logoUrl: '', primaryColor: '#3b82f6',
+  companyName: '', logoUrl: '', primaryColor: '#21F1A8',
   faviconUrl: '', supportEmail: '', customDomain: '',
 };
 
@@ -121,7 +121,7 @@ export default function SuperAdminWhiteLabelPage() {
                     border: `1px solid ${T.bdr}`, borderRadius: 7, cursor: 'pointer' }} />
                 <input type="text" value={form.primaryColor}
                   onChange={e => setForm(f => ({ ...f, primaryColor: e.target.value }))}
-                  placeholder="#3b82f6"
+                  placeholder="#21F1A8"
                   style={{ flex: 1, padding: '9px 12px', background: T.bgC,
                     border: `1px solid ${T.bdr}`, borderRadius: 8, color: T.t1,
                     fontSize: 13, outline: 'none', fontFamily: 'monospace' }} />

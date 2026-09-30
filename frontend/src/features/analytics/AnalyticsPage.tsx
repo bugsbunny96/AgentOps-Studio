@@ -25,14 +25,14 @@ const T = {
   bgH: 'rgba(255,255,255,0.06)',
   bdr: 'rgba(255,255,255,0.07)',
   bdrH: 'rgba(255,255,255,0.15)',
-  blue: '#3b82f6',
-  blueL: '#60a5fa',
-  violet: '#8b5cf6',
+  blue: '#21F1A8',
+  blueL: '#7CF7CB',
+  violet: '#0FC98A',
   em: '#10b981',
   amb: '#f59e0b',
-  t1: '#f8fafc',
-  t2: '#94a3b8',
-  t3: '#475569',
+  t1: '#fafafa',
+  t2: '#a3a3a3',
+  t3: '#737373',
 };
 
 // ── Types ──────────────────────────────────────────────────────────────────────
@@ -48,7 +48,7 @@ interface CallsPerDayPoint { date: string; count: number }
 interface TopCaller { callerNumber: string; count: number; lastCall: string; totalDuration: number }
 
 // ── BentoCard (cursor-glow, matches DashboardPage.tsx) ────────────────────────
-function BentoCard({ children, style, glowColor = 'rgba(59,130,246,0.12)' }: {
+function BentoCard({ children, style, glowColor = 'rgba(33,241,168,0.12)' }: {
   children: ReactNode; style?: CSSProperties; glowColor?: string;
 }) {
   const ref = useRef<HTMLDivElement>(null);
@@ -90,7 +90,7 @@ function BentoCard({ children, style, glowColor = 'rgba(59,130,246,0.12)' }: {
 function SectionLabel({ icon: Icon, children }: { icon: React.ElementType; children: ReactNode }) {
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 22, height: 22, borderRadius: 6, background: 'rgba(59,130,246,0.15)', border: '1px solid rgba(59,130,246,0.25)' }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 22, height: 22, borderRadius: 6, background: 'rgba(33,241,168,0.15)', border: '1px solid rgba(33,241,168,0.25)' }}>
         <Icon size={11} style={{ color: T.blueL }} />
       </div>
       <span style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.12em', color: T.t3 }}>{children}</span>
@@ -145,8 +145,8 @@ function CallsPerDayChart({ data }: { data: CallsPerDayPoint[] }) {
               <div style={{
                 width: '100%', height: `${Math.max(pct, 3)}%`,
                 borderRadius: '3px 3px 1px 1px',
-                background: isLatest ? `linear-gradient(to top, ${T.blue}, ${T.blueL})` : 'rgba(59,130,246,0.35)',
-                boxShadow: isLatest ? '0 0 10px rgba(59,130,246,0.4)' : 'none',
+                background: isLatest ? `linear-gradient(to top, ${T.blue}, ${T.blueL})` : 'rgba(33,241,168,0.35)',
+                boxShadow: isLatest ? '0 0 10px rgba(33,241,168,0.4)' : 'none',
                 transition: 'height 0.3s ease',
               }} />
             </div>
@@ -264,7 +264,7 @@ export default function AnalyticsPage() {
       </div>
 
       {/* Calls per day chart */}
-      <BentoCard glowColor="rgba(59,130,246,0.07)">
+      <BentoCard glowColor="rgba(33,241,168,0.07)">
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 18 }}>
           <div>
             <p style={{ fontSize: 13, fontWeight: 700, color: T.t1, margin: 0 }}>Call Volume</p>
@@ -278,7 +278,7 @@ export default function AnalyticsPage() {
                 style={{
                   padding: '4px 10px', borderRadius: 6, border: 'none', cursor: 'pointer',
                   fontSize: 11.5, fontWeight: 600,
-                  background: days === r ? 'rgba(59,130,246,0.2)' : 'transparent',
+                  background: days === r ? 'rgba(33,241,168,0.2)' : 'transparent',
                   color: days === r ? T.blueL : T.t3,
                   transition: 'all 0.15s',
                 }}
@@ -294,7 +294,7 @@ export default function AnalyticsPage() {
       </BentoCard>
 
       {/* Top callers */}
-      <BentoCard glowColor="rgba(139,92,246,0.07)">
+      <BentoCard glowColor="rgba(15,201,138,0.07)">
         <div style={{ marginBottom: 4 }}>
           <SectionLabel icon={Trophy}>Top Callers</SectionLabel>
         </div>

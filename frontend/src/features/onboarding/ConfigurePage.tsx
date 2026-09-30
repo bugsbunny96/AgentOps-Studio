@@ -82,7 +82,7 @@ type ConfigureFormValues = z.infer<typeof ConfigureSchema>;
 // ─── CrawlBadge — small "From website" indicator ─────────────────────────────
 function CrawlBadge() {
   return (
-    <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 border border-emerald-200 px-2 py-0.5 text-[10px] font-semibold text-emerald-700">
+    <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/10 border border-emerald-500/30 px-2 py-0.5 text-[10px] font-semibold text-emerald-300">
       <Globe size={9} /> From website
     </span>
   );
@@ -232,12 +232,12 @@ export default function ConfigurePage() {
     <div className="space-y-8">
       {/* Header */}
       <div className="flex items-start gap-4">
-        <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-xl bg-brand-100 text-brand-600">
+        <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-xl bg-brand-400/15 text-brand-300">
           <Settings2 size={24} />
         </div>
         <div>
-          <h1 className="text-2xl font-bold text-slate-900">Configure your business</h1>
-          <p className="mt-1 text-sm text-slate-500">
+          <h1 className="text-2xl font-bold text-slate-50">Configure your business</h1>
+          <p className="mt-1 text-sm text-slate-400">
             Help your AI answer callers accurately. All fields are optional — fill them in from
             the dashboard later.
           </p>
@@ -246,13 +246,13 @@ export default function ConfigurePage() {
 
       {/* ── Crawl auto-populate banner ─────────────────────────────────── */}
       {crawlEnabled && (
-        <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3.5 flex items-start gap-3">
-          <CheckCircle2 size={16} className="text-emerald-600 flex-shrink-0 mt-0.5" />
+        <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-4 py-3.5 flex items-start gap-3">
+          <CheckCircle2 size={16} className="text-emerald-300 flex-shrink-0 mt-0.5" />
           <div>
-            <p className="text-sm font-medium text-emerald-800">
+            <p className="text-sm font-medium text-emerald-300">
               Fields pre-filled from your website
             </p>
-            <p className="text-xs text-emerald-700 mt-0.5">
+            <p className="text-xs text-emerald-300 mt-0.5">
               We scanned{' '}
               <span className="font-medium underline decoration-dotted">
                 {currentOrg?.websiteUrl}
@@ -265,7 +265,7 @@ export default function ConfigurePage() {
 
       {/* Server error */}
       {serverError && (
-        <div className="rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+        <div className="rounded-md border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-300">
           {serverError}
         </div>
       )}
@@ -275,14 +275,14 @@ export default function ConfigurePage() {
         {/* ── 1. Agent Identity ─────────────────────────────────────────── */}
         <section className="space-y-4">
           <div>
-            <h2 className="text-sm font-semibold text-slate-800">Agent identity</h2>
+            <h2 className="text-sm font-semibold text-slate-100">Agent identity</h2>
             <p className="text-xs text-slate-400 mt-0.5">
               How your AI introduces itself on every call.
             </p>
           </div>
 
           <div>
-            <label htmlFor="agent-name" className="block text-sm font-medium text-slate-700 mb-1">
+            <label htmlFor="agent-name" className="block text-sm font-medium text-slate-200 mb-1">
               Agent name <span className="text-slate-400 font-normal">(optional)</span>
             </label>
             <input
@@ -293,10 +293,10 @@ export default function ConfigurePage() {
               maxLength={50}
               className={`w-full rounded-md border px-3 py-2 text-sm shadow-sm outline-none
                 focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition
-                ${errors.agentName ? 'border-red-400 bg-red-50' : 'border-slate-300 bg-white'}`}
+                ${errors.agentName ? 'border-red-400 bg-red-500/10' : 'border-white/15 bg-surface'}`}
             />
             {errors.agentName ? (
-              <p className="mt-1 text-xs text-red-600">{errors.agentName.message}</p>
+              <p className="mt-1 text-xs text-red-300">{errors.agentName.message}</p>
             ) : (
               <p className="mt-1 text-xs text-slate-400">
                 Your AI will say:{' '}
@@ -309,12 +309,12 @@ export default function ConfigurePage() {
           </div>
         </section>
 
-        <hr className="border-slate-100" />
+        <hr className="border-white/10" />
 
         {/* ── 2. Business Context ───────────────────────────────────────── */}
         <section className="space-y-5">
           <div>
-            <h2 className="text-sm font-semibold text-slate-800">Business context</h2>
+            <h2 className="text-sm font-semibold text-slate-100">Business context</h2>
             <p className="text-xs text-slate-400 mt-0.5">
               Helps the AI describe your business and answer common questions.
             </p>
@@ -325,7 +325,7 @@ export default function ConfigurePage() {
             <div className="flex items-center gap-2 mb-1">
               <label
                 htmlFor="business-description"
-                className="block text-sm font-medium text-slate-700"
+                className="block text-sm font-medium text-slate-200"
               >
                 Business description
               </label>
@@ -339,20 +339,20 @@ export default function ConfigurePage() {
               className={`w-full rounded-md border px-3 py-2 text-sm shadow-sm outline-none
                 resize-y min-h-[96px]
                 focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition
-                ${errors.businessDescription ? 'border-red-400 bg-red-50' : 'border-slate-300 bg-white'}`}
+                ${errors.businessDescription ? 'border-red-400 bg-red-500/10' : 'border-white/15 bg-surface'}`}
             />
             <p className="mt-1 text-xs text-slate-400">
               No character limit. Drag the bottom-right corner to resize.
             </p>
             {errors.businessDescription && (
-              <p className="mt-0.5 text-xs text-red-600">{errors.businessDescription.message}</p>
+              <p className="mt-0.5 text-xs text-red-300">{errors.businessDescription.message}</p>
             )}
           </div>
 
           {/* Services */}
           <div>
             <div className="flex items-center gap-2 mb-1">
-              <p className="block text-sm font-medium text-slate-700">
+              <p className="block text-sm font-medium text-slate-200">
                 Services / Products{' '}
                 <span className="text-slate-400 font-normal">(up to 20)</span>
               </p>
@@ -363,14 +363,14 @@ export default function ConfigurePage() {
                 {serviceFields.map((field, idx) => (
                   <span
                     key={field.id}
-                    className="inline-flex items-center gap-1.5 rounded-full bg-brand-50
-                      border border-brand-200 px-3 py-1 text-xs font-medium text-brand-700"
+                    className="inline-flex items-center gap-1.5 rounded-full bg-brand-400/10
+                      border border-brand-400/30 px-3 py-1 text-xs font-medium text-brand-300"
                   >
                     {field.value}
                     <button
                       type="button"
                       onClick={() => removeService(idx)}
-                      className="text-brand-400 hover:text-brand-700 transition"
+                      className="text-brand-400 hover:text-brand-200 transition"
                       aria-label={`Remove ${field.value}`}
                     >
                       <X size={12} />
@@ -390,15 +390,15 @@ export default function ConfigurePage() {
                   }}
                   placeholder="e.g. Express Delivery"
                   maxLength={100}
-                  className="flex-1 rounded-md border border-slate-300 px-3 py-2 text-sm shadow-sm
-                    outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition bg-white"
+                  className="flex-1 rounded-md border border-white/15 px-3 py-2 text-sm shadow-sm
+                    outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition bg-surface"
                 />
                 <button
                   type="button"
                   onClick={addService}
                   disabled={!newService.trim()}
-                  className="flex items-center gap-1 rounded-md border border-slate-300 bg-white
-                    px-3 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50 transition
+                  className="flex items-center gap-1 rounded-md border border-white/15 bg-surface
+                    px-3 py-2 text-sm font-medium text-slate-300 hover:bg-white/[0.03] transition
                     disabled:opacity-40"
                 >
                   <Plus size={14} /> Add
@@ -408,13 +408,13 @@ export default function ConfigurePage() {
           </div>
         </section>
 
-        <hr className="border-slate-100" />
+        <hr className="border-white/10" />
 
         {/* ── 3. Business Hours ─────────────────────────────────────────── */}
         <section className="space-y-4">
           <div>
             <div className="flex items-center gap-2">
-              <h2 className="text-sm font-semibold text-slate-800">Business hours</h2>
+              <h2 className="text-sm font-semibold text-slate-100">Business hours</h2>
               {crawledFields.hours && <CrawlBadge />}
             </div>
             <p className="text-xs text-slate-400 mt-0.5">
@@ -434,8 +434,8 @@ export default function ConfigurePage() {
               <span
                 className={`h-4 w-4 rounded border-2 flex items-center justify-center transition
                   ${isOpen24Hours
-                    ? 'border-brand-500 bg-brand-500'
-                    : 'border-slate-300 bg-white group-hover:border-brand-400'}`}
+                    ? 'border-brand-500 bg-brand-400'
+                    : 'border-white/15 bg-surface group-hover:border-brand-400'}`}
               >
                 {isOpen24Hours && (
                   <svg viewBox="0 0 10 8" className="h-2.5 w-2.5 text-white fill-current">
@@ -451,7 +451,7 @@ export default function ConfigurePage() {
                 )}
               </span>
             </span>
-            <span className="text-sm font-medium text-slate-700">
+            <span className="text-sm font-medium text-slate-200">
               Open 24 hours{' '}
               <span className="text-slate-400 font-normal text-xs">(runs all day, every day)</span>
             </span>
@@ -461,7 +461,7 @@ export default function ConfigurePage() {
           {!isOpen24Hours && (
             <div className="flex items-center gap-3">
               <div className="flex-1">
-                <label htmlFor="hours-start" className="text-xs text-slate-500 mb-1 block">
+                <label htmlFor="hours-start" className="text-xs text-slate-400 mb-1 block">
                   Opens
                 </label>
                 <input
@@ -469,16 +469,16 @@ export default function ConfigurePage() {
                   type="time"
                   {...register('businessHoursStart')}
                   className={`w-full rounded-md border px-3 py-2 text-sm shadow-sm outline-none
-                    focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition bg-white
-                    ${errors.businessHoursStart ? 'border-red-400' : 'border-slate-300'}`}
+                    focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition bg-surface
+                    ${errors.businessHoursStart ? 'border-red-400' : 'border-white/15'}`}
                 />
                 {errors.businessHoursStart && (
-                  <p className="mt-0.5 text-xs text-red-600">{errors.businessHoursStart.message}</p>
+                  <p className="mt-0.5 text-xs text-red-300">{errors.businessHoursStart.message}</p>
                 )}
               </div>
               <span className="mt-5 text-slate-400 text-sm">to</span>
               <div className="flex-1">
-                <label htmlFor="hours-end" className="text-xs text-slate-500 mb-1 block">
+                <label htmlFor="hours-end" className="text-xs text-slate-400 mb-1 block">
                   Closes
                 </label>
                 <input
@@ -486,11 +486,11 @@ export default function ConfigurePage() {
                   type="time"
                   {...register('businessHoursEnd')}
                   className={`w-full rounded-md border px-3 py-2 text-sm shadow-sm outline-none
-                    focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition bg-white
-                    ${errors.businessHoursEnd ? 'border-red-400' : 'border-slate-300'}`}
+                    focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition bg-surface
+                    ${errors.businessHoursEnd ? 'border-red-400' : 'border-white/15'}`}
                 />
                 {errors.businessHoursEnd && (
-                  <p className="mt-0.5 text-xs text-red-600">{errors.businessHoursEnd.message}</p>
+                  <p className="mt-0.5 text-xs text-red-300">{errors.businessHoursEnd.message}</p>
                 )}
               </div>
             </div>
@@ -498,19 +498,19 @@ export default function ConfigurePage() {
 
           {/* 24h confirmation */}
           {isOpen24Hours && (
-            <p className="text-xs text-brand-600 bg-brand-50 border border-brand-100 rounded-md px-3 py-2">
+            <p className="text-xs text-brand-300 bg-brand-400/10 border border-brand-400/30 rounded-md px-3 py-2">
               ✓ Your AI will tell callers that your business is open 24 hours a day.
             </p>
           )}
         </section>
 
-        <hr className="border-slate-100" />
+        <hr className="border-white/10" />
 
         {/* ── 4. Contact Details ────────────────────────────────────────── */}
         <section className="space-y-4">
           <div>
             <div className="flex items-center gap-2">
-              <h2 className="text-sm font-semibold text-slate-800">Contact details</h2>
+              <h2 className="text-sm font-semibold text-slate-100">Contact details</h2>
               {(crawledFields.email || crawledFields.phone) && <CrawlBadge />}
             </div>
             <p className="text-xs text-slate-400 mt-0.5">
@@ -522,7 +522,7 @@ export default function ConfigurePage() {
             <div>
               <label
                 htmlFor="contact-email"
-                className="block text-sm font-medium text-slate-700 mb-1"
+                className="block text-sm font-medium text-slate-200 mb-1"
               >
                 Support email
               </label>
@@ -533,16 +533,16 @@ export default function ConfigurePage() {
                 placeholder="support@yourcompany.com"
                 className={`w-full rounded-md border px-3 py-2 text-sm shadow-sm outline-none
                   focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition
-                  ${errors.contactEmail ? 'border-red-400 bg-red-50' : 'border-slate-300 bg-white'}`}
+                  ${errors.contactEmail ? 'border-red-400 bg-red-500/10' : 'border-white/15 bg-surface'}`}
               />
               {errors.contactEmail && (
-                <p className="mt-1 text-xs text-red-600">{errors.contactEmail.message}</p>
+                <p className="mt-1 text-xs text-red-300">{errors.contactEmail.message}</p>
               )}
             </div>
             <div>
               <label
                 htmlFor="contact-phone"
-                className="block text-sm font-medium text-slate-700 mb-1"
+                className="block text-sm font-medium text-slate-200 mb-1"
               >
                 Support phone
               </label>
@@ -551,20 +551,20 @@ export default function ConfigurePage() {
                 type="tel"
                 {...register('contactPhone')}
                 placeholder="+91 98765 43210"
-                className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm shadow-sm
-                  outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition bg-white"
+                className="w-full rounded-md border border-white/15 px-3 py-2 text-sm shadow-sm
+                  outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition bg-surface"
               />
             </div>
           </div>
         </section>
 
-        <hr className="border-slate-100" />
+        <hr className="border-white/10" />
 
         {/* ── 5. Locations ─────────────────────────────────────────────── */}
         <section className="space-y-4">
           <div>
             <div className="flex items-center gap-2">
-              <h2 className="text-sm font-semibold text-slate-800">
+              <h2 className="text-sm font-semibold text-slate-100">
                 Office / branch locations{' '}
                 <span className="text-slate-400 font-normal text-xs">(up to 10)</span>
               </h2>
@@ -580,14 +580,14 @@ export default function ConfigurePage() {
               {locationFields.map((field, idx) => (
                 <span
                   key={field.id}
-                  className="inline-flex items-center gap-1.5 rounded-full bg-slate-100
-                    border border-slate-200 px-3 py-1 text-xs font-medium text-slate-700"
+                  className="inline-flex items-center gap-1.5 rounded-full bg-white/[0.06]
+                    border border-white/10 px-3 py-1 text-xs font-medium text-slate-200"
                 >
                   {field.value}
                   <button
                     type="button"
                     onClick={() => removeLocation(idx)}
-                    className="text-slate-400 hover:text-slate-700 transition"
+                    className="text-slate-400 hover:text-slate-200 transition"
                     aria-label={`Remove ${field.value}`}
                   >
                     <X size={12} />
@@ -608,15 +608,15 @@ export default function ConfigurePage() {
                 }}
                 placeholder="e.g. Delhi, Mumbai, Bangalore"
                 maxLength={200}
-                className="flex-1 rounded-md border border-slate-300 px-3 py-2 text-sm shadow-sm
-                  outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition bg-white"
+                className="flex-1 rounded-md border border-white/15 px-3 py-2 text-sm shadow-sm
+                  outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition bg-surface"
               />
               <button
                 type="button"
                 onClick={addLocation}
                 disabled={!newLocation.trim()}
-                className="flex items-center gap-1 rounded-md border border-slate-300 bg-white
-                  px-3 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50 transition
+                className="flex items-center gap-1 rounded-md border border-white/15 bg-surface
+                  px-3 py-2 text-sm font-medium text-slate-300 hover:bg-white/[0.03] transition
                   disabled:opacity-40"
               >
                 <Plus size={14} /> Add
@@ -625,7 +625,7 @@ export default function ConfigurePage() {
           )}
         </section>
 
-        <hr className="border-slate-100" />
+        <hr className="border-white/10" />
 
         {/* ── 6. FAQs ──────────────────────────────────────────────────── */}
         <section className="space-y-4">
@@ -637,7 +637,7 @@ export default function ConfigurePage() {
           >
             <div>
               <div className="flex items-center gap-2">
-                <h2 className="text-sm font-semibold text-slate-800 group-hover:text-brand-600 transition">
+                <h2 className="text-sm font-semibold text-slate-100 group-hover:text-brand-200 transition">
                   Frequently asked questions{' '}
                   <span className="text-slate-400 font-normal text-xs">(up to 10)</span>
                 </h2>
@@ -647,7 +647,7 @@ export default function ConfigurePage() {
                 Answers spoken aloud by your AI. Keep each answer under 30 words.
               </p>
             </div>
-            <span className="ml-4 flex-shrink-0 text-slate-400 group-hover:text-brand-600 transition">
+            <span className="ml-4 flex-shrink-0 text-slate-400 group-hover:text-brand-200 transition">
               {faqsOpen ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
             </span>
           </button>
@@ -657,10 +657,10 @@ export default function ConfigurePage() {
               {faqFields.map((field, idx) => (
                 <div
                   key={field.id}
-                  className="rounded-lg border border-slate-200 bg-slate-50 p-4 space-y-3"
+                  className="rounded-lg border border-white/10 bg-white/[0.03] p-4 space-y-3"
                 >
                   <div className="flex items-center justify-between">
-                    <span className="text-xs font-semibold text-slate-500 uppercase tracking-wide">
+                    <span className="text-xs font-semibold text-slate-400 uppercase tracking-wide">
                       FAQ {idx + 1}
                     </span>
                     <button
@@ -674,7 +674,7 @@ export default function ConfigurePage() {
                   </div>
 
                   <div>
-                    <label className="text-xs font-medium text-slate-600 mb-1 block">
+                    <label className="text-xs font-medium text-slate-300 mb-1 block">
                       Question
                     </label>
                     <input
@@ -683,18 +683,18 @@ export default function ConfigurePage() {
                       placeholder="e.g. What are your delivery charges?"
                       maxLength={200}
                       className={`w-full rounded-md border px-3 py-2 text-sm shadow-sm outline-none
-                        bg-white focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition
-                        ${errors.faqs?.[idx]?.question ? 'border-red-400' : 'border-slate-300'}`}
+                        bg-surface focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition
+                        ${errors.faqs?.[idx]?.question ? 'border-red-400' : 'border-white/15'}`}
                     />
                     {errors.faqs?.[idx]?.question && (
-                      <p className="mt-0.5 text-xs text-red-600">
+                      <p className="mt-0.5 text-xs text-red-300">
                         {errors.faqs[idx]?.question?.message}
                       </p>
                     )}
                   </div>
 
                   <div>
-                    <label className="text-xs font-medium text-slate-600 mb-1 block">
+                    <label className="text-xs font-medium text-slate-300 mb-1 block">
                       Answer{' '}
                       <span className="text-slate-400 font-normal">(spoken aloud — keep it concise)</span>
                     </label>
@@ -704,11 +704,11 @@ export default function ConfigurePage() {
                       placeholder="e.g. Delivery is free above ₹500. Standard orders cost ₹49."
                       maxLength={300}
                       className={`w-full rounded-md border px-3 py-2 text-sm shadow-sm outline-none
-                        resize-none bg-white focus:ring-2 focus:ring-brand-500 focus:border-brand-500
-                        transition ${errors.faqs?.[idx]?.answer ? 'border-red-400' : 'border-slate-300'}`}
+                        resize-none bg-surface focus:ring-2 focus:ring-brand-500 focus:border-brand-500
+                        transition ${errors.faqs?.[idx]?.answer ? 'border-red-400' : 'border-white/15'}`}
                     />
                     {errors.faqs?.[idx]?.answer && (
-                      <p className="mt-0.5 text-xs text-red-600">
+                      <p className="mt-0.5 text-xs text-red-300">
                         {errors.faqs[idx]?.answer?.message}
                       </p>
                     )}
@@ -720,8 +720,8 @@ export default function ConfigurePage() {
                 <button
                   type="button"
                   onClick={() => appendFaq({ question: '', answer: '' })}
-                  className="flex items-center gap-2 rounded-md border border-dashed border-slate-300
-                    px-4 py-2.5 text-sm text-slate-500 hover:border-brand-400 hover:text-brand-600
+                  className="flex items-center gap-2 rounded-md border border-dashed border-white/15
+                    px-4 py-2.5 text-sm text-slate-400 hover:border-brand-400 hover:text-brand-200
                     transition w-full justify-center"
                 >
                   <Plus size={14} /> Add a question
@@ -742,9 +742,9 @@ export default function ConfigurePage() {
           <button
             type="submit"
             disabled={isSubmitting}
-            className="flex-1 flex items-center justify-center gap-2 rounded-md bg-brand-600
-              px-4 py-2.5 text-sm font-semibold text-white shadow-sm
-              hover:bg-brand-700 focus:outline-none focus:ring-2 focus:ring-brand-500
+            className="flex-1 flex items-center justify-center gap-2 rounded-md bg-brand-400
+              px-4 py-2.5 text-sm font-semibold text-slate-900 shadow-sm
+              hover:bg-brand-300 focus:outline-none focus:ring-2 focus:ring-brand-500
               disabled:opacity-50 disabled:cursor-not-allowed transition"
           >
             {isSubmitting && <Loader2 size={16} className="animate-spin" />}
@@ -754,8 +754,8 @@ export default function ConfigurePage() {
             type="button"
             disabled={isSubmitting}
             onClick={handleSkip}
-            className="rounded-md px-4 py-2.5 text-sm font-medium text-slate-500
-              hover:text-slate-700 hover:bg-slate-100 transition disabled:opacity-50"
+            className="rounded-md px-4 py-2.5 text-sm font-medium text-slate-400
+              hover:text-slate-200 hover:bg-white/[0.06] transition disabled:opacity-50"
           >
             Skip
           </button>

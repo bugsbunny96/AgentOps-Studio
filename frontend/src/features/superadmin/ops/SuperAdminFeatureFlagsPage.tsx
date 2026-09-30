@@ -13,8 +13,8 @@ import api from '@/utils/api';
 // ─── Design tokens (matching SA portal) ──────────────────────────────────────
 
 const T = {
-  bg:    '#07070f',
-  bgS:   '#0e0e1a',
+  bg:    '#141414',
+  bgS:   '#1c1c1c',
   bgC:   'rgba(255,255,255,0.04)',
   bdr:   'rgba(255,255,255,0.07)',
   bdrB:  'rgba(255,255,255,0.12)',
@@ -24,10 +24,10 @@ const T = {
   greenL:'#bbf7d0',
   amber: '#f59e0b',
   amberL:'#fde68a',
-  blue:  '#3b82f6',
-  t1:    '#f8fafc',
-  t2:    '#94a3b8',
-  t3:    '#475569',
+  blue:  '#21F1A8',
+  t1:    '#fafafa',
+  t2:    '#a3a3a3',
+  t3:    '#737373',
 };
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -325,7 +325,7 @@ export default function SuperAdminFeatureFlagsPage() {
         <>
           {sectionHeader(
             <div style={{
-              width: 32, height: 32, borderRadius: 8, background: 'rgba(59,130,246,0.12)',
+              width: 32, height: 32, borderRadius: 8, background: 'rgba(33,241,168,0.12)',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
             }}>
               <Globe size={16} color={T.blue} />

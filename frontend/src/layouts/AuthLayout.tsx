@@ -4,7 +4,7 @@
  * Left panel  (lg+): dark gradient brand panel with animated orbs + tagline
  * Right panel       : white clean form area — consistent with dashboard design system
  *
- * Design tokens match the landing page (dark #030712 gradient) and dashboard
+ * Design tokens match the landing page (dark #171717 gradient) and dashboard
  * (slate type system). Uses real brand logo assets from assets/logos/.
  */
 
@@ -64,7 +64,7 @@ export function AuthLayout() {
       <div
         className="hidden lg:flex lg:w-[44%] xl:w-[42%] flex-shrink-0 flex-col
           relative overflow-hidden"
-        style={{ background: 'linear-gradient(145deg, #030712 0%, #0d1524 50%, #0f0a1e 100%)' }}
+        style={{ background: 'linear-gradient(145deg, #171717 0%, #1f1f1f 50%, #1a1a1a 100%)' }}
       >
         {/* Grid texture */}
         <div
@@ -83,7 +83,7 @@ export function AuthLayout() {
           style={{
             top: '10%', right: '-60px', width: 280, height: 280,
             borderRadius: '50%',
-            background: 'radial-gradient(circle, rgba(99,102,241,.28) 0%, transparent 70%)',
+            background: 'radial-gradient(circle, rgba(33,241,168,.28) 0%, transparent 70%)',
             animation: 'authOrbFloat 10s ease-in-out infinite',
             willChange: 'transform',
           }}
@@ -93,7 +93,7 @@ export function AuthLayout() {
           style={{
             bottom: '15%', left: '-40px', width: 220, height: 220,
             borderRadius: '50%',
-            background: 'radial-gradient(circle, rgba(139,92,246,.22) 0%, transparent 70%)',
+            background: 'radial-gradient(circle, rgba(15,201,138,.22) 0%, transparent 70%)',
             animation: 'authOrbFloat 13s ease-in-out infinite reverse',
             willChange: 'transform',
           }}
@@ -146,15 +146,15 @@ export function AuthLayout() {
 
             <h2
               className="text-3xl xl:text-4xl font-extrabold leading-tight mb-4"
-              style={{ color: '#f8fafc', letterSpacing: '-0.02em' }}
+              style={{ color: '#fafafa', letterSpacing: '-0.02em' }}
             >
               Never miss a<br />
-              <span style={{ background: 'linear-gradient(90deg, #818cf8, #a78bfa)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+              <span style={{ background: 'linear-gradient(90deg, #6AF6C4, #5CF4BF)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
                 customer call
               </span>{' '}again.
             </h2>
 
-            <p className="text-sm leading-relaxed mb-8" style={{ color: 'rgba(148,163,184,.85)', maxWidth: 340 }}>
+            <p className="text-sm leading-relaxed mb-8" style={{ color: 'rgba(163,163,163,.85)', maxWidth: 340 }}>
               Set up your AI receptionist in under 10 minutes. It handles inbound calls,
               answers FAQs, and captures leads — 24 × 7, in any language.
             </p>
@@ -180,7 +180,7 @@ export function AuthLayout() {
             className="mt-auto pt-8 border-t"
             style={{ borderColor: 'rgba(255,255,255,.07)' }}
           >
-            <p className="text-xs italic" style={{ color: 'rgba(100,116,139,.8)' }}>
+            <p className="text-xs italic" style={{ color: 'rgba(115,115,115,.8)' }}>
               "Set up in 10 minutes. Customers never know it's AI."
             </p>
           </div>
@@ -189,20 +189,20 @@ export function AuthLayout() {
 
       {/* ── Right: Form panel ───────────────────────────────────────────── */}
       <div className="flex flex-1 flex-col items-center justify-center
-        bg-white min-h-screen px-6 py-10">
+        bg-surface min-h-screen px-6 py-10">
 
         {/* Mobile-only logo */}
         <div className="lg:hidden flex items-center gap-3 mb-8">
           <img src={agentopsIcon} alt="AgentOps" className="h-9 w-9 rounded-xl" />
           <div>
-            <p className="text-sm font-bold text-slate-900 tracking-tight">AgentOps</p>
+            <p className="text-sm font-bold text-slate-50 tracking-tight">AgentOps</p>
             <p className="text-[10px] font-semibold tracking-widest uppercase text-slate-400">Studio</p>
           </div>
         </div>
 
         {/* Form card */}
         <div className="w-full max-w-[420px]">
-          <div className="rounded-2xl border border-slate-100 bg-white p-8 shadow-sm
+          <div className="rounded-2xl border border-white/10 bg-surface p-8 shadow-sm
             ring-1 ring-slate-950/5">
             <Outlet />
           </div>

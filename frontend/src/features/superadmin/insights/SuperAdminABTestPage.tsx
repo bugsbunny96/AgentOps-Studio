@@ -8,14 +8,14 @@ import { FlaskConical, Plus, Play, Pause, StopCircle, RefreshCw, Trash2, Chevron
 import api from '@/utils/api';
 
 const T = {
-  bg: '#07070f', bgS: '#0e0e1a', bgC: 'rgba(255,255,255,0.04)',
+  bg: '#141414', bgS: '#1c1c1c', bgC: 'rgba(255,255,255,0.04)',
   bdr: 'rgba(255,255,255,0.07)', bdrB: 'rgba(255,255,255,0.12)',
   red: '#ef4444', redD: 'rgba(239,68,68,0.12)',
   green: '#22c55e', greenD: 'rgba(34,197,94,0.12)',
   amber: '#f59e0b', amberD: 'rgba(245,158,11,0.12)',
-  blue: '#3b82f6', blueD: 'rgba(59,130,246,0.12)',
+  blue: '#21F1A8', blueD: 'rgba(33,241,168,0.12)',
   purple: '#a855f7', purpleD: 'rgba(168,85,247,0.12)',
-  t1: '#f8fafc', t2: '#94a3b8', t3: '#475569',
+  t1: '#fafafa', t2: '#a3a3a3', t3: '#737373',
 };
 
 type TestStatus = 'draft' | 'running' | 'paused' | 'ended';
@@ -130,8 +130,8 @@ export default function SuperAdminABTestPage() {
           </button>
           <button onClick={() => setShowCreate(!showCreate)}
             style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 16px',
-              background: T.purpleD, border: `1px solid ${T.purple}`, borderRadius: 8,
-              color: T.purple, cursor: 'pointer', fontSize: 13, fontWeight: 600 }}>
+              background: 'rgba(33,241,168,0.12)', border: `1px solid #21F1A8`, borderRadius: 8,
+              color: '#21F1A8', cursor: 'pointer', fontSize: 13, fontWeight: 600 }}>
             <Plus size={14} /> New Test
           </button>
         </div>
@@ -139,7 +139,7 @@ export default function SuperAdminABTestPage() {
 
       {/* Create form */}
       {showCreate && (
-        <div style={{ background: T.bgS, border: `1px solid ${T.purple}55`, borderRadius: 12,
+        <div style={{ background: T.bgS, border: `1px solid #21F1A855`, borderRadius: 12,
           padding: 24, marginBottom: 28 }}>
           <h3 style={{ margin: '0 0 18px', fontSize: 14, fontWeight: 700, color: T.purple }}>
             New A/B Test
@@ -217,8 +217,8 @@ export default function SuperAdminABTestPage() {
           )}
           <div style={{ display: 'flex', gap: 10 }}>
             <button onClick={() => createMutation.mutate()} disabled={createMutation.isPending || !form.name}
-              style={{ padding: '9px 20px', background: T.purpleD, border: `1px solid ${T.purple}`,
-                borderRadius: 8, color: T.purple, cursor: 'pointer', fontSize: 13, fontWeight: 600 }}>
+              style={{ padding: '9px 20px', background: 'rgba(33,241,168,0.12)', border: `1px solid #21F1A8`,
+                borderRadius: 8, color: '#21F1A8', cursor: 'pointer', fontSize: 13, fontWeight: 600 }}>
               {createMutation.isPending ? 'Creating…' : 'Create Test (Draft)'}
             </button>
             <button onClick={() => setShowCreate(false)}
@@ -318,7 +318,7 @@ export default function SuperAdminABTestPage() {
                 <div style={{ borderTop: `1px solid ${T.bdr}`, padding: '16px 20px' }}>
                   {test.hypothesis && (
                     <div style={{ marginBottom: 14, padding: '10px 14px', background: T.purpleD,
-                      border: `1px solid ${T.purple}33`, borderRadius: 8 }}>
+                      border: `1px solid #21F1A833`, borderRadius: 8 }}>
                       <span style={{ fontSize: 11, color: T.purple, fontWeight: 600 }}>Hypothesis: </span>
                       <span style={{ fontSize: 13, color: T.t2 }}>{test.hypothesis}</span>
                     </div>

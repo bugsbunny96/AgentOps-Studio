@@ -108,7 +108,7 @@ export function HeroMockup() {
           key={text}
           style={{
             position: 'absolute', zIndex: 3,
-            background: 'rgba(13,21,36,0.92)', border: `1px solid ${color.borderStrong}`,
+            background: 'rgba(31,31,31,0.92)', border: `1px solid ${color.borderStrong}`,
             borderRadius: 999, padding: '5px 10px', fontSize: 10.5, fontWeight: 600, color: color.text1,
             fontFamily: mono ? font.mono : 'inherit',
             display: 'flex', alignItems: 'center', gap: 5,
@@ -127,7 +127,7 @@ export function HeroMockup() {
       <div
         style={{
           position: 'absolute', top: 72, right: -52, zIndex: 3,
-          background: 'rgba(13,21,36,0.92)', border: `1px solid ${color.borderStrong}`,
+          background: 'rgba(31,31,31,0.92)', border: `1px solid ${color.borderStrong}`,
           borderRadius: 999, padding: '5px 10px', fontSize: 10.5, fontWeight: 600, color: color.text1,
           display: 'flex', alignItems: 'center', gap: 5,
           boxShadow: '0 8px 20px rgba(0,0,0,0.3)', backdropFilter: 'blur(8px)',
@@ -154,7 +154,7 @@ export function HeroMockup() {
         {/* Back card — analytics */}
         <div style={{
           position: 'absolute', width: 148, right: -44, bottom: 55, zIndex: 1, padding: 12,
-          background: 'rgba(13,21,36,0.78)', border: '1px solid rgba(255,255,255,0.09)', borderRadius: 14,
+          background: 'rgba(31,31,31,0.78)', border: '1px solid rgba(255,255,255,0.09)', borderRadius: 14,
           transform: 'perspective(1100px) rotateY(10deg) translateZ(-30px)',
           boxShadow: '0 18px 36px rgba(0,0,0,0.3)',
         }}>
@@ -163,7 +163,7 @@ export function HeroMockup() {
           <p style={{ fontSize: 9.5, color: color.emerald, marginTop: 2 }}>↑ 18% vs yesterday</p>
           <div style={{ display: 'flex', alignItems: 'flex-end', gap: 3, height: 24, marginTop: 7 }}>
             {BAR_HEIGHTS.map((h, i) => (
-              <div key={i} style={{ flex: 1, borderRadius: 2, background: `linear-gradient(180deg, ${color.blueLight}, rgba(59,130,246,0.3))`, height: `${h}%` }} />
+              <div key={i} style={{ flex: 1, borderRadius: 2, background: `linear-gradient(180deg, ${color.blueLight}, rgba(33,241,168,0.3))`, height: `${h}%` }} />
             ))}
           </div>
         </div>
@@ -171,7 +171,7 @@ export function HeroMockup() {
         {/* Back card — languages */}
         <div style={{
           position: 'absolute', width: 132, left: -36, top: 36, zIndex: 1, padding: 11,
-          background: 'rgba(13,21,36,0.78)', border: '1px solid rgba(255,255,255,0.09)', borderRadius: 14,
+          background: 'rgba(31,31,31,0.78)', border: '1px solid rgba(255,255,255,0.09)', borderRadius: 14,
           transform: 'perspective(1100px) rotateY(-8deg) translateZ(-20px)',
           boxShadow: '0 18px 36px rgba(0,0,0,0.3)',
         }}>
@@ -191,9 +191,9 @@ export function HeroMockup() {
 
         {/* Main card */}
         <div style={{
-          background: 'rgba(13,21,36,0.94)', border: '1px solid rgba(255,255,255,0.14)', borderRadius: 18,
+          background: 'rgba(31,31,31,0.94)', border: '1px solid rgba(255,255,255,0.14)', borderRadius: 18,
           padding: 18, position: 'relative', zIndex: 2,
-          boxShadow: '0 0 0 1px rgba(59,130,246,.12), 0 40px 70px rgba(0,0,0,.5), 0 0 50px rgba(59,130,246,.08), inset 0 1px 0 rgba(255,255,255,.1)',
+          boxShadow: '0 0 0 1px rgba(33,241,168,.12), 0 40px 70px rgba(0,0,0,.5), 0 0 50px rgba(33,241,168,.08), inset 0 1px 0 rgba(255,255,255,.1)',
         }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -243,8 +243,8 @@ export function HeroMockup() {
 
           <div style={{ display: 'flex', gap: 7 }}>
             <button style={{
-              flex: 1, padding: 7, borderRadius: 7, background: 'rgba(59,130,246,.15)', color: color.blueLight,
-              border: '1px solid rgba(59,130,246,.2)', fontSize: 10.5, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit',
+              flex: 1, padding: 7, borderRadius: 7, background: 'rgba(33,241,168,.15)', color: color.blueLight,
+              border: '1px solid rgba(33,241,168,.2)', fontSize: 10.5, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit',
             }}>↗ Transfer</button>
             <button style={{
               flex: 1, padding: 7, borderRadius: 7, background: 'rgba(239,68,68,.1)', color: color.red,

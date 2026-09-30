@@ -21,8 +21,8 @@ const PageLoader = () => (
   <div style={{ display: 'flex', height: '100%', minHeight: '240px', alignItems: 'center', justifyContent: 'center' }}>
     <div style={{
       width: 28, height: 28, borderRadius: '50%',
-      border: '3px solid rgba(59,130,246,0.2)',
-      borderTopColor: '#3b82f6',
+      border: '3px solid rgba(33,241,168,0.2)',
+      borderTopColor: '#21F1A8',
       animation: 'spin 0.7s linear infinite',
     }} />
   </div>

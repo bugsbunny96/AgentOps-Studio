@@ -143,8 +143,8 @@ export function PrimaryButton({ to, children, size = 'md', className = '' }: { t
         padding: size === 'lg' ? '14px 28px' : '12px 22px',
         borderRadius: radius.md,
         background: `linear-gradient(135deg, ${color.blue}, ${color.violet})`,
-        color: '#fff',
-        boxShadow: '0 0 0 1px rgba(139,92,246,.3), 0 4px 20px rgba(59,130,246,.25)',
+        color: '#171717',
+        boxShadow: '0 0 0 1px rgba(15,201,138,.3), 0 4px 20px rgba(33,241,168,.25)',
       }}
       onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-1px)'; }}
       onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; }}

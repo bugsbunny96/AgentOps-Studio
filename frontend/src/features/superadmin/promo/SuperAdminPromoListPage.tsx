@@ -28,10 +28,10 @@ interface PromoCode {
 }
 
 const T = {
-  bg: '#07070f', bgS: '#0e0e1a', bgC: 'rgba(255,255,255,0.04)',
+  bg: '#141414', bgS: '#1c1c1c', bgC: 'rgba(255,255,255,0.04)',
   bdr: 'rgba(255,255,255,0.07)',
   red: '#ef4444', green: '#10b981', amber: '#f59e0b',
-  t1: '#f8fafc', t2: '#94a3b8', t3: '#475569',
+  t1: '#fafafa', t2: '#a3a3a3', t3: '#737373',
 };
 
 function fmt(d: string) {
@@ -85,7 +85,7 @@ export default function SuperAdminPromoListPage() {
         </div>
         <button
           onClick={() => navigate('/superadmin/promo/new')}
-          style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '9px 18px', borderRadius: 8, background: T.red, border: 'none', color: '#fff', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}
+          style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '9px 18px', borderRadius: 8, background: '#21F1A8', border: 'none', color: '#171717', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}
         >
           <PlusCircle size={15} /> New Code
         </button>
@@ -103,7 +103,7 @@ export default function SuperAdminPromoListPage() {
             <p style={{ color: T.t2, fontSize: 14, margin: '0 0 12px' }}>No promo codes yet.</p>
             <button
               onClick={() => navigate('/superadmin/promo/new')}
-              style={{ padding: '8px 18px', borderRadius: 8, background: T.red, border: 'none', color: '#fff', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}
+              style={{ padding: '8px 18px', borderRadius: 8, background: '#21F1A8', border: 'none', color: '#171717', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}
             >
               Create your first code
             </button>
@@ -246,7 +246,7 @@ export default function SuperAdminPromoListPage() {
             <button
               key={p}
               onClick={() => setPage(p)}
-              style={{ width: 32, height: 32, borderRadius: 6, fontSize: 12, fontWeight: 600, cursor: 'pointer', background: page === p ? T.red : T.bgC, border: `1px solid ${page === p ? T.red : T.bdr}`, color: page === p ? '#fff' : T.t2 }}
+              style={{ width: 32, height: 32, borderRadius: 6, fontSize: 12, fontWeight: 600, cursor: 'pointer', background: page === p ? '#21F1A8' : T.bgC, border: `1px solid ${page === p ? '#21F1A8' : T.bdr}`, color: page === p ? '#171717' : T.t2 }}
             >
               {p}
             </button>

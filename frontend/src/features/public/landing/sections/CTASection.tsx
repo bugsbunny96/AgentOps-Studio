@@ -6,12 +6,12 @@ export function CTASection() {
     <section style={{ padding: '100px 0', position: 'relative', overflow: 'hidden', borderTop: `1px solid ${color.border}` }}>
       <div style={{
         position: 'absolute', borderRadius: '50%', pointerEvents: 'none', width: 500, height: 350,
-        background: 'radial-gradient(circle, rgba(59,130,246,.15) 0%, transparent 70%)', top: -80, left: -80,
+        background: 'radial-gradient(circle, rgba(33,241,168,.15) 0%, transparent 70%)', top: -80, left: -80,
         animationName: 'floatA', animationDuration: '10s', animationIterationCount: 'infinite', willChange: 'transform',
       }} />
       <div style={{
         position: 'absolute', borderRadius: '50%', pointerEvents: 'none', width: 450, height: 300,
-        background: 'radial-gradient(circle, rgba(139,92,246,.12) 0%, transparent 70%)', bottom: -80, right: -80,
+        background: 'radial-gradient(circle, rgba(15,201,138,.12) 0%, transparent 70%)', bottom: -80, right: -80,
         animationName: 'floatA', animationDuration: '10s', animationDelay: '-5s', animationIterationCount: 'infinite', willChange: 'transform',
       }} />
 

@@ -24,11 +24,11 @@ interface BlogPost {
 }
 
 const T = {
-  bg: '#07070f', bgS: '#0e0e1a', bgC: 'rgba(255,255,255,0.04)',
+  bg: '#141414', bgS: '#1c1c1c', bgC: 'rgba(255,255,255,0.04)',
   bdr: 'rgba(255,255,255,0.07)', bdrB: 'rgba(255,255,255,0.12)',
   red: '#ef4444', redL: '#fca5a5',
   green: '#10b981', amber: '#f59e0b',
-  t1: '#f8fafc', t2: '#94a3b8', t3: '#475569',
+  t1: '#fafafa', t2: '#a3a3a3', t3: '#737373',
 };
 
 // ─── Component ────────────────────────────────────────────────────────────────
@@ -82,7 +82,7 @@ export default function SuperAdminBlogListPage() {
           style={{
             display: 'flex', alignItems: 'center', gap: 8,
             padding: '9px 18px', borderRadius: 8,
-            background: T.red, border: 'none', color: '#fff',
+            background: '#21F1A8', border: 'none', color: '#171717',
             fontSize: 13, fontWeight: 600, cursor: 'pointer',
           }}
         >
@@ -99,9 +99,9 @@ export default function SuperAdminBlogListPage() {
             style={{
               padding: '6px 14px', borderRadius: 6, fontSize: 12, fontWeight: 600,
               cursor: 'pointer', textTransform: 'capitalize',
-              background: statusFilter === f ? T.red : T.bgC,
-              border: `1px solid ${statusFilter === f ? T.red : T.bdr}`,
-              color: statusFilter === f ? '#fff' : T.t2,
+              background: statusFilter === f ? '#21F1A8' : T.bgC,
+              border: `1px solid ${statusFilter === f ? '#21F1A8' : T.bdr}`,
+              color: statusFilter === f ? '#171717' : T.t2,
               transition: 'all 0.15s',
             }}
           >
@@ -122,7 +122,7 @@ export default function SuperAdminBlogListPage() {
             <p style={{ color: T.t2, fontSize: 14, margin: 0 }}>No posts yet.</p>
             <button
               onClick={() => navigate('/superadmin/blog/new')}
-              style={{ marginTop: 12, padding: '8px 18px', borderRadius: 8, background: T.red, border: 'none', color: '#fff', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}
+              style={{ marginTop: 12, padding: '8px 18px', borderRadius: 8, background: '#21F1A8', border: 'none', color: '#171717', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}
             >
               Write your first post
             </button>
@@ -250,9 +250,9 @@ export default function SuperAdminBlogListPage() {
               style={{
                 width: 32, height: 32, borderRadius: 6, fontSize: 12, fontWeight: 600,
                 cursor: 'pointer',
-                background: page === p ? T.red : T.bgC,
-                border: `1px solid ${page === p ? T.red : T.bdr}`,
-                color: page === p ? '#fff' : T.t2,
+                background: page === p ? '#21F1A8' : T.bgC,
+                border: `1px solid ${page === p ? '#21F1A8' : T.bdr}`,
+                color: page === p ? '#171717' : T.t2,
               }}
             >
               {p}

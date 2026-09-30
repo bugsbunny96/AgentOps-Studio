@@ -32,34 +32,34 @@ import type { MemberPermissions } from '@/types';
 
 // ── Dark-layout global text remapping ─────────────────────────────────────────
 // Pages that pre-date the dark theme use Tailwind's light-theme utilities
-// (text-slate-900, text-gray-800, etc.) which are near-invisible on #030712.
+// (text-slate-900, text-gray-800, etc.) which are near-invisible on #171717.
 // We inject a single <style> block that:
 //   1. Remaps dark slate/gray text → light equivalents on dark bg.
 //   2. Restores original dark colours inside explicitly white card containers
 //      (higher CSS specificity wins: #dl-main .bg-white .text-* > #dl-main .text-*).
 const DARK_LAYOUT_CSS = `
-#dl-main { color: #e2e8f0; }
+#dl-main { color: #e5e5e5; }
 
 /* Dark text → light when floating on dark background */
-#dl-main .text-slate-900 { color: #f1f5f9; }
-#dl-main .text-slate-800 { color: #e2e8f0; }
-#dl-main .text-slate-700 { color: #cbd5e1; }
-#dl-main .text-slate-600 { color: #94a3b8; }
-#dl-main .text-gray-900  { color: #f1f5f9; }
-#dl-main .text-gray-800  { color: #e2e8f0; }
-#dl-main .text-gray-700  { color: #cbd5e1; }
-#dl-main .text-gray-600  { color: #94a3b8; }
+#dl-main .text-slate-900 { color: #f5f5f5; }
+#dl-main .text-slate-800 { color: #e5e5e5; }
+#dl-main .text-slate-700 { color: #d4d4d4; }
+#dl-main .text-slate-600 { color: #a3a3a3; }
+#dl-main .text-gray-900  { color: #f5f5f5; }
+#dl-main .text-gray-800  { color: #e5e5e5; }
+#dl-main .text-gray-700  { color: #d4d4d4; }
+#dl-main .text-gray-600  { color: #a3a3a3; }
 
 /* Restore original dark text inside white card containers (specificity 1,2,0 > 1,1,0) */
 #dl-main .bg-white .text-slate-900,
-#dl-main .bg-white .text-gray-900  { color: #0f172a; }
+#dl-main .bg-white .text-gray-900  { color: #171717; }
 #dl-main .bg-white .text-slate-800,
-#dl-main .bg-white .text-gray-800  { color: #1e293b; }
+#dl-main .bg-white .text-gray-800  { color: #262626; }
 #dl-main .bg-white .text-slate-700,
-#dl-main .bg-white .text-gray-700  { color: #334155; }
+#dl-main .bg-white .text-gray-700  { color: #404040; }
 #dl-main .bg-white .text-slate-600,
-#dl-main .bg-white .text-gray-600  { color: #475569; }
-#dl-main .bg-white .text-slate-500 { color: #64748b; }
+#dl-main .bg-white .text-gray-600  { color: #8a8a8a; }
+#dl-main .bg-white .text-slate-500 { color: #8a8a8a; }
 
 /* Fix select/input elements inside forms on dark bg */
 #dl-main select,
@@ -104,18 +104,18 @@ const DARK_LAYOUT_CSS = `
 
 // ── Design tokens (mirrors landing page) ──────────────────────────────────────
 const T = {
-  bg:    '#030712',
-  bgS:   '#0d1524',
+  bg:    '#171717',
+  bgS:   '#1f1f1f',
   bgC:   'rgba(255,255,255,0.04)',
   bdr:   'rgba(255,255,255,0.07)',
   bdrB:  'rgba(255,255,255,0.12)',
-  blue:  '#3b82f6',
-  blueL: '#60a5fa',
-  violet:'#8b5cf6',
+  blue:  '#21F1A8',
+  blueL: '#7CF7CB',
+  violet:'#0FC98A',
   em:    '#10b981',
-  t1:    '#f8fafc',
-  t2:    '#94a3b8',
-  t3:    '#475569',
+  t1:    '#fafafa',
+  t2:    '#a3a3a3',
+  t3:    '#8a8a8a',
 };
 
 // ── Nav items ──────────────────────────────────────────────────────────────────
@@ -198,7 +198,7 @@ interface Announcement {
 }
 
 const BANNER_STYLE: Record<AnnouncementType, { bg: string; border: string; color: string; icon: React.ReactNode }> = {
-  info:     { bg: 'rgba(59,130,246,0.12)',  border: 'rgba(59,130,246,0.3)',  color: '#93c5fd', icon: <Info size={14} /> },
+  info:     { bg: 'rgba(33,241,168,0.12)',  border: 'rgba(33,241,168,0.3)',  color: '#A2FAD9', icon: <Info size={14} /> },
   warning:  { bg: 'rgba(245,158,11,0.12)',  border: 'rgba(245,158,11,0.3)',  color: '#fde68a', icon: <AlertTriangle size={14} /> },
   critical: { bg: 'rgba(239,68,68,0.18)',   border: 'rgba(239,68,68,0.4)',   color: '#fca5a5', icon: <AlertTriangle size={14} /> },
 };
@@ -456,10 +456,10 @@ export function DashboardLayout() {
                 transition: 'all 0.15s',
                 ...(isActive
                   ? {
-                      background: 'linear-gradient(135deg, rgba(59,130,246,0.2), rgba(139,92,246,0.2))',
+                      background: 'linear-gradient(135deg, rgba(33,241,168,0.2), rgba(15,201,138,0.2))',
                       color: T.blueL,
-                      border: '1px solid rgba(59,130,246,0.25)',
-                      boxShadow: '0 0 12px rgba(59,130,246,0.1)',
+                      border: '1px solid rgba(33,241,168,0.25)',
+                      boxShadow: '0 0 12px rgba(33,241,168,0.1)',
                     }
                   : {
                       color: T.t2,
@@ -496,8 +496,8 @@ export function DashboardLayout() {
             <div style={{
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               width: 30, height: 30, borderRadius: '50%', flexShrink: 0,
-              background: 'linear-gradient(135deg, #3b82f6, #8b5cf6)',
-              fontSize: 11, fontWeight: 800, color: '#fff',
+              background: 'linear-gradient(135deg, #21F1A8, #0FC98A)',
+              fontSize: 11, fontWeight: 800, color: '#171717',
             }}>
               {initials}
             </div>
@@ -548,7 +548,7 @@ export function DashboardLayout() {
             height: 56, flexShrink: 0,
             padding: '0 32px',
             borderBottom: `1px solid ${T.bdr}`,
-            background: 'rgba(13,21,36,0.8)',
+            background: 'rgba(31,31,31,0.8)',
             backdropFilter: 'blur(12px)',
           }}
         >

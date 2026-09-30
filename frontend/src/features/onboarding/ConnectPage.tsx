@@ -149,14 +149,14 @@ export default function ConnectPage() {
     <div className="space-y-8">
       {/* Header */}
       <div className="flex items-start gap-4">
-        <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-xl bg-brand-100 text-brand-600">
+        <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-xl bg-brand-400/15 text-brand-300">
           <Bot size={24} />
         </div>
         <div>
-          <h1 className="text-2xl font-bold text-slate-900">
+          <h1 className="text-2xl font-bold text-slate-50">
             Let's set up your AI receptionist
           </h1>
-          <p className="mt-1 text-sm text-slate-500">
+          <p className="mt-1 text-sm text-slate-400">
             First, tell us about your business.
           </p>
         </div>
@@ -164,7 +164,7 @@ export default function ConnectPage() {
 
       {/* Server / root error */}
       {errors.root && (
-        <div className="rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+        <div className="rounded-md border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-300">
           {errors.root.message}
         </div>
       )}
@@ -173,7 +173,7 @@ export default function ConnectPage() {
       <form onSubmit={handleSubmit(onSubmit)} noValidate className="space-y-5">
         {/* Business name */}
         <div>
-          <label htmlFor="org-name" className="block text-sm font-medium text-slate-700 mb-1">
+          <label htmlFor="org-name" className="block text-sm font-medium text-slate-200 mb-1">
             Business name <span className="text-red-500">*</span>
           </label>
           <input
@@ -185,10 +185,10 @@ export default function ConnectPage() {
             placeholder="e.g. Acme Logistics Pvt. Ltd."
             className={`w-full rounded-md border px-3 py-2 text-sm shadow-sm outline-none
               focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition
-              ${errors.name ? 'border-red-400 bg-red-50' : 'border-slate-300 bg-white'}`}
+              ${errors.name ? 'border-red-400 bg-red-500/10' : 'border-white/15 bg-surface'}`}
           />
           {errors.name && (
-            <p className="mt-1 text-xs text-red-600">{errors.name.message}</p>
+            <p className="mt-1 text-xs text-red-300">{errors.name.message}</p>
           )}
           <p className="mt-1 text-xs text-slate-400">
             Your AI will say: "Thank you for calling <em>[Business Name]</em>."
@@ -197,15 +197,15 @@ export default function ConnectPage() {
 
         {/* Industry */}
         <div>
-          <label htmlFor="industry" className="block text-sm font-medium text-slate-700 mb-1">
+          <label htmlFor="industry" className="block text-sm font-medium text-slate-200 mb-1">
             Industry <span className="text-red-500">*</span>
           </label>
           <select
             id="industry"
             {...register('industry')}
             className={`w-full rounded-md border px-3 py-2 text-sm shadow-sm outline-none
-              focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition bg-white
-              ${errors.industry ? 'border-red-400 bg-red-50' : 'border-slate-300'}`}
+              focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition bg-surface
+              ${errors.industry ? 'border-red-400 bg-red-500/10' : 'border-white/15'}`}
           >
             <option value="">Select your industry</option>
             {INDUSTRY_OPTIONS.map((opt) => (
@@ -215,7 +215,7 @@ export default function ConnectPage() {
             ))}
           </select>
           {errors.industry ? (
-            <p className="mt-1 text-xs text-red-600">{errors.industry.message}</p>
+            <p className="mt-1 text-xs text-red-300">{errors.industry.message}</p>
           ) : (
             <p className="mt-1 text-xs text-slate-400">
               This helps your AI use the right language and terminology for your sector.
@@ -228,16 +228,16 @@ export default function ConnectPage() {
           <button
             type="button"
             onClick={() => setTimezoneExpanded((v) => !v)}
-            className="flex items-center gap-2 text-xs text-slate-500 hover:text-slate-700 transition group"
+            className="flex items-center gap-2 text-xs text-slate-400 hover:text-slate-200 transition group"
           >
             <span className="text-slate-400">🕐</span>
             <span>
               Timezone auto-detected:{' '}
-              <span className="font-medium text-slate-700">{getTimezoneLabel(timezone)}</span>
+              <span className="font-medium text-slate-200">{getTimezoneLabel(timezone)}</span>
             </span>
             <ChevronDown
               size={13}
-              className={`transition-transform text-slate-400 group-hover:text-slate-600 ${timezoneExpanded ? 'rotate-180' : ''}`}
+              className={`transition-transform text-slate-400 group-hover:text-slate-300 ${timezoneExpanded ? 'rotate-180' : ''}`}
             />
           </button>
 
@@ -247,8 +247,8 @@ export default function ConnectPage() {
                 id="timezone"
                 {...register('timezone')}
                 className={`w-full rounded-md border px-3 py-2 text-sm shadow-sm outline-none
-                  focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition bg-white
-                  ${errors.timezone ? 'border-red-400' : 'border-slate-300'}`}
+                  focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition bg-surface
+                  ${errors.timezone ? 'border-red-400' : 'border-white/15'}`}
               >
                 {TIMEZONE_OPTIONS.map((tz) => (
                   <option key={tz.value} value={tz.value}>
@@ -257,7 +257,7 @@ export default function ConnectPage() {
                 ))}
               </select>
               {errors.timezone && (
-                <p className="mt-1 text-xs text-red-600">{errors.timezone.message}</p>
+                <p className="mt-1 text-xs text-red-300">{errors.timezone.message}</p>
               )}
               <p className="mt-1 text-xs text-slate-400">
                 Used to set your business hours and route calls correctly.
@@ -271,9 +271,9 @@ export default function ConnectPage() {
           <button
             type="submit"
             disabled={isSubmitting}
-            className="w-full flex items-center justify-center gap-2 rounded-md bg-brand-600
-              px-4 py-2.5 text-sm font-semibold text-white shadow-sm
-              hover:bg-brand-700 focus:outline-none focus:ring-2 focus:ring-brand-500
+            className="w-full flex items-center justify-center gap-2 rounded-md bg-brand-400
+              px-4 py-2.5 text-sm font-semibold text-slate-900 shadow-sm
+              hover:bg-brand-300 focus:outline-none focus:ring-2 focus:ring-brand-500
               disabled:opacity-50 disabled:cursor-not-allowed transition"
           >
             {isSubmitting && <Loader2 size={16} className="animate-spin" />}

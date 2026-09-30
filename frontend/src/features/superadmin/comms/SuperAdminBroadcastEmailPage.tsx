@@ -18,8 +18,8 @@ import api from '@/utils/api';
 // ─── Design tokens ────────────────────────────────────────────────────────────
 
 const T = {
-  bg:    '#07070f',
-  bgS:   '#0e0e1a',
+  bg:    '#141414',
+  bgS:   '#1c1c1c',
   bgC:   'rgba(255,255,255,0.04)',
   bdr:   'rgba(255,255,255,0.07)',
   bdrB:  'rgba(255,255,255,0.12)',
@@ -29,12 +29,12 @@ const T = {
   greenL:'#bbf7d0',
   amber: '#f59e0b',
   amberL:'#fde68a',
-  blue:  '#3b82f6',
-  blueL: '#93c5fd',
-  indigo:'#6366f1',
-  t1:    '#f8fafc',
-  t2:    '#94a3b8',
-  t3:    '#475569',
+  blue:  '#21F1A8',
+  blueL: '#A2FAD9',
+  indigo:'#21F1A8',
+  t1:    '#fafafa',
+  t2:    '#a3a3a3',
+  t3:    '#737373',
 };
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -121,31 +121,31 @@ const sLabel: React.CSSProperties = {
 const TEMPLATES: { label: string; html: string }[] = [
   {
     label: 'Announcement',
-    html: `<h2 style="color:#f8fafc;font-family:system-ui,sans-serif;margin:0 0 12px">📢 Announcement Title</h2>
-<p style="color:#94a3b8;font-family:system-ui,sans-serif;line-height:1.7;margin:0 0 20px">
+    html: `<h2 style="color:#fafafa;font-family:system-ui,sans-serif;margin:0 0 12px">📢 Announcement Title</h2>
+<p style="color:#a3a3a3;font-family:system-ui,sans-serif;line-height:1.7;margin:0 0 20px">
   Write your announcement body here. Keep it concise and action-focused.
 </p>
-<a href="https://app.agentops.studio" style="display:inline-block;padding:10px 20px;background:#6366f1;color:#fff;border-radius:8px;text-decoration:none;font-weight:600;font-family:system-ui,sans-serif">
+<a href="https://app.agentops.studio" style="display:inline-block;padding:10px 20px;background:#21F1A8;color:#fff;border-radius:8px;text-decoration:none;font-weight:600;font-family:system-ui,sans-serif">
   Learn More →
 </a>`,
   },
   {
     label: 'Maintenance',
     html: `<h2 style="color:#f59e0b;font-family:system-ui,sans-serif;margin:0 0 12px">⚠️ Scheduled Maintenance</h2>
-<p style="color:#94a3b8;font-family:system-ui,sans-serif;line-height:1.7;margin:0 0 12px">
-  We will be performing scheduled maintenance on <strong style="color:#f8fafc">[DATE]</strong> from <strong style="color:#f8fafc">[TIME] to [TIME] IST</strong>.
+<p style="color:#a3a3a3;font-family:system-ui,sans-serif;line-height:1.7;margin:0 0 12px">
+  We will be performing scheduled maintenance on <strong style="color:#fafafa">[DATE]</strong> from <strong style="color:#fafafa">[TIME] to [TIME] IST</strong>.
 </p>
-<p style="color:#94a3b8;font-family:system-ui,sans-serif;line-height:1.7;margin:0">
+<p style="color:#a3a3a3;font-family:system-ui,sans-serif;line-height:1.7;margin:0">
   During this window, the platform may be temporarily unavailable. We apologise for any inconvenience.
 </p>`,
   },
   {
     label: 'Feature Launch',
     html: `<h2 style="color:#14b8a6;font-family:system-ui,sans-serif;margin:0 0 12px">✨ Introducing [Feature Name]</h2>
-<p style="color:#94a3b8;font-family:system-ui,sans-serif;line-height:1.7;margin:0 0 16px">
+<p style="color:#a3a3a3;font-family:system-ui,sans-serif;line-height:1.7;margin:0 0 16px">
   We're excited to announce [brief description of what the feature does and why it matters].
 </p>
-<ul style="color:#94a3b8;font-family:system-ui,sans-serif;line-height:1.9;margin:0 0 20px;padding-left:20px">
+<ul style="color:#a3a3a3;font-family:system-ui,sans-serif;line-height:1.9;margin:0 0 20px;padding-left:20px">
   <li>Benefit one</li>
   <li>Benefit two</li>
   <li>Benefit three</li>
@@ -306,7 +306,7 @@ export default function SuperAdminBroadcastEmailPage() {
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
           <div style={{
             width: 42, height: 42, borderRadius: 10,
-            background: 'rgba(99,102,241,0.15)',
+            background: 'rgba(33,241,168,0.15)',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
           }}>
             <Send size={20} color={T.indigo} />
@@ -371,7 +371,7 @@ export default function SuperAdminBroadcastEmailPage() {
                 <button key={v} onClick={() => set('audience', v)} style={{
                   flex: 1, padding: '8px 0', borderRadius: 8,
                   border: `1px solid ${compose.audience === v ? T.indigo : T.bdr}`,
-                  background: compose.audience === v ? 'rgba(99,102,241,0.15)' : 'transparent',
+                  background: compose.audience === v ? 'rgba(33,241,168,0.15)' : 'transparent',
                   color: compose.audience === v ? T.blueL : T.t2,
                   fontSize: 12, fontWeight: 600, cursor: 'pointer',
                   display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5,
@@ -444,7 +444,7 @@ export default function SuperAdminBroadcastEmailPage() {
           <div style={{
             display: 'flex', gap: 6, alignItems: 'flex-start',
             padding: '8px 12px', borderRadius: 8,
-            background: 'rgba(99,102,241,0.08)', border: `1px solid rgba(99,102,241,0.2)`,
+            background: 'rgba(33,241,168,0.08)', border: `1px solid rgba(33,241,168,0.2)`,
             marginBottom: 18,
           }}>
             <Info size={13} color={T.blueL} style={{ flexShrink: 0, marginTop: 1 }} />
@@ -527,7 +527,7 @@ export default function SuperAdminBroadcastEmailPage() {
               }}>
                 {/* Brand header */}
                 <div style={{ marginBottom: 20, paddingBottom: 16, borderBottom: `1px solid rgba(255,255,255,0.08)` }}>
-                  <span style={{ fontSize: 16, fontWeight: 700, color: '#f8fafc', letterSpacing: '-0.02em' }}>
+                  <span style={{ fontSize: 16, fontWeight: 700, color: '#fafafa', letterSpacing: '-0.02em' }}>
                     AgentOps<span style={{ color: T.indigo }}>.</span>
                   </span>
                 </div>
@@ -545,7 +545,7 @@ export default function SuperAdminBroadcastEmailPage() {
                 )}
                 {/* Footer */}
                 <div style={{ marginTop: 24, paddingTop: 16, borderTop: `1px solid rgba(255,255,255,0.08)`, textAlign: 'center' }}>
-                  <p style={{ margin: 0, fontSize: 11, color: '#475569', lineHeight: 1.6 }}>
+                  <p style={{ margin: 0, fontSize: 11, color: '#737373', lineHeight: 1.6 }}>
                     Sent by AgentOps Studio · To: {audienceLabel}
                     <br />© 2025 AgentOps Studio. All rights reserved.
                   </p>

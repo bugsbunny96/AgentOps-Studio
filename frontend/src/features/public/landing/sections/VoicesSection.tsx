@@ -97,9 +97,9 @@ function VoiceCard({ voice, delay }: { voice: (typeof VOICES)[number]; delay: nu
             aria-label={playing ? `Pause ${voice.name} preview` : `Play ${voice.name} preview`}
             style={{
               width: 34, height: 34, borderRadius: '50%', flexShrink: 0,
-              background: playing ? color.blueLight : 'rgba(59,130,246,.15)',
-              color: playing ? '#031024' : color.blueLight,
-              border: '1px solid rgba(59,130,246,.25)',
+              background: playing ? color.blueLight : 'rgba(33,241,168,.15)',
+              color: playing ? '#171717' : color.blueLight,
+              border: '1px solid rgba(33,241,168,.25)',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               cursor: loading ? 'wait' : 'pointer', opacity: loading ? 0.6 : 1,
               transition: 'background 0.2s, color 0.2s',

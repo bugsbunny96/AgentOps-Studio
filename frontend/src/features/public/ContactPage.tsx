@@ -12,11 +12,11 @@ import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 
 const T = {
-  bg: '#030712', bgS: '#0d1524',
+  bg: '#171717', bgS: '#1f1f1f',
   bgC: 'rgba(255,255,255,0.03)', bgCH: 'rgba(255,255,255,0.05)',
   bdr: 'rgba(255,255,255,0.07)', bdrB: 'rgba(255,255,255,0.15)',
-  blue: '#3b82f6', violet: '#8b5cf6', em: '#10b981', amber: '#f59e0b',
-  t1: '#f8fafc', t2: '#94a3b8', t3: '#475569',
+  blue: '#21F1A8', violet: '#0FC98A', em: '#10b981', amber: '#f59e0b',
+  t1: '#fafafa', t2: '#a3a3a3', t3: '#737373',
 };
 
 const pill = (bg: string, color: string, border: string): React.CSSProperties => ({
@@ -141,12 +141,12 @@ export default function ContactPage() {
       {/* Hero */}
       <section style={{ position: 'relative', overflow: 'hidden', padding: 'clamp(80px,10vw,120px) 24px 60px', textAlign: 'center' }}>
         <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none' }}>
-          <div style={{ position: 'absolute', top: '8%', left: '25%', width: 400, height: 400, borderRadius: '50%', background: 'radial-gradient(circle, rgba(139,92,246,0.10) 0%, transparent 70%)', animation: 'cp-float 11s ease-in-out infinite' }} />
-          <div style={{ position: 'absolute', top: '20%', right: '15%', width: 280, height: 280, borderRadius: '50%', background: 'radial-gradient(circle, rgba(59,130,246,0.08) 0%, transparent 70%)', animation: 'cp-float 8s ease-in-out infinite reverse' }} />
+          <div style={{ position: 'absolute', top: '8%', left: '25%', width: 400, height: 400, borderRadius: '50%', background: 'radial-gradient(circle, rgba(15,201,138,0.10) 0%, transparent 70%)', animation: 'cp-float 11s ease-in-out infinite' }} />
+          <div style={{ position: 'absolute', top: '20%', right: '15%', width: 280, height: 280, borderRadius: '50%', background: 'radial-gradient(circle, rgba(33,241,168,0.08) 0%, transparent 70%)', animation: 'cp-float 8s ease-in-out infinite reverse' }} />
         </div>
         <div style={{ position: 'relative', maxWidth: 620, margin: '0 auto' }}>
           <div style={{ marginBottom: 20 }}>
-            <span style={pill('rgba(139,92,246,0.1)', T.violet, 'rgba(139,92,246,0.25)')}>● Get in touch</span>
+            <span style={pill('rgba(15,201,138,0.1)', T.violet, 'rgba(15,201,138,0.25)')}>● Get in touch</span>
           </div>
           <h1 style={{ fontSize: 'clamp(30px,5vw,54px)', fontWeight: 900, lineHeight: 1.1, margin: '0 0 18px', letterSpacing: '-0.03em' }}>
             Talk to a real{' '}
@@ -223,7 +223,7 @@ export default function ContactPage() {
                     style={{
                       padding: '13px 24px', borderRadius: 10,
                       background: formState === 'submitting' ? T.t3 : T.violet,
-                      color: '#fff', fontWeight: 700, fontSize: 15, border: 'none',
+                      color: '#171717', fontWeight: 700, fontSize: 15, border: 'none',
                       cursor: formState === 'submitting' ? 'not-allowed' : 'pointer',
                       transition: 'background .2s', fontFamily: 'inherit',
                     }}

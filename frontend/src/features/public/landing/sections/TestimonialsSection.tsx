@@ -2,8 +2,8 @@ import { color, maxW } from '../tokens';
 import { GradientText, Reveal, SectionEyebrow, SectionHeading, SpotlightCard } from '../primitives';
 
 const TESTIMONIALS = [
-  { quote: '"We went from missing 40% of calls during peak hours to zero missed calls. Our delivery team focuses on deliveries, not phone calls. ROI was clear in week one."', name: 'Rohit Mehra', role: 'Founder, FastShip Logistics · Delhi', avatar: 'R', grad: 'linear-gradient(135deg, #3b82f6, #8b5cf6)' },
-  { quote: '"The Hindi auto-detection is flawless. Our customers in tier-2 cities now get responses in their language without any effort from our side. Game changer."', name: 'Priya Nair', role: 'Operations Head, MedCare Clinics · Bangalore', avatar: 'P', grad: 'linear-gradient(135deg, #10b981, #3b82f6)' },
+  { quote: '"We went from missing 40% of calls during peak hours to zero missed calls. Our delivery team focuses on deliveries, not phone calls. ROI was clear in week one."', name: 'Rohit Mehra', role: 'Founder, FastShip Logistics · Delhi', avatar: 'R', grad: 'linear-gradient(135deg, #21F1A8, #0FC98A)' },
+  { quote: '"The Hindi auto-detection is flawless. Our customers in tier-2 cities now get responses in their language without any effort from our side. Game changer."', name: 'Priya Nair', role: 'Operations Head, MedCare Clinics · Bangalore', avatar: 'P', grad: 'linear-gradient(135deg, #10b981, #21F1A8)' },
   { quote: '"Setup took 22 minutes. That\'s it. No developers, no integration headaches. The voice quality is so good our clients think it\'s a real receptionist."', name: 'Amit Sharma', role: 'CEO, BuildRight Realty · Mumbai', avatar: 'A', grad: 'linear-gradient(135deg, #f59e0b, #ec4899)' },
 ];
 
@@ -22,7 +22,7 @@ export function TestimonialsSection() {
           {TESTIMONIALS.map(({ quote, name, role, avatar, grad }, i) => (
             <Reveal key={i} delay={i * 100}>
               <SpotlightCard style={{ padding: 24, minHeight: 200 }}>
-                <div style={{ position: 'absolute', top: 16, right: 20, fontSize: 52, fontWeight: 800, lineHeight: 1, color: 'rgba(59,130,246,0.13)', userSelect: 'none' }} aria-hidden="true">
+                <div style={{ position: 'absolute', top: 16, right: 20, fontSize: 52, fontWeight: 800, lineHeight: 1, color: 'rgba(33,241,168,0.13)', userSelect: 'none' }} aria-hidden="true">
                   "
                 </div>
                 <div style={{ display: 'flex', gap: 2, marginBottom: 14, color: color.amber, fontSize: 12 }} aria-label="5 out of 5 stars">
@@ -33,7 +33,7 @@ export function TestimonialsSection() {
                   <div style={{
                     width: 34, height: 34, borderRadius: 10,
                     background: grad, display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    fontSize: 13, fontWeight: 800, color: '#fff', flexShrink: 0,
+                    fontSize: 13, fontWeight: 800, color: '#171717', flexShrink: 0,
                   }} aria-hidden="true">
                     {avatar}
                   </div>

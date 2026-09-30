@@ -15,16 +15,16 @@
  */
 
 const T = {
-  bg:     '#030712',
-  bgS:    '#0d1524',
-  t1:     '#f8fafc',
-  t2:     '#94a3b8',
-  t3:     '#475569',
-  blue:   '#3b82f6',
-  violet: '#8b5cf6',
+  bg:     '#171717',
+  bgS:    '#1f1f1f',
+  t1:     '#fafafa',
+  t2:     '#a3a3a3',
+  t3:     '#737373',
+  blue:   '#21F1A8',
+  violet: '#0FC98A',
   green:  '#22c55e',
   border: 'rgba(255,255,255,0.07)',
-  borderB:'rgba(59,130,246,0.18)',
+  borderB:'rgba(33,241,168,0.18)',
 };
 
 const S = {
@@ -79,7 +79,7 @@ const S = {
     verticalAlign: 'top' as const,
   } as React.CSSProperties,
   highlight: {
-    background: 'rgba(59,130,246,0.08)',
+    background: 'rgba(33,241,168,0.08)',
     border: `1px solid ${T.borderB}`,
     borderRadius: 10,
     padding: '16px 20px',
@@ -132,7 +132,7 @@ export default function PrivacyPolicyPage() {
       >
         <div style={{ maxWidth: 760, margin: '0 auto' }}>
           <div style={{ display: 'flex', justifyContent: 'center', gap: 8, flexWrap: 'wrap', marginBottom: 20 }}>
-            <span style={{ fontSize: 11, fontWeight: 700, padding: '3px 10px', borderRadius: 20, background: 'rgba(59,130,246,0.12)', color: T.blue, border: `1px solid ${T.borderB}` }}>
+            <span style={{ fontSize: 11, fontWeight: 700, padding: '3px 10px', borderRadius: 20, background: 'rgba(33,241,168,0.12)', color: T.blue, border: `1px solid ${T.borderB}` }}>
               Effective {EFFECTIVE_DATE}
             </span>
             <span style={{ fontSize: 11, fontWeight: 700, padding: '3px 10px', borderRadius: 20, background: 'rgba(34,197,94,0.1)', color: T.green, border: '1px solid rgba(34,197,94,0.2)' }}>

@@ -9,13 +9,13 @@ import { Link } from 'react-router-dom';
 import api from '@/utils/api';
 
 const T = {
-  bg: '#07070f', bgS: '#0e0e1a', bgC: 'rgba(255,255,255,0.04)',
+  bg: '#141414', bgS: '#1c1c1c', bgC: 'rgba(255,255,255,0.04)',
   bdr: 'rgba(255,255,255,0.07)', bdrB: 'rgba(255,255,255,0.12)',
   green: '#22c55e', greenD: 'rgba(34,197,94,0.12)',
   amber: '#f59e0b', amberD: 'rgba(245,158,11,0.12)',
-  blue: '#3b82f6', blueD: 'rgba(59,130,246,0.12)',
+  blue: '#21F1A8', blueD: 'rgba(33,241,168,0.12)',
   purple: '#a855f7', purpleD: 'rgba(168,85,247,0.12)',
-  t1: '#f8fafc', t2: '#94a3b8', t3: '#475569',
+  t1: '#fafafa', t2: '#a3a3a3', t3: '#737373',
 };
 
 interface TopReferrer {
@@ -30,7 +30,7 @@ interface ReferralTree {
   referrals: ReferralLink[];
 }
 
-const medalColors = ['#f59e0b', '#94a3b8', '#cd7c2f'];
+const medalColors = ['#f59e0b', '#a3a3a3', '#cd7c2f'];
 
 export default function SuperAdminReferralPage() {
   const [lookupOrgId, setLookupOrgId] = useState('');
@@ -229,13 +229,13 @@ export default function SuperAdminReferralPage() {
                   if (el?.value.trim()) genCodeMutation.mutate(el.value.trim());
                 }}
                 disabled={genCodeMutation.isPending}
-                style={{ padding: '9px 16px', background: T.purpleD, border: `1px solid ${T.purple}`,
-                  borderRadius: 8, color: T.purple, cursor: 'pointer', fontSize: 13, fontWeight: 600 }}>
+                style={{ padding: '9px 16px', background: 'rgba(33,241,168,0.12)', border: `1px solid #21F1A8`,
+                  borderRadius: 8, color: '#21F1A8', cursor: 'pointer', fontSize: 13, fontWeight: 600 }}>
                 {genCodeMutation.isPending ? 'Generating…' : 'Generate / Regenerate Code'}
               </button>
               {genCodeMutation.isSuccess && genCodeMutation.data && (
                 <div style={{ padding: '10px 14px', background: T.purpleD,
-                  border: `1px solid ${T.purple}55`, borderRadius: 8 }}>
+                  border: `1px solid #21F1A855`, borderRadius: 8 }}>
                   <div style={{ fontSize: 11, color: T.t3, marginBottom: 4 }}>New code</div>
                   <code style={{ fontSize: 16, color: T.purple, fontWeight: 700 }}>
                     {genCodeMutation.data}

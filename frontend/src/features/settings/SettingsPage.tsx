@@ -51,9 +51,9 @@ type LanguagesValues = z.infer<typeof LanguagesSchema>;
 function InfoRow({ label, value }: { label: string; value?: string | null }) {
   if (!value) return null;
   return (
-    <div className="flex items-start justify-between gap-4 py-3 border-b border-slate-50 last:border-0">
+    <div className="flex items-start justify-between gap-4 py-3 border-b border-white/5 last:border-0">
       <span className="text-xs font-medium text-slate-400 w-40 flex-shrink-0 pt-0.5">{label}</span>
-      <span className="text-sm text-slate-700 text-right flex-1 leading-snug">{value}</span>
+      <span className="text-sm text-slate-200 text-right flex-1 leading-snug">{value}</span>
     </div>
   );
 }
@@ -68,14 +68,14 @@ function CopyRow({ label, value }: { label: string; value?: string }) {
     });
   };
   return (
-    <div className="flex items-center justify-between gap-4 py-3 border-b border-slate-50 last:border-0">
+    <div className="flex items-center justify-between gap-4 py-3 border-b border-white/5 last:border-0">
       <span className="text-xs font-medium text-slate-400 w-40 flex-shrink-0">{label}</span>
       <div className="flex items-center gap-2">
-        <code className="text-xs bg-slate-50 border border-slate-100 rounded-md px-2 py-1
-          font-mono text-slate-600 max-w-[200px] truncate">{value}</code>
+        <code className="text-xs bg-white/[0.03] border border-white/10 rounded-md px-2 py-1
+          font-mono text-slate-300 max-w-[200px] truncate">{value}</code>
         <button onClick={copy} title="Copy"
           className="flex h-7 w-7 items-center justify-center rounded-md text-slate-400
-            hover:bg-slate-100 hover:text-slate-600 transition-colors">
+            hover:bg-white/[0.06] hover:text-slate-300 transition-colors">
           {copied
             ? <CheckCircle2 size={13} className="text-emerald-500" />
             : <Copy size={13} />}
@@ -99,9 +99,9 @@ function Section({
   children: React.ReactNode;
 }) {
   return (
-    <div className="rounded-xl border border-slate-100 bg-white">
+    <div className="rounded-xl border border-white/10 bg-surface">
       <div className="flex items-center justify-between px-5 pt-5 pb-1">
-        <h3 className="text-sm font-semibold text-slate-800">{title}</h3>
+        <h3 className="text-sm font-semibold text-slate-100">{title}</h3>
         {action}
       </div>
       <div className="px-5 pb-4">{children}</div>
@@ -112,10 +112,10 @@ function Section({
 /** Inline success banner shown after a successful save. Auto-hides after 3 s. */
 function SavedBanner() {
   return (
-    <div className="flex items-center gap-2 rounded-lg bg-emerald-50 border border-emerald-100
+    <div className="flex items-center gap-2 rounded-lg bg-emerald-500/10 border border-emerald-500/30
       px-4 py-2.5 mt-3 mb-1">
       <CheckCircle2 size={14} className="text-emerald-500 flex-shrink-0" />
-      <span className="text-sm font-medium text-emerald-700">Changes saved successfully.</span>
+      <span className="text-sm font-medium text-emerald-300">Changes saved successfully.</span>
     </div>
   );
 }
@@ -125,8 +125,8 @@ function EditButton({ onClick }: { onClick: () => void }) {
   return (
     <button
       onClick={onClick}
-      className="flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white
-        px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-50 hover:border-slate-300
+      className="flex items-center gap-1.5 rounded-lg border border-white/10 bg-surface
+        px-3 py-1.5 text-xs font-medium text-slate-300 hover:bg-white/[0.03] hover:border-white/15
         transition-colors shadow-sm"
     >
       <Pencil size={12} />
@@ -186,14 +186,14 @@ function LanguagesForm({ onSaved, onCancel }: { onSaved: () => void; onCancel: (
   return (
     <form onSubmit={handleSubmit(onSubmit)} noValidate className="mt-4 space-y-5">
       {serverError && (
-        <div className="rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+        <div className="rounded-md border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-300">
           {serverError}
         </div>
       )}
 
       {/* Language checkboxes */}
       <div>
-        <p className="text-sm font-medium text-slate-700 mb-3">Supported languages</p>
+        <p className="text-sm font-medium text-slate-200 mb-3">Supported languages</p>
         <div className="space-y-2.5">
           {LANGUAGE_OPTIONS.map(({ code, label }) => {
             const checked = selectedLangs.includes(code);
@@ -213,8 +213,8 @@ function LanguagesForm({ onSaved, onCancel }: { onSaved: () => void; onCancel: (
                     className={[
                       'h-4 w-4 rounded border-2 flex items-center justify-center transition',
                       checked
-                        ? 'border-brand-500 bg-brand-500'
-                        : 'border-slate-300 bg-white group-hover:border-brand-400',
+                        ? 'border-brand-500 bg-brand-400'
+                        : 'border-white/15 bg-surface group-hover:border-brand-400',
                     ].join(' ')}
                   >
                     {checked && (
@@ -225,19 +225,19 @@ function LanguagesForm({ onSaved, onCancel }: { onSaved: () => void; onCancel: (
                     )}
                   </span>
                 </span>
-                <span className="text-sm text-slate-700">{label}</span>
+                <span className="text-sm text-slate-200">{label}</span>
               </label>
             );
           })}
         </div>
         {errors.supportedLanguages && (
-          <p className="mt-2 text-xs text-red-600">{errors.supportedLanguages.message}</p>
+          <p className="mt-2 text-xs text-red-300">{errors.supportedLanguages.message}</p>
         )}
       </div>
 
       {/* Fallback number */}
       <div>
-        <label htmlFor="s-fallback" className="block text-sm font-medium text-slate-700 mb-1">
+        <label htmlFor="s-fallback" className="block text-sm font-medium text-slate-200 mb-1">
           Fallback number <span className="text-slate-400 font-normal">(optional)</span>
         </label>
         <input
@@ -245,8 +245,8 @@ function LanguagesForm({ onSaved, onCancel }: { onSaved: () => void; onCancel: (
           type="tel"
           {...register('fallbackNumber')}
           placeholder="+91 98765 43210"
-          className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm shadow-sm
-            outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition bg-white"
+          className="w-full rounded-md border border-white/15 px-3 py-2 text-sm shadow-sm
+            outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition bg-surface"
         />
         <p className="mt-1 text-xs text-slate-400">
           When the AI can't handle a call, it transfers to this number.
@@ -254,12 +254,12 @@ function LanguagesForm({ onSaved, onCancel }: { onSaved: () => void; onCancel: (
       </div>
 
       {/* Form actions */}
-      <div className="flex items-center gap-3 pt-2 border-t border-slate-100">
+      <div className="flex items-center gap-3 pt-2 border-t border-white/10">
         <button
           type="submit"
           disabled={isSubmitting}
-          className="flex items-center gap-2 rounded-lg bg-brand-600 px-5 py-2.5
-            text-sm font-semibold text-white hover:bg-brand-700
+          className="flex items-center gap-2 rounded-lg bg-brand-400 px-5 py-2.5
+            text-sm font-semibold text-slate-900 hover:bg-brand-300
             disabled:opacity-50 disabled:cursor-not-allowed transition"
         >
           {isSubmitting
@@ -271,8 +271,8 @@ function LanguagesForm({ onSaved, onCancel }: { onSaved: () => void; onCancel: (
           type="button"
           onClick={onCancel}
           disabled={isSubmitting}
-          className="rounded-lg px-4 py-2.5 text-sm font-medium text-slate-500
-            hover:bg-slate-100 hover:text-slate-700 transition disabled:opacity-50"
+          className="rounded-lg px-4 py-2.5 text-sm font-medium text-slate-400
+            hover:bg-white/[0.06] hover:text-slate-200 transition disabled:opacity-50"
         >
           Cancel
         </button>
@@ -319,13 +319,13 @@ function ProfileForm({ onSaved, onCancel }: { onSaved: () => void; onCancel: () 
   return (
     <form onSubmit={handleSubmit(onSubmit)} noValidate className="mt-3 space-y-4">
       {serverError && (
-        <div className="rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+        <div className="rounded-md border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-300">
           {serverError}
         </div>
       )}
 
       <div>
-        <label htmlFor="s-profile-name" className="block text-sm font-medium text-slate-700 mb-1">
+        <label htmlFor="s-profile-name" className="block text-sm font-medium text-slate-200 mb-1">
           Display name
         </label>
         <input
@@ -336,11 +336,11 @@ function ProfileForm({ onSaved, onCancel }: { onSaved: () => void; onCancel: () 
           className={[
             'w-full rounded-md border px-3 py-2 text-sm shadow-sm outline-none',
             'focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition',
-            errors.name ? 'border-red-400 bg-red-50' : 'border-slate-300 bg-white',
+            errors.name ? 'border-red-400 bg-red-500/10' : 'border-white/15 bg-surface',
           ].join(' ')}
         />
         {errors.name && (
-          <p className="mt-1 text-xs text-red-600">{errors.name.message}</p>
+          <p className="mt-1 text-xs text-red-300">{errors.name.message}</p>
         )}
         <p className="mt-1 text-xs text-slate-400">
           Your name appears in team member lists and notification emails.
@@ -348,16 +348,16 @@ function ProfileForm({ onSaved, onCancel }: { onSaved: () => void; onCancel: () 
       </div>
 
       {/* Read-only email notice */}
-      <div className="rounded-lg bg-slate-50 border border-slate-100 px-4 py-2.5 text-xs text-slate-500">
+      <div className="rounded-lg bg-white/[0.03] border border-white/10 px-4 py-2.5 text-xs text-slate-400">
         Email address cannot be changed here. Contact support to update your email.
       </div>
 
-      <div className="flex items-center gap-3 pt-1 border-t border-slate-100">
+      <div className="flex items-center gap-3 pt-1 border-t border-white/10">
         <button
           type="submit"
           disabled={isSubmitting}
-          className="flex items-center gap-2 rounded-lg bg-brand-600 px-5 py-2.5
-            text-sm font-semibold text-white hover:bg-brand-700
+          className="flex items-center gap-2 rounded-lg bg-brand-400 px-5 py-2.5
+            text-sm font-semibold text-slate-900 hover:bg-brand-300
             disabled:opacity-50 disabled:cursor-not-allowed transition"
         >
           {isSubmitting
@@ -369,8 +369,8 @@ function ProfileForm({ onSaved, onCancel }: { onSaved: () => void; onCancel: () 
           type="button"
           onClick={onCancel}
           disabled={isSubmitting}
-          className="rounded-lg px-4 py-2.5 text-sm font-medium text-slate-500
-            hover:bg-slate-100 hover:text-slate-700 transition disabled:opacity-50"
+          className="rounded-lg px-4 py-2.5 text-sm font-medium text-slate-400
+            hover:bg-white/[0.06] hover:text-slate-200 transition disabled:opacity-50"
         >
           Cancel
         </button>
@@ -443,7 +443,7 @@ function ChangePasswordForm({ onSaved, onCancel }: { onSaved: () => void; onCanc
     const hasError = !!errors[name];
     return (
       <div>
-        <label htmlFor={id} className="block text-sm font-medium text-slate-700 mb-1">
+        <label htmlFor={id} className="block text-sm font-medium text-slate-200 mb-1">
           {label}
         </label>
         <div className="relative">
@@ -455,14 +455,14 @@ function ChangePasswordForm({ onSaved, onCancel }: { onSaved: () => void; onCanc
             className={[
               'w-full rounded-md border px-3 py-2 pr-10 text-sm shadow-sm outline-none',
               'focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition',
-              hasError ? 'border-red-400 bg-red-50' : 'border-slate-300 bg-white',
+              hasError ? 'border-red-400 bg-red-500/10' : 'border-white/15 bg-surface',
             ].join(' ')}
           />
           <button
             type="button"
             onClick={onToggle}
             className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400
-              hover:text-slate-600 transition-colors"
+              hover:text-slate-300 transition-colors"
             tabIndex={-1}
             aria-label={show ? 'Hide password' : 'Show password'}
           >
@@ -470,7 +470,7 @@ function ChangePasswordForm({ onSaved, onCancel }: { onSaved: () => void; onCanc
           </button>
         </div>
         {errors[name] && (
-          <p className="mt-1 text-xs text-red-600">{errors[name]?.message}</p>
+          <p className="mt-1 text-xs text-red-300">{errors[name]?.message}</p>
         )}
       </div>
     );
@@ -479,7 +479,7 @@ function ChangePasswordForm({ onSaved, onCancel }: { onSaved: () => void; onCanc
   return (
     <form onSubmit={handleSubmit(onSubmit)} noValidate className="mt-3 space-y-4">
       {serverError && (
-        <div className="rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+        <div className="rounded-md border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-300">
           {serverError}
         </div>
       )}
@@ -511,12 +511,12 @@ function ChangePasswordForm({ onSaved, onCancel }: { onSaved: () => void; onCanc
         Your current session remains active after changing.
       </p>
 
-      <div className="flex items-center gap-3 pt-1 border-t border-slate-100">
+      <div className="flex items-center gap-3 pt-1 border-t border-white/10">
         <button
           type="submit"
           disabled={isSubmitting}
-          className="flex items-center gap-2 rounded-lg bg-brand-600 px-5 py-2.5
-            text-sm font-semibold text-white hover:bg-brand-700
+          className="flex items-center gap-2 rounded-lg bg-brand-400 px-5 py-2.5
+            text-sm font-semibold text-slate-900 hover:bg-brand-300
             disabled:opacity-50 disabled:cursor-not-allowed transition"
         >
           {isSubmitting
@@ -528,8 +528,8 @@ function ChangePasswordForm({ onSaved, onCancel }: { onSaved: () => void; onCanc
           type="button"
           onClick={onCancel}
           disabled={isSubmitting}
-          className="rounded-lg px-4 py-2.5 text-sm font-medium text-slate-500
-            hover:bg-slate-100 hover:text-slate-700 transition disabled:opacity-50"
+          className="rounded-lg px-4 py-2.5 text-sm font-medium text-slate-400
+            hover:bg-white/[0.06] hover:text-slate-200 transition disabled:opacity-50"
         >
           Cancel
         </button>
@@ -601,26 +601,26 @@ function PhoneNumberSetup() {
   return (
     <div className="mt-3 space-y-4">
       {/* Status row */}
-      <div className="flex items-center gap-3 pb-4 border-b border-slate-50">
+      <div className="flex items-center gap-3 pb-4 border-b border-white/5">
         <div
           className="flex h-9 w-9 items-center justify-center rounded-lg flex-shrink-0"
-          style={{ background: 'rgba(99,102,241,.08)', border: '1px solid rgba(99,102,241,.15)' }}
+          style={{ background: 'rgba(33,241,168,.08)', border: '1px solid rgba(33,241,168,.15)' }}
         >
-          <Phone size={15} className="text-brand-600" strokeWidth={1.8} />
+          <Phone size={15} className="text-brand-300" strokeWidth={1.8} />
         </div>
         <div className="flex-1">
-          <p className="text-sm font-medium text-slate-800">Inbound Call Routing</p>
+          <p className="text-sm font-medium text-slate-100">Inbound Call Routing</p>
           {isLoading ? (
             <p className="text-xs text-slate-400 mt-0.5">Loading…</p>
           ) : data?.vapiPhoneNumberId ? (
             <div className="flex items-center gap-1.5 mt-0.5">
               <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
-              <span className="text-xs text-emerald-600 font-medium">Phone number linked</span>
+              <span className="text-xs text-emerald-300 font-medium">Phone number linked</span>
             </div>
           ) : (
             <div className="flex items-center gap-1.5 mt-0.5">
               <span className="h-1.5 w-1.5 rounded-full bg-amber-400" />
-              <span className="text-xs text-amber-600 font-medium">No phone number linked yet</span>
+              <span className="text-xs text-amber-300 font-medium">No phone number linked yet</span>
             </div>
           )}
         </div>
@@ -631,9 +631,9 @@ function PhoneNumberSetup() {
       )}
 
       {/* How-to instructions */}
-      <div className="rounded-lg bg-slate-50 border border-slate-100 p-4 text-xs text-slate-500
+      <div className="rounded-lg bg-white/[0.03] border border-white/10 p-4 text-xs text-slate-400
         leading-relaxed space-y-2">
-        <p className="font-semibold text-slate-600">How to connect your Vapi phone number:</p>
+        <p className="font-semibold text-slate-300">How to connect your Vapi phone number:</p>
         <ol className="list-decimal list-inside space-y-1.5">
           <li>
             Open the{' '}
@@ -641,7 +641,7 @@ function PhoneNumberSetup() {
               href="https://dashboard.vapi.ai/phone-numbers"
               target="_blank"
               rel="noopener noreferrer"
-              className="text-brand-600 hover:underline inline-flex items-center gap-0.5"
+              className="text-brand-300 hover:underline inline-flex items-center gap-0.5"
             >
               Vapi Phone Numbers dashboard
               <ExternalLink size={10} className="inline" />
@@ -650,8 +650,8 @@ function PhoneNumberSetup() {
           <li>Buy or import a phone number (Twilio, Vonage, or Vapi-managed)</li>
           <li>
             In the number's settings, set <strong>Server URL</strong> to:<br />
-            <code className="bg-white border border-slate-200 rounded px-1.5 py-0.5
-              font-mono text-slate-700 text-[10px] break-all">
+            <code className="bg-surface border border-white/10 rounded px-1.5 py-0.5
+              font-mono text-slate-200 text-[10px] break-all">
               https://your-api-domain.com/api/v1/webhooks/vapi
             </code>
           </li>
@@ -661,7 +661,7 @@ function PhoneNumberSetup() {
 
       {/* Input + save */}
       <div className="space-y-2">
-        <label className="text-xs font-medium text-slate-600" htmlFor="phoneNumberId">
+        <label className="text-xs font-medium text-slate-300" htmlFor="phoneNumberId">
           Vapi Phone Number ID
         </label>
         <div className="flex gap-2">
@@ -672,15 +672,15 @@ function PhoneNumberSetup() {
             onChange={(e) => setInputValue(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && handleSave()}
             placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
-            className="flex-1 rounded-lg border border-slate-200 px-3 py-2 text-sm font-mono
-              text-slate-700 placeholder:text-slate-300 focus:outline-none focus:ring-2
+            className="flex-1 rounded-lg border border-white/10 px-3 py-2 text-sm font-mono
+              text-slate-200 placeholder:text-slate-300 focus:outline-none focus:ring-2
               focus:ring-brand-500 focus:border-transparent transition-shadow"
           />
           <button
             onClick={handleSave}
             disabled={mutation.isPending || !inputValue.trim()}
             className="flex items-center gap-1.5 rounded-lg px-4 py-2 text-sm font-medium
-              bg-brand-600 text-white hover:bg-brand-700 disabled:opacity-50
+              bg-brand-400 text-slate-900 hover:bg-brand-300 disabled:opacity-50
               disabled:cursor-not-allowed transition-colors"
           >
             {mutation.isPending
@@ -727,12 +727,12 @@ function AdminAccessLogSection() {
   return (
     <Section title="Recent Admin Access">
       <div style={{ paddingTop: 8 }}>
-        <p style={{ fontSize: 12, color: '#64748b', marginBottom: 12, lineHeight: 1.6 }}>
+        <p style={{ fontSize: 12, color: '#8a8a8a', marginBottom: 12, lineHeight: 1.6 }}>
           For transparency, this log shows when the AgentOps platform team has accessed your organisation,
           for example to debug an issue. Operator identity is not disclosed.
         </p>
         {isLoading ? (
-          <p style={{ fontSize: 12, color: '#94a3b8' }}>Loading…</p>
+          <p style={{ fontSize: 12, color: '#a3a3a3' }}>Loading…</p>
         ) : events.length === 0 ? (
           <div style={{
             display: 'flex', alignItems: 'center', gap: 8,
@@ -753,12 +753,12 @@ function AdminAccessLogSection() {
                 background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(0,0,0,0.06)',
               }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <Shield size={13} style={{ color: '#94a3b8', flexShrink: 0 }} />
-                  <span style={{ fontSize: 12, color: '#475569' }}>
+                  <Shield size={13} style={{ color: '#a3a3a3', flexShrink: 0 }} />
+                  <span style={{ fontSize: 12, color: '#737373' }}>
                     {ACTION_LABELS[ev.action] ?? ev.action}
                   </span>
                 </div>
-                <span style={{ fontSize: 11, color: '#94a3b8', flexShrink: 0 }}>
+                <span style={{ fontSize: 11, color: '#a3a3a3', flexShrink: 0 }}>
                   {new Date(ev.createdAt).toLocaleDateString('en-IN', {
                     day: 'numeric', month: 'short', year: 'numeric',
                     hour: '2-digit', minute: '2-digit',
@@ -820,31 +820,31 @@ export default function SettingsPage() {
 
       {/* Page header */}
       <div>
-        <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Settings</h1>
-        <p className="mt-1 text-sm text-slate-500">
+        <h1 className="text-2xl font-bold text-slate-50 tracking-tight">Settings</h1>
+        <p className="mt-1 text-sm text-slate-400">
           Manage your organisation's configuration, voice settings, and phone number.
         </p>
       </div>
 
       {/* ── 1. Organisation Profile ──────────────────────────────────────── */}
       <Section title="Organisation Profile">
-        <div className="flex items-center gap-4 mb-4 mt-3 pb-4 border-b border-slate-50">
+        <div className="flex items-center gap-4 mb-4 mt-3 pb-4 border-b border-white/5">
           <div
             className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-xl
               text-lg font-bold text-white"
-            style={{ background: 'linear-gradient(135deg, #4f46e5, #7c3aed)' }}
+            style={{ background: 'linear-gradient(135deg, #0FC98A, #0AA271)' }}
           >
             {currentOrg?.name?.[0]?.toUpperCase() ?? '?'}
           </div>
           <div className="flex-1 min-w-0">
-            <p className="font-semibold text-slate-800 truncate">
+            <p className="font-semibold text-slate-100 truncate">
               {currentOrg?.name ?? '—'}
             </p>
             <p className="text-xs text-slate-400 font-mono">{currentOrg?.slug}</p>
           </div>
           {currentRole && (
-            <span className="flex-shrink-0 rounded-full border border-brand-100 bg-brand-50
-              px-2.5 py-1 text-xs font-semibold text-brand-700">
+            <span className="flex-shrink-0 rounded-full border border-brand-400/30 bg-brand-400/10
+              px-2.5 py-1 text-xs font-semibold text-brand-300">
               {currentRole}
             </span>
           )}
@@ -940,9 +940,9 @@ export default function SettingsPage() {
             ? (
               <button
                 onClick={() => { setPasswordEdit(true); setPasswordSaved(false); }}
-                className="flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white
-                  px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-50
-                  hover:border-slate-300 transition-colors shadow-sm"
+                className="flex items-center gap-1.5 rounded-lg border border-white/10 bg-surface
+                  px-3 py-1.5 text-xs font-medium text-slate-300 hover:bg-white/[0.03]
+                  hover:border-white/15 transition-colors shadow-sm"
               >
                 Change password
               </button>

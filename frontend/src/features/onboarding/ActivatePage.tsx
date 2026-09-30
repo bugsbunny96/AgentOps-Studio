@@ -169,35 +169,35 @@ function StatusIcon({ status }: { status: CheckItem['status'] }) {
 
 function SummaryCard({ org }: { org: Organization }) {
   return (
-    <div className="rounded-xl border border-slate-200 bg-white p-5 space-y-3">
+    <div className="rounded-xl border border-white/10 bg-surface p-5 space-y-3">
       <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">
         Your agent at a glance
       </p>
       <div className="grid grid-cols-2 gap-x-8 gap-y-2 text-sm">
         <div>
           <p className="text-xs text-slate-400">Business</p>
-          <p className="font-medium text-slate-800 truncate">{org.name}</p>
+          <p className="font-medium text-slate-100 truncate">{org.name}</p>
         </div>
         <div>
           <p className="text-xs text-slate-400">Industry</p>
-          <p className="font-medium text-slate-800">{org.industry}</p>
+          <p className="font-medium text-slate-100">{org.industry}</p>
         </div>
         {org.agentName && (
           <div>
             <p className="text-xs text-slate-400">Agent name</p>
-            <p className="font-medium text-slate-800">{org.agentName}</p>
+            <p className="font-medium text-slate-100">{org.agentName}</p>
           </div>
         )}
         <div>
           <p className="text-xs text-slate-400">Languages</p>
-          <p className="font-medium text-slate-800">
+          <p className="font-medium text-slate-100">
             {(org.supportedLanguages ?? []).map((c) => LANG_LABELS[c] ?? c).join(', ') || 'English'}
           </p>
         </div>
         {org.businessHours?.start && (
           <div>
             <p className="text-xs text-slate-400">Hours</p>
-            <p className="font-medium text-slate-800">
+            <p className="font-medium text-slate-100">
               {org.businessHours.start} – {org.businessHours.end}
             </p>
           </div>
@@ -205,7 +205,7 @@ function SummaryCard({ org }: { org: Organization }) {
         {org.fallbackNumber && (
           <div>
             <p className="text-xs text-slate-400">Fallback number</p>
-            <p className="font-medium text-slate-800">{org.fallbackNumber}</p>
+            <p className="font-medium text-slate-100">{org.fallbackNumber}</p>
           </div>
         )}
       </div>
@@ -320,20 +320,20 @@ function TestCallWidget({ vapiPublicKey, vapiAssistantId, agentName, systemPromp
   );
 
   return (
-    <div className="rounded-xl border border-slate-200 bg-white overflow-hidden">
+    <div className="rounded-xl border border-white/10 bg-surface overflow-hidden">
       {/* Header */}
-      <div className="flex items-center gap-3 px-5 py-4 border-b border-slate-100 bg-slate-50">
-        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-indigo-100 text-indigo-600">
+      <div className="flex items-center gap-3 px-5 py-4 border-b border-white/10 bg-white/[0.03]">
+        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-brand-400/15 text-brand-300">
           <Bot size={16} />
         </div>
         <div className="min-w-0">
-          <p className="text-sm font-semibold text-slate-800 truncate">{agentName}</p>
+          <p className="text-sm font-semibold text-slate-100 truncate">{agentName}</p>
           <p className="text-xs text-slate-400">AI Voice Receptionist</p>
         </div>
         <div className="ml-auto flex items-center gap-1.5">
           <span
             className={`h-2 w-2 rounded-full ${
-              isCallActive ? 'bg-emerald-500 animate-pulse' : 'bg-slate-300'
+              isCallActive ? 'bg-emerald-500 animate-pulse' : 'bg-white/15'
             }`}
           />
           <span className="text-xs text-slate-400">
@@ -355,11 +355,11 @@ function TestCallWidget({ vapiPublicKey, vapiAssistantId, agentName, systemPromp
         {/* Idle / ready state */}
         {callState === 'idle' && (
           <div className="text-center space-y-3">
-            <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-indigo-50 text-indigo-500">
+            <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-brand-400/10 text-brand-300">
               <PhoneCall size={24} />
             </div>
             <div>
-              <p className="text-sm font-medium text-slate-700">Test your AI receptionist</p>
+              <p className="text-sm font-medium text-slate-200">Test your AI receptionist</p>
               <p className="text-xs text-slate-400 mt-0.5">
                 Click to start a browser call — your microphone is used for the test.
               </p>
@@ -367,9 +367,9 @@ function TestCallWidget({ vapiPublicKey, vapiAssistantId, agentName, systemPromp
             <button
               type="button"
               onClick={startCall}
-              className="inline-flex items-center gap-2 rounded-md bg-indigo-600 px-5 py-2.5
-                text-sm font-semibold text-white shadow-sm hover:bg-indigo-700
-                focus:outline-none focus:ring-2 focus:ring-indigo-500 transition"
+              className="inline-flex items-center gap-2 rounded-md bg-brand-400 px-5 py-2.5
+                text-sm font-semibold text-slate-900 shadow-sm hover:bg-brand-300
+                focus:outline-none focus:ring-2 focus:ring-brand-500 transition"
             >
               <PhoneCall size={15} />
               Start test call
@@ -380,10 +380,10 @@ function TestCallWidget({ vapiPublicKey, vapiAssistantId, agentName, systemPromp
         {/* Connecting */}
         {isConnecting && (
           <div className="text-center space-y-3 py-2">
-            <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-indigo-50">
-              <Loader2 size={24} className="text-indigo-500 animate-spin" />
+            <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-brand-400/10">
+              <Loader2 size={24} className="text-brand-300 animate-spin" />
             </div>
-            <p className="text-sm text-slate-500">Connecting to your AI agent…</p>
+            <p className="text-sm text-slate-400">Connecting to your AI agent…</p>
           </div>
         )}
 
@@ -392,14 +392,14 @@ function TestCallWidget({ vapiPublicKey, vapiAssistantId, agentName, systemPromp
           <div className="space-y-4">
             {/* Waveform + status */}
             <div className="flex flex-col items-center gap-2 py-2">
-              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-emerald-50">
+              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-emerald-500/10">
                 {callState === 'agent-speaking' ? (
                   <SoundBars />
                 ) : (
                   <Mic size={20} className="text-emerald-500" />
                 )}
               </div>
-              <p className="text-xs text-slate-500">
+              <p className="text-xs text-slate-400">
                 {callState === 'agent-speaking' ? `${agentName} is speaking…` : 'Listening for you…'}
               </p>
             </div>
@@ -411,8 +411,8 @@ function TestCallWidget({ vapiPublicKey, vapiAssistantId, agentName, systemPromp
                 onClick={toggleMute}
                 className={`flex items-center gap-1.5 rounded-md px-3 py-2 text-xs font-medium border transition
                   ${isMuted
-                    ? 'border-amber-300 bg-amber-50 text-amber-700 hover:bg-amber-100'
-                    : 'border-slate-200 bg-slate-50 text-slate-600 hover:bg-slate-100'
+                    ? 'border-amber-500/30 bg-amber-500/10 text-amber-300 hover:bg-amber-500/15'
+                    : 'border-white/10 bg-white/[0.03] text-slate-300 hover:bg-white/[0.06]'
                   }`}
               >
                 {isMuted ? <MicOff size={13} /> : <Mic size={13} />}
@@ -434,11 +434,11 @@ function TestCallWidget({ vapiPublicKey, vapiAssistantId, agentName, systemPromp
         {/* Ended */}
         {callState === 'ended' && (
           <div className="text-center space-y-3">
-            <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-slate-100 text-slate-400">
+            <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-white/[0.06] text-slate-400">
               <PhoneOff size={20} />
             </div>
             <div>
-              <p className="text-sm font-medium text-slate-700">Call ended</p>
+              <p className="text-sm font-medium text-slate-200">Call ended</p>
               <p className="text-xs text-slate-400 mt-0.5">
                 How did your AI receptionist do?
               </p>
@@ -446,7 +446,7 @@ function TestCallWidget({ vapiPublicKey, vapiAssistantId, agentName, systemPromp
             <button
               type="button"
               onClick={resetWidget}
-              className="text-xs text-indigo-600 underline underline-offset-2 hover:text-indigo-700"
+              className="text-xs text-brand-300 underline underline-offset-2 hover:text-brand-200"
             >
               Test again
             </button>
@@ -456,12 +456,12 @@ function TestCallWidget({ vapiPublicKey, vapiAssistantId, agentName, systemPromp
         {/* Error */}
         {callState === 'error' && (
           <div className="space-y-3">
-            <div className="rounded-md border border-red-200 bg-red-50 px-4 py-3 flex items-start gap-2">
+            <div className="rounded-md border border-red-500/30 bg-red-500/10 px-4 py-3 flex items-start gap-2">
               <AlertTriangle size={15} className="text-red-500 flex-shrink-0 mt-0.5" />
               <div>
-                <p className="text-sm font-medium text-red-700">Call failed</p>
+                <p className="text-sm font-medium text-red-300">Call failed</p>
                 {errorMessage && (
-                  <p className="text-xs text-red-600 mt-0.5">{errorMessage}</p>
+                  <p className="text-xs text-red-300 mt-0.5">{errorMessage}</p>
                 )}
               </div>
             </div>
@@ -469,7 +469,7 @@ function TestCallWidget({ vapiPublicKey, vapiAssistantId, agentName, systemPromp
               <button
                 type="button"
                 onClick={resetWidget}
-                className="text-xs text-indigo-600 underline underline-offset-2 hover:text-indigo-700"
+                className="text-xs text-brand-300 underline underline-offset-2 hover:text-brand-200"
               >
                 Try again
               </button>
@@ -479,20 +479,20 @@ function TestCallWidget({ vapiPublicKey, vapiAssistantId, agentName, systemPromp
       </div>
 
       {/* System prompt accordion */}
-      <div className="border-t border-slate-100">
+      <div className="border-t border-white/10">
         <button
           type="button"
           onClick={() => setShowPrompt((p) => !p)}
-          className="flex w-full items-center justify-between px-5 py-3 text-xs text-slate-500
-            hover:bg-slate-50 transition"
+          className="flex w-full items-center justify-between px-5 py-3 text-xs text-slate-400
+            hover:bg-white/[0.03] transition"
         >
           <span className="font-medium">View system prompt</span>
           {showPrompt ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
         </button>
         {showPrompt && (
           <div className="px-5 pb-4">
-            <pre className="rounded-md bg-slate-50 border border-slate-100 p-3 text-[10px]
-              leading-relaxed text-slate-600 whitespace-pre-wrap font-mono max-h-48 overflow-y-auto">
+            <pre className="rounded-md bg-white/[0.03] border border-white/10 p-3 text-[10px]
+              leading-relaxed text-slate-300 whitespace-pre-wrap font-mono max-h-48 overflow-y-auto">
               {systemPrompt}
             </pre>
           </div>
@@ -573,12 +573,12 @@ export default function ActivatePage() {
     <div className="space-y-8">
       {/* Header */}
       <div className="flex items-start gap-4">
-        <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-xl bg-emerald-100 text-emerald-600">
+        <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-xl bg-emerald-500/15 text-emerald-300">
           <Rocket size={24} />
         </div>
         <div>
-          <h1 className="text-2xl font-bold text-slate-900">You're ready to launch!</h1>
-          <p className="mt-1 text-sm text-slate-500">
+          <h1 className="text-2xl font-bold text-slate-50">You're ready to launch!</h1>
+          <p className="mt-1 text-sm text-slate-400">
             {currentOrg?.name
               ? `${currentOrg.name}'s AI agent is configured and waiting to go live.`
               : 'Your AI agent is configured and waiting to go live.'}
@@ -588,12 +588,12 @@ export default function ActivatePage() {
 
       {/* Dynamic checklist */}
       {checklist.length > 0 && (
-        <div className="rounded-xl border border-slate-200 bg-slate-50 p-5 space-y-1">
+        <div className="rounded-xl border border-white/10 bg-white/[0.03] p-5 space-y-1">
           <div className="flex items-center justify-between mb-3">
             <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">
               Setup summary
             </p>
-            <span className="text-xs text-slate-500">{doneCount}/{totalCount} complete</span>
+            <span className="text-xs text-slate-400">{doneCount}/{totalCount} complete</span>
           </div>
           <div className="space-y-3">
             {checklist.map((item) => (
@@ -601,7 +601,7 @@ export default function ActivatePage() {
                 <StatusIcon status={item.status} />
                 <div className="min-w-0">
                   <p className={`text-sm font-medium leading-tight
-                    ${item.status === 'done' ? 'text-slate-800' : item.status === 'partial' ? 'text-amber-700' : 'text-slate-400'}`}>
+                    ${item.status === 'done' ? 'text-slate-100' : item.status === 'partial' ? 'text-amber-300' : 'text-slate-400'}`}>
                     {item.label}
                   </p>
                   {item.detail && (
@@ -623,15 +623,15 @@ export default function ActivatePage() {
       {/* ── Test Call Section ───────────────────────────────────────────── */}
       <div className="space-y-2">
         <div className="flex items-center justify-between">
-          <p className="text-sm font-semibold text-slate-700">Try your agent</p>
+          <p className="text-sm font-semibold text-slate-200">Try your agent</p>
           <span className="text-xs text-slate-400">Browser test call — uses your mic</span>
         </div>
 
         {/* Loading: provisioning Vapi assistant */}
         {provisionState === 'loading' && (
-          <div className="rounded-xl border border-slate-200 bg-slate-50 p-6 flex flex-col items-center gap-3">
-            <Loader2 size={22} className="text-indigo-500 animate-spin" />
-            <p className="text-sm text-slate-500">Creating your AI voice agent…</p>
+          <div className="rounded-xl border border-white/10 bg-white/[0.03] p-6 flex flex-col items-center gap-3">
+            <Loader2 size={22} className="text-brand-300 animate-spin" />
+            <p className="text-sm text-slate-400">Creating your AI voice agent…</p>
             <p className="text-xs text-slate-400 text-center max-w-xs">
               Your agent is being configured. This happens once — refresh won't trigger it again.
             </p>
@@ -650,12 +650,12 @@ export default function ActivatePage() {
 
         {/* No VAPI_PUBLIC_KEY configured */}
         {provisionState === 'no-key' && (
-          <div className="rounded-xl border border-amber-200 bg-amber-50 p-5 space-y-2">
+          <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-5 space-y-2">
             <div className="flex items-center gap-2">
               <AlertTriangle size={16} className="text-amber-500" />
-              <p className="text-sm font-medium text-amber-800">Browser test calls not configured</p>
+              <p className="text-sm font-medium text-amber-300">Browser test calls not configured</p>
             </div>
-            <p className="text-xs text-amber-700">
+            <p className="text-xs text-amber-300">
               Browser test calls are not yet enabled. Your AI agent has already been created and is live —
               contact your administrator to enable the browser test call feature.
             </p>
@@ -664,13 +664,13 @@ export default function ActivatePage() {
 
         {/* Provision error */}
         {provisionState === 'error' && (
-          <div className="rounded-xl border border-red-200 bg-red-50 p-5 space-y-2">
+          <div className="rounded-xl border border-red-500/30 bg-red-500/10 p-5 space-y-2">
             <div className="flex items-center gap-2">
               <AlertTriangle size={16} className="text-red-500" />
-              <p className="text-sm font-medium text-red-700">Agent creation failed</p>
+              <p className="text-sm font-medium text-red-300">Agent creation failed</p>
             </div>
             {provisionError && (
-              <p className="text-xs text-red-600">{provisionError}</p>
+              <p className="text-xs text-red-300">{provisionError}</p>
             )}
             <p className="text-xs text-red-500">
               You can still launch — your agent can be set up from the dashboard.
@@ -683,7 +683,7 @@ export default function ActivatePage() {
       {(provisionState === 'ready' || provisionState === 'no-key') && agentConfig && (
         <p className="text-xs text-slate-400 text-center">
           Agent ID:{' '}
-          <code className="font-mono text-indigo-600">
+          <code className="font-mono text-brand-300">
             {agentConfig.vapiAssistantId.slice(0, 8)}…
           </code>
         </p>
@@ -691,7 +691,7 @@ export default function ActivatePage() {
 
       {/* Launch error */}
       {launchError && (
-        <div className="rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+        <div className="rounded-md border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-300">
           {launchError}
         </div>
       )}

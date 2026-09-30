@@ -58,11 +58,11 @@ interface RevenueData {
 // ─── Design tokens ────────────────────────────────────────────────────────────
 
 const T = {
-  bg: '#07070f', bgS: '#0e0e1a', bgC: 'rgba(255,255,255,0.04)',
+  bg: '#141414', bgS: '#1c1c1c', bgC: 'rgba(255,255,255,0.04)',
   bdr: 'rgba(255,255,255,0.07)',
   red: '#ef4444', green: '#10b981', amber: '#f59e0b',
-  blue: '#3b82f6', violet: '#8b5cf6', cyan: '#06b6d4',
-  t1: '#f8fafc', t2: '#94a3b8', t3: '#475569',
+  blue: '#21F1A8', violet: '#0FC98A', cyan: '#06b6d4',
+  t1: '#fafafa', t2: '#a3a3a3', t3: '#737373',
 };
 
 const PLAN_COLOR: Record<string, string> = {
@@ -312,8 +312,8 @@ export default function SuperAdminAnalyticsPage() {
               style={{
                 padding: '6px 16px', borderRadius: 6, fontSize: 12, fontWeight: 700,
                 cursor: 'pointer', border: 'none', fontFamily: 'inherit',
-                background: days === d ? T.red : 'transparent',
-                color:      days === d ? '#fff' : T.t3,
+                background: days === d ? '#21F1A8' : 'transparent',
+                color:      days === d ? '#171717' : T.t3,
               }}
             >
               {d}d

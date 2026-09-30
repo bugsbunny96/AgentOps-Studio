@@ -56,7 +56,7 @@ export function PublicLayout() {
   }
 
   return (
-    <div className="min-h-screen" style={{ background: '#030712', color: '#f8fafc' }}>
+    <div className="min-h-screen" style={{ background: '#171717', color: '#fafafa' }}>
       {/* Backdrop — dims the page when mobile menu is open; tap to close */}
       {mobileOpen && (
         <div
@@ -79,7 +79,7 @@ export function PublicLayout() {
           zIndex: 100,
           borderBottom: '1px solid rgba(255,255,255,0.07)',
           backdropFilter: 'blur(20px)',
-          background: scrolled ? 'rgba(3,7,18,0.92)' : 'rgba(3,7,18,0.6)',
+          background: scrolled ? 'rgba(23,23,23,0.92)' : 'rgba(23,23,23,0.6)',
           transition: 'background 0.3s ease',
         }}
       >
@@ -98,7 +98,7 @@ export function PublicLayout() {
           {/* Logo */}
           <Link to="/" style={{ display: 'flex', alignItems: 'center', gap: 10, textDecoration: 'none' }}>
             <img src={agentopsIcon} alt="AgentOps" style={{ width: 28, height: 28, borderRadius: 8, display: 'block' }} />
-            <span style={{ fontWeight: 800, fontSize: 15, color: '#f8fafc', letterSpacing: '-0.01em' }}>
+            <span style={{ fontWeight: 800, fontSize: 15, color: '#fafafa', letterSpacing: '-0.01em' }}>
               AgentOps Studio
             </span>
           </Link>
@@ -112,7 +112,7 @@ export function PublicLayout() {
                 style={{
                   fontSize: 13,
                   fontWeight: 500,
-                  color: location.pathname === to ? '#f8fafc' : '#94a3b8',
+                  color: location.pathname === to ? '#fafafa' : '#a3a3a3',
                   textDecoration: 'none',
                   padding: '5px 10px',
                   borderRadius: 6,
@@ -132,9 +132,9 @@ export function PublicLayout() {
                 onClick={handleDashboard}
                 style={{
                   padding: '7px 16px', borderRadius: 8, fontSize: 13, fontWeight: 600,
-                  background: 'linear-gradient(135deg, #3b82f6, #8b5cf6)',
-                  color: '#fff', border: 'none', cursor: 'pointer',
-                  boxShadow: '0 0 0 1px rgba(139,92,246,.3), 0 4px 16px rgba(59,130,246,.25)',
+                  background: 'linear-gradient(135deg, #21F1A8, #0FC98A)',
+                  color: '#171717', border: 'none', cursor: 'pointer',
+                  boxShadow: '0 0 0 1px rgba(15,201,138,.3), 0 4px 16px rgba(33,241,168,.25)',
                 }}
               >
                 Go to Dashboard →
@@ -145,7 +145,7 @@ export function PublicLayout() {
                   to="/login"
                   style={{
                     padding: '7px 14px', borderRadius: 8, fontSize: 13, fontWeight: 600,
-                    color: '#f8fafc', textDecoration: 'none',
+                    color: '#fafafa', textDecoration: 'none',
                     border: '1px solid rgba(255,255,255,0.12)',
                     background: 'transparent',
                     transition: 'background 0.2s',
@@ -157,9 +157,9 @@ export function PublicLayout() {
                   to="/register"
                   style={{
                     padding: '7px 16px', borderRadius: 8, fontSize: 13, fontWeight: 600,
-                    background: 'linear-gradient(135deg, #3b82f6, #8b5cf6)',
-                    color: '#fff', textDecoration: 'none',
-                    boxShadow: '0 0 0 1px rgba(139,92,246,.3), 0 4px 16px rgba(59,130,246,.25)',
+                    background: 'linear-gradient(135deg, #21F1A8, #0FC98A)',
+                    color: '#171717', textDecoration: 'none',
+                    boxShadow: '0 0 0 1px rgba(15,201,138,.3), 0 4px 16px rgba(33,241,168,.25)',
                     transition: 'transform 0.2s, box-shadow 0.2s',
                   }}
                 >
@@ -175,7 +175,7 @@ export function PublicLayout() {
               style={{
                 display: 'none',
                 background: 'transparent', border: 'none', cursor: 'pointer',
-                padding: 6, color: '#94a3b8',
+                padding: 6, color: '#a3a3a3',
               }}
               className="public-hamburger"
             >
@@ -193,7 +193,7 @@ export function PublicLayout() {
           <div
             style={{
               borderTop: '1px solid rgba(255,255,255,0.07)',
-              background: 'rgba(3,7,18,0.97)',
+              background: 'rgba(23,23,23,0.97)',
               padding: '12px 20px 20px',
             }}
           >
@@ -203,7 +203,7 @@ export function PublicLayout() {
                 to={to}
                 style={{
                   display: 'block', padding: '10px 0',
-                  fontSize: 15, fontWeight: 500, color: '#94a3b8', textDecoration: 'none',
+                  fontSize: 15, fontWeight: 500, color: '#a3a3a3', textDecoration: 'none',
                   borderBottom: '1px solid rgba(255,255,255,0.04)',
                 }}
               >
@@ -211,8 +211,8 @@ export function PublicLayout() {
               </Link>
             ))}
             <div style={{ marginTop: 16, display: 'flex', flexDirection: 'column', gap: 8 }}>
-              <Link to="/login" style={{ padding: '10px 16px', borderRadius: 8, textAlign: 'center', fontSize: 14, fontWeight: 600, color: '#f8fafc', textDecoration: 'none', border: '1px solid rgba(255,255,255,0.12)' }}>Log In</Link>
-              <Link to="/register" style={{ padding: '10px 16px', borderRadius: 8, textAlign: 'center', fontSize: 14, fontWeight: 600, color: '#fff', textDecoration: 'none', background: 'linear-gradient(135deg, #3b82f6, #8b5cf6)' }}>Start Free Trial</Link>
+              <Link to="/login" style={{ padding: '10px 16px', borderRadius: 8, textAlign: 'center', fontSize: 14, fontWeight: 600, color: '#fafafa', textDecoration: 'none', border: '1px solid rgba(255,255,255,0.12)' }}>Log In</Link>
+              <Link to="/register" style={{ padding: '10px 16px', borderRadius: 8, textAlign: 'center', fontSize: 14, fontWeight: 600, color: '#171717', textDecoration: 'none', background: 'linear-gradient(135deg, #21F1A8, #0FC98A)' }}>Start Free Trial</Link>
             </div>
           </div>
         )}
@@ -243,9 +243,9 @@ export function PublicLayout() {
             <div>
               <Link to="/" style={{ display: 'inline-flex', alignItems: 'center', gap: 8, textDecoration: 'none', marginBottom: 10 }}>
                 <img src={agentopsIcon} alt="AgentOps" style={{ width: 24, height: 24, borderRadius: 6, display: 'block' }} />
-                <span style={{ fontWeight: 800, fontSize: 14, color: '#f8fafc' }}>AgentOps Studio</span>
+                <span style={{ fontWeight: 800, fontSize: 14, color: '#fafafa' }}>AgentOps Studio</span>
               </Link>
-              <p style={{ fontSize: 13, color: '#475569', lineHeight: 1.6, maxWidth: 210 }}>
+              <p style={{ fontSize: 13, color: '#8a8a8a', lineHeight: 1.6, maxWidth: 210 }}>
                 AI-powered voice agents for Indian SMBs. Handle every call in the language your customers speak.
               </p>
               <div style={{ display: 'flex', gap: 8, marginTop: 14 }}>
@@ -258,7 +258,7 @@ export function PublicLayout() {
                       background: 'rgba(255,255,255,0.03)',
                       border: '1px solid rgba(255,255,255,0.07)',
                       display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      color: '#475569', textDecoration: 'none', fontSize: 12,
+                      color: '#8a8a8a', textDecoration: 'none', fontSize: 12,
                       transition: 'all 0.2s',
                     }}
                   >
@@ -298,13 +298,13 @@ export function PublicLayout() {
               },
             ] as { heading: string; links: { label: string; to: string }[] }[]).map(({ heading, links }) => (
               <div key={heading}>
-                <h4 style={{ fontSize: 12.5, fontWeight: 700, color: '#f8fafc', marginBottom: 12 }}>{heading}</h4>
+                <h4 style={{ fontSize: 12.5, fontWeight: 700, color: '#fafafa', marginBottom: 12 }}>{heading}</h4>
                 <ul style={{ listStyle: 'none', display: 'flex', flexDirection: 'column', gap: 7 }}>
                   {links.map(({ label, to }) => (
                     <li key={label}>
                       <Link
                         to={to}
-                        style={{ fontSize: 12.5, color: '#475569', textDecoration: 'none', transition: 'color 0.2s' }}
+                        style={{ fontSize: 12.5, color: '#8a8a8a', textDecoration: 'none', transition: 'color 0.2s' }}
                       >
                         {label}
                       </Link>
@@ -327,11 +327,11 @@ export function PublicLayout() {
               gap: 10,
             }}
           >
-            <p style={{ fontSize: 11.5, color: '#475569' }}>
+            <p style={{ fontSize: 11.5, color: '#8a8a8a' }}>
               © {new Date().getFullYear()} <span style={{ fontWeight: 600 }}>AgentOps Studio.</span> All rights reserved.
             </p>
-            <p style={{ fontSize: 11.5, color: '#475569' }}>
-              Made with ♥ by <span style={{ fontWeight: 600 }}>Rishabh</span> · GST invoices available
+            <p style={{ fontSize: 11.5, color: '#8a8a8a' }}>
+              Made with ♥ · GST invoices available
             </p>
           </div>
         </div>

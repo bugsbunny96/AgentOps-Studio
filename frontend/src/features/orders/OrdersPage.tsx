@@ -73,8 +73,8 @@ async function updateStatus(orderId: string, status: OrderStatus): Promise<void>
 
 const STATUS_META: Record<OrderStatus, { label: string; color: string; bg: string; icon: React.ElementType }> = {
   pending_payment_arrangement: { label: 'Awaiting Payment',  color: '#f59e0b', bg: 'rgba(245,158,11,0.1)',   icon: Clock       },
-  payment_received:            { label: 'Payment Received',  color: '#3b82f6', bg: 'rgba(59,130,246,0.1)',   icon: CheckCircle2 },
-  processing:                  { label: 'Processing',        color: '#8b5cf6', bg: 'rgba(139,92,246,0.1)',   icon: RefreshCw   },
+  payment_received:            { label: 'Payment Received',  color: '#21F1A8', bg: 'rgba(33,241,168,0.1)',   icon: CheckCircle2 },
+  processing:                  { label: 'Processing',        color: '#0FC98A', bg: 'rgba(15,201,138,0.1)',   icon: RefreshCw   },
   dispatched:                  { label: 'Dispatched',        color: '#06b6d4', bg: 'rgba(6,182,212,0.1)',    icon: Truck       },
   delivered:                   { label: 'Delivered',         color: '#10b981', bg: 'rgba(16,185,129,0.1)',   icon: CheckCircle2 },
   cancelled:                   { label: 'Cancelled',         color: '#ef4444', bg: 'rgba(239,68,68,0.1)',    icon: XCircle     },
@@ -123,7 +123,7 @@ export default function OrdersPage() {
   if (isLoading) {
     return (
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: 320 }}>
-        <Loader2 size={28} style={{ color: '#3b82f6', animation: 'spin 1s linear infinite' }} />
+        <Loader2 size={28} style={{ color: '#21F1A8', animation: 'spin 1s linear infinite' }} />
       </div>
     );
   }
@@ -154,9 +154,9 @@ export default function OrdersPage() {
         justifyContent: 'center', gap: 16, height: 320,
         border: '1px dashed rgba(255,255,255,0.1)', borderRadius: 16,
       }}>
-        <Package size={40} style={{ color: '#334155' }} />
-        <p style={{ color: '#64748b', fontSize: 15 }}>No orders yet</p>
-        <p style={{ color: '#475569', fontSize: 13 }}>
+        <Package size={40} style={{ color: '#404040' }} />
+        <p style={{ color: '#8a8a8a', fontSize: 15 }}>No orders yet</p>
+        <p style={{ color: '#737373', fontSize: 13 }}>
           Orders will appear here when customers place them via your AI receptionist.
         </p>
       </div>
@@ -169,8 +169,8 @@ export default function OrdersPage() {
       {/* Header */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <div>
-          <h2 style={{ fontSize: 22, fontWeight: 700, color: '#f1f5f9', margin: 0 }}>Orders</h2>
-          <p style={{ fontSize: 13, color: '#64748b', margin: '4px 0 0' }}>
+          <h2 style={{ fontSize: 22, fontWeight: 700, color: '#f5f5f5', margin: 0 }}>Orders</h2>
+          <p style={{ fontSize: 13, color: '#8a8a8a', margin: '4px 0 0' }}>
             {total} order{total !== 1 ? 's' : ''} placed via your AI receptionist
           </p>
         </div>
@@ -178,7 +178,7 @@ export default function OrdersPage() {
 
       {/* Table */}
       <div style={{
-        background: '#0f1729', border: '1px solid rgba(255,255,255,0.06)',
+        background: '#1f1f1f', border: '1px solid rgba(255,255,255,0.06)',
         borderRadius: 14, overflow: 'hidden',
       }}>
         {/* Table header */}
@@ -188,7 +188,7 @@ export default function OrdersPage() {
           padding: '10px 20px',
           borderBottom: '1px solid rgba(255,255,255,0.06)',
           fontSize: 11, fontWeight: 700, letterSpacing: '0.06em',
-          textTransform: 'uppercase', color: '#475569',
+          textTransform: 'uppercase', color: '#737373',
         }}>
           <span>Order ID</span>
           <span>Product / Customer</span>
@@ -216,24 +216,24 @@ export default function OrdersPage() {
                   padding: '14px 20px',
                   cursor: 'pointer',
                   transition: 'background 0.15s',
-                  background: isExpanded ? 'rgba(59,130,246,0.04)' : 'transparent',
+                  background: isExpanded ? 'rgba(33,241,168,0.04)' : 'transparent',
                 }}
                 onMouseEnter={(e) => { if (!isExpanded) e.currentTarget.style.background = 'rgba(255,255,255,0.02)'; }}
                 onMouseLeave={(e) => { if (!isExpanded) e.currentTarget.style.background = 'transparent'; }}
               >
                 {/* Order ID */}
-                <span style={{ fontSize: 12, fontWeight: 700, color: '#3b82f6', fontFamily: 'monospace' }}>
+                <span style={{ fontSize: 12, fontWeight: 700, color: '#21F1A8', fontFamily: 'monospace' }}>
                   {order.orderId}
                 </span>
 
                 {/* Product + Customer */}
                 <div style={{ minWidth: 0 }}>
-                  <p style={{ fontSize: 13, fontWeight: 600, color: '#e2e8f0', margin: 0,
+                  <p style={{ fontSize: 13, fontWeight: 600, color: '#e5e5e5', margin: 0,
                     overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                     {order.product}
-                    <span style={{ fontSize: 11, color: '#64748b', marginLeft: 6 }}>× {order.quantity}</span>
+                    <span style={{ fontSize: 11, color: '#8a8a8a', marginLeft: 6 }}>× {order.quantity}</span>
                   </p>
-                  <p style={{ fontSize: 11, color: '#64748b', margin: '2px 0 0' }}>
+                  <p style={{ fontSize: 11, color: '#8a8a8a', margin: '2px 0 0' }}>
                     {order.customerName} · {order.customerPhone}
                   </p>
                 </div>
@@ -241,16 +241,16 @@ export default function OrdersPage() {
                 {/* Fulfillment */}
                 <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
                   {order.fulfillmentType === 'delivery' ? (
-                    <><Truck size={12} style={{ color: '#8b5cf6' }} />
-                    <span style={{ fontSize: 12, color: '#94a3b8' }}>Delivery</span></>
+                    <><Truck size={12} style={{ color: '#0FC98A' }} />
+                    <span style={{ fontSize: 12, color: '#a3a3a3' }}>Delivery</span></>
                   ) : (
                     <><Store size={12} style={{ color: '#10b981' }} />
-                    <span style={{ fontSize: 12, color: '#94a3b8' }}>Pickup</span></>
+                    <span style={{ fontSize: 12, color: '#a3a3a3' }}>Pickup</span></>
                   )}
                 </div>
 
                 {/* Amount */}
-                <span style={{ fontSize: 13, fontWeight: 700, color: '#f1f5f9' }}>
+                <span style={{ fontSize: 13, fontWeight: 700, color: '#f5f5f5' }}>
                   {formatCurrency(order.totalAmount)}
                 </span>
 
@@ -265,7 +265,7 @@ export default function OrdersPage() {
                 </div>
 
                 {/* Date */}
-                <span style={{ fontSize: 11, color: '#475569' }}>{formatDate(order.createdAt)}</span>
+                <span style={{ fontSize: 11, color: '#737373' }}>{formatDate(order.createdAt)}</span>
               </div>
 
               {/* Expanded detail panel */}
@@ -279,10 +279,10 @@ export default function OrdersPage() {
                   {/* Delivery address */}
                   {order.fulfillmentType === 'delivery' && order.deliveryAddress && (
                     <div>
-                      <p style={{ fontSize: 11, fontWeight: 700, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.06em', margin: '0 0 6px' }}>
+                      <p style={{ fontSize: 11, fontWeight: 700, color: '#737373', textTransform: 'uppercase', letterSpacing: '0.06em', margin: '0 0 6px' }}>
                         Delivery Address
                       </p>
-                      <p style={{ fontSize: 13, color: '#cbd5e1', margin: 0, lineHeight: 1.7 }}>
+                      <p style={{ fontSize: 13, color: '#d4d4d4', margin: 0, lineHeight: 1.7 }}>
                         {order.deliveryAddress.line1}{order.deliveryAddress.line2 ? `, ${order.deliveryAddress.line2}` : ''}<br />
                         {order.deliveryAddress.city}{order.deliveryAddress.state ? `, ${order.deliveryAddress.state}` : ''}<br />
                         PIN: {order.deliveryAddress.pincode}
@@ -292,10 +292,10 @@ export default function OrdersPage() {
 
                   {/* Price breakdown */}
                   <div>
-                    <p style={{ fontSize: 11, fontWeight: 700, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.06em', margin: '0 0 6px' }}>
+                    <p style={{ fontSize: 11, fontWeight: 700, color: '#737373', textTransform: 'uppercase', letterSpacing: '0.06em', margin: '0 0 6px' }}>
                       Price Breakdown
                     </p>
-                    <p style={{ fontSize: 13, color: '#cbd5e1', margin: 0, lineHeight: 1.7 }}>
+                    <p style={{ fontSize: 13, color: '#d4d4d4', margin: 0, lineHeight: 1.7 }}>
                       Unit price: {formatCurrency(order.unitPrice)}<br />
                       Qty: {order.quantity}<br />
                       <strong>Total: {formatCurrency(order.totalAmount)}</strong>
@@ -305,10 +305,10 @@ export default function OrdersPage() {
                   {/* Call ID */}
                   {order.callId && (
                     <div>
-                      <p style={{ fontSize: 11, fontWeight: 700, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.06em', margin: '0 0 6px' }}>
+                      <p style={{ fontSize: 11, fontWeight: 700, color: '#737373', textTransform: 'uppercase', letterSpacing: '0.06em', margin: '0 0 6px' }}>
                         Source Call
                       </p>
-                      <p style={{ fontSize: 11, fontFamily: 'monospace', color: '#64748b', margin: 0 }}>
+                      <p style={{ fontSize: 11, fontFamily: 'monospace', color: '#8a8a8a', margin: 0 }}>
                         {order.callId}
                       </p>
                     </div>
@@ -317,7 +317,7 @@ export default function OrdersPage() {
                   {/* Status actions */}
                   {nextOpts.length > 0 && (
                     <div style={{ marginLeft: 'auto' }}>
-                      <p style={{ fontSize: 11, fontWeight: 700, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.06em', margin: '0 0 8px' }}>
+                      <p style={{ fontSize: 11, fontWeight: 700, color: '#737373', textTransform: 'uppercase', letterSpacing: '0.06em', margin: '0 0 8px' }}>
                         Update Status
                       </p>
                       <div style={{ display: 'flex', gap: 8 }}>
@@ -364,13 +364,13 @@ export default function OrdersPage() {
               display: 'flex', alignItems: 'center', gap: 4,
               padding: '6px 14px', borderRadius: 8,
               background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)',
-              color: page === 1 ? '#334155' : '#94a3b8', cursor: page === 1 ? 'default' : 'pointer',
+              color: page === 1 ? '#404040' : '#a3a3a3', cursor: page === 1 ? 'default' : 'pointer',
               fontSize: 13, fontWeight: 500,
             }}
           >
             <ChevronLeft size={14} /> Prev
           </button>
-          <span style={{ fontSize: 13, color: '#475569' }}>Page {page} of {pages}</span>
+          <span style={{ fontSize: 13, color: '#737373' }}>Page {page} of {pages}</span>
           <button
             onClick={() => setPage((p) => Math.min(pages, p + 1))}
             disabled={page === pages}
@@ -378,7 +378,7 @@ export default function OrdersPage() {
               display: 'flex', alignItems: 'center', gap: 4,
               padding: '6px 14px', borderRadius: 8,
               background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)',
-              color: page === pages ? '#334155' : '#94a3b8', cursor: page === pages ? 'default' : 'pointer',
+              color: page === pages ? '#404040' : '#a3a3a3', cursor: page === pages ? 'default' : 'pointer',
               fontSize: 13, fontWeight: 500,
             }}
           >

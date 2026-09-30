@@ -16,21 +16,21 @@ import api from '@/utils/api';
 // ─── Design tokens ────────────────────────────────────────────────────────────
 
 const T = {
-  bg:    '#030712',
-  bgS:   '#0d1524',
+  bg:    '#171717',
+  bgS:   '#1f1f1f',
   bgC:   'rgba(255,255,255,0.03)',
   bdr:   'rgba(255,255,255,0.07)',
   bdrB:  'rgba(255,255,255,0.12)',
-  blue:  '#3b82f6',
-  violet:'#8b5cf6',
+  blue:  '#21F1A8',
+  violet:'#0FC98A',
   teal:  '#14b8a6',
   tealL: '#99f6e4',
-  blueL: '#93c5fd',
+  blueL: '#A2FAD9',
   amber: '#f59e0b',
   amberL:'#fde68a',
-  t1:    '#f8fafc',
-  t2:    '#94a3b8',
-  t3:    '#475569',
+  t1:    '#fafafa',
+  t2:    '#a3a3a3',
+  t3:    '#737373',
 };
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -56,7 +56,7 @@ interface ChangelogPage {
 
 const TYPE_META: Record<ChangelogType, { label: string; color: string; bg: string; border: string; icon: React.ReactNode; dot: string }> = {
   new:      { label: 'New',      color: T.tealL,  bg: 'rgba(20,184,166,0.12)',  border: 'rgba(20,184,166,0.3)',  icon: <Sparkles  size={12} />, dot: T.teal },
-  improved: { label: 'Improved', color: T.blueL,  bg: 'rgba(59,130,246,0.12)',  border: 'rgba(59,130,246,0.3)',  icon: <TrendingUp size={12} />, dot: T.blue },
+  improved: { label: 'Improved', color: T.blueL,  bg: 'rgba(33,241,168,0.12)',  border: 'rgba(33,241,168,0.3)',  icon: <TrendingUp size={12} />, dot: T.blue },
   fixed:    { label: 'Fixed',    color: T.amberL, bg: 'rgba(245,158,11,0.12)',  border: 'rgba(245,158,11,0.3)',  icon: <Wrench    size={12} />, dot: T.amber },
 };
 
@@ -110,7 +110,7 @@ export default function ChangelogPage() {
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
         padding: '14px 40px',
         borderBottom: `1px solid ${T.bdr}`,
-        background: 'rgba(13,21,36,0.8)',
+        background: 'rgba(31,31,31,0.8)',
         backdropFilter: 'blur(12px)',
         position: 'sticky', top: 0, zIndex: 50,
       }}>
@@ -124,8 +124,8 @@ export default function ChangelogPage() {
           <NavLink to="/changelog" active>Changelog</NavLink>
           <Link to="/dashboard" style={{
             padding: '6px 16px', borderRadius: 8,
-            background: 'linear-gradient(135deg, #3b82f6, #8b5cf6)',
-            color: '#fff', fontSize: 12, fontWeight: 700, textDecoration: 'none',
+            background: 'linear-gradient(135deg, #21F1A8, #0FC98A)',
+            color: '#171717', fontSize: 12, fontWeight: 700, textDecoration: 'none',
           }}>
             Open App
           </Link>

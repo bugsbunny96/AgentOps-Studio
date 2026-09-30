@@ -33,10 +33,10 @@ interface BlogPostFull extends BlogPostCard {
 // ─── Design tokens ────────────────────────────────────────────────────────────
 
 const T = {
-  bg: '#030712', bgS: '#0d1524',
+  bg: '#171717', bgS: '#1f1f1f',
   bgC: 'rgba(255,255,255,0.03)', bdr: 'rgba(255,255,255,0.07)', bdrB: 'rgba(255,255,255,0.12)',
-  blue: '#3b82f6', violet: '#8b5cf6', em: '#10b981',
-  t1: '#f8fafc', t2: '#94a3b8', t3: '#475569',
+  blue: '#21F1A8', violet: '#0FC98A', em: '#10b981',
+  t1: '#fafafa', t2: '#a3a3a3', t3: '#737373',
 };
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -65,18 +65,18 @@ function formatDate(iso: string) {
 
 function renderMarkdown(md: string): string {
   return md
-    .replace(/^### (.+)$/gm, '<h3 style="font-size:17px;font-weight:700;color:#f8fafc;margin:24px 0 10px">$1</h3>')
-    .replace(/^## (.+)$/gm,  '<h2 style="font-size:20px;font-weight:800;color:#f8fafc;margin:32px 0 12px">$1</h2>')
-    .replace(/^# (.+)$/gm,   '<h1 style="font-size:24px;font-weight:900;color:#f8fafc;margin:36px 0 14px">$1</h1>')
-    .replace(/\*\*(.+?)\*\*/g, '<strong style="color:#f8fafc">$1</strong>')
+    .replace(/^### (.+)$/gm, '<h3 style="font-size:17px;font-weight:700;color:#fafafa;margin:24px 0 10px">$1</h3>')
+    .replace(/^## (.+)$/gm,  '<h2 style="font-size:20px;font-weight:800;color:#fafafa;margin:32px 0 12px">$1</h2>')
+    .replace(/^# (.+)$/gm,   '<h1 style="font-size:24px;font-weight:900;color:#fafafa;margin:36px 0 14px">$1</h1>')
+    .replace(/\*\*(.+?)\*\*/g, '<strong style="color:#fafafa">$1</strong>')
     .replace(/\*(.+?)\*/g,     '<em>$1</em>')
     .replace(/`(.+?)`/g,       '<code style="background:rgba(255,255,255,0.08);padding:2px 6px;border-radius:4px;font-size:0.9em;font-family:monospace">$1</code>')
-    .replace(/^> (.+)$/gm,     '<blockquote style="border-left:3px solid #3b82f6;margin:16px 0;padding:10px 18px;color:#94a3b8;background:rgba(59,130,246,0.06);border-radius:0 8px 8px 0">$1</blockquote>')
-    .replace(/^- (.+)$/gm,     '<li style="margin:6px 0 6px 24px;color:#94a3b8;line-height:1.7">$1</li>')
+    .replace(/^> (.+)$/gm,     '<blockquote style="border-left:3px solid #21F1A8;margin:16px 0;padding:10px 18px;color:#a3a3a3;background:rgba(33,241,168,0.06);border-radius:0 8px 8px 0">$1</blockquote>')
+    .replace(/^- (.+)$/gm,     '<li style="margin:6px 0 6px 24px;color:#a3a3a3;line-height:1.7">$1</li>')
     .split('\n\n')
     .map((block) => {
       if (block.startsWith('<h') || block.startsWith('<blockquote') || block.startsWith('<li')) return block;
-      return `<p style="color:#94a3b8;font-size:15px;line-height:1.85;margin:0 0 16px">${block}</p>`;
+      return `<p style="color:#a3a3a3;font-size:15px;line-height:1.85;margin:0 0 16px">${block}</p>`;
     })
     .join('');
 }
@@ -116,7 +116,7 @@ function ArticleView({ slug, onClose }: { slug: string; onClose: () => void }) {
   if (isLoading) {
     return (
       <div style={{ display: 'flex', justifyContent: 'center', padding: 80 }}>
-        <div style={{ width: 28, height: 28, borderRadius: '50%', border: '3px solid rgba(59,130,246,0.2)', borderTopColor: T.blue, animation: 'spin .7s linear infinite' }} />
+        <div style={{ width: 28, height: 28, borderRadius: '50%', border: '3px solid rgba(33,241,168,0.2)', borderTopColor: T.blue, animation: 'spin .7s linear infinite' }} />
       </div>
     );
   }
@@ -221,7 +221,7 @@ export default function BlogPage() {
       <section style={{ padding: 'clamp(80px,10vw,120px) 24px 60px', textAlign: 'center' }}>
         <div style={{ maxWidth: 600, margin: '0 auto' }}>
           <div style={{ marginBottom: 20 }}>
-            <span style={pill('rgba(59,130,246,0.1)', T.blue, 'rgba(59,130,246,0.25)')}>● Resource Library</span>
+            <span style={pill('rgba(33,241,168,0.1)', T.blue, 'rgba(33,241,168,0.25)')}>● Resource Library</span>
           </div>
           <h1 style={{ fontSize: 'clamp(28px,5vw,52px)', fontWeight: 900, lineHeight: 1.1, margin: '0 0 16px', letterSpacing: '-0.03em' }}>
             Guides for AI-powered{' '}
@@ -240,7 +240,7 @@ export default function BlogPage() {
         <section style={{ maxWidth: 800, margin: '0 auto', padding: '0 24px 28px', display: 'flex', gap: 8, flexWrap: 'wrap' }}>
           <button
             onClick={() => { setTagFilter(undefined); setPage(1); }}
-            style={{ padding: '5px 14px', borderRadius: 999, fontSize: 12, fontWeight: 600, cursor: 'pointer', border: `1px solid ${!tagFilter ? T.blue : T.bdr}`, background: !tagFilter ? 'rgba(59,130,246,0.1)' : T.bgC, color: !tagFilter ? T.blue : T.t2 }}
+            style={{ padding: '5px 14px', borderRadius: 999, fontSize: 12, fontWeight: 600, cursor: 'pointer', border: `1px solid ${!tagFilter ? T.blue : T.bdr}`, background: !tagFilter ? 'rgba(33,241,168,0.1)' : T.bgC, color: !tagFilter ? T.blue : T.t2 }}
           >
             All
           </button>

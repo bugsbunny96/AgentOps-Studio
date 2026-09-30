@@ -3,13 +3,39 @@
 
 /* ── Custom Design Tokens ─────────────────────────────────────────── */
 @theme {
-  /* Brand Colors */
-  --color-brand-50: #eef2ff;
-  --color-brand-100: #e0e7ff;
-  --color-brand-500: #6366f1;
-  --color-brand-600: #4f46e5;
-  --color-brand-700: #4338ca;
-  --color-brand-900: #1e1b4b;
+  /* Brand — "Tiffany × Dark Gray" (design.deb Combo 01)
+     Tiffany #21F1A8 = brand-400 (fills, CTAs, focus). 700/800 are the
+     AA-safe shades for mint text on light surfaces. */
+  --color-brand-50: #ecfef7;
+  --color-brand-100: #d0fdec;
+  --color-brand-200: #a2fad9;
+  --color-brand-300: #6af6c4;
+  --color-brand-400: #21f1a8;
+  --color-brand-500: #0fd994;
+  --color-brand-600: #0bb87e;
+  --color-brand-700: #067a53;
+  --color-brand-800: #065f42;
+  --color-brand-900: #064e37;
+  --color-brand-950: #032a1e;
+
+  /* Neutrals — slate is remapped to true grays so slate-900 = Dark Gray #171717 */
+  --color-slate-50: #fafafa;
+  --color-slate-100: #f5f5f5;
+  --color-slate-200: #e5e5e5;
+  --color-slate-300: #d4d4d4;
+  --color-slate-400: #a3a3a3;
+  --color-slate-500: #737373;
+  --color-slate-600: #525252;
+  --color-slate-700: #404040;
+  --color-slate-800: #262626;
+  --color-slate-900: #171717;
+  --color-slate-950: #0f0f0f;
+
+  /* Named palette tokens */
+  --color-tiffany: #21f1a8;
+  --color-ink: #171717;
+  --color-surface: #1f1f1f;   /* cards, inputs, modals on Dark Gray */
+  --color-surface-2: #262626; /* raised / hover surface */
 
   /* Typography */
   --font-family-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
@@ -34,7 +60,8 @@
   }
 
   body {
-    @apply bg-white text-slate-900 antialiased;
+    @apply bg-slate-900 text-slate-50 antialiased;
+    color-scheme: dark;
     font-family: var(--font-family-sans);
   }
 
@@ -44,8 +71,10 @@
 
   /* Focus ring — WCAG 2.1 AA */
   :focus-visible {
-    @apply outline-2 outline-offset-2 outline-brand-600;
+    @apply outline-2 outline-offset-2 outline-brand-400;
   }
+
+  ::selection { background: rgb(33 241 168 / 0.35); color: #171717; }
 
   /* Scrollbar styling */
   ::-webkit-scrollbar {

@@ -107,7 +107,7 @@ function StatusBadge({ status }: { status: Call['status'] }) {
   if (status === 'completed') {
     return (
       <span className="inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-medium"
-        style={{ background: 'rgba(99,102,241,.1)', color: '#4f46e5' }}>
+        style={{ background: 'rgba(33,241,168,.1)', color: '#0FC98A' }}>
         <CheckCircle2 size={11} />
         Completed
       </span>
@@ -125,15 +125,15 @@ function StatusBadge({ status }: { status: Call['status'] }) {
 function DirectionChip({ direction }: { direction: Call['direction'] }) {
   if (direction === 'Inbound') {
     return (
-      <span className="inline-flex items-center gap-1 text-xs font-medium text-slate-600">
+      <span className="inline-flex items-center gap-1 text-xs font-medium text-slate-300">
         <PhoneIncoming size={12} className="text-emerald-500" />
         Inbound
       </span>
     );
   }
   return (
-    <span className="inline-flex items-center gap-1 text-xs font-medium text-slate-600">
-      <PhoneOutgoing size={12} className="text-violet-500" />
+    <span className="inline-flex items-center gap-1 text-xs font-medium text-slate-300">
+      <PhoneOutgoing size={12} className="text-brand-300" />
       Outbound
     </span>
   );
@@ -187,8 +187,8 @@ export default function CallsPage() {
         {/* Header */}
         <div className="flex items-start justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Calls</h1>
-            <p className="mt-1 text-sm text-slate-500">
+            <h1 className="text-2xl font-bold text-slate-50 tracking-tight">Calls</h1>
+            <p className="mt-1 text-sm text-slate-400">
               Every conversation your agent has had — searchable and filterable.
             </p>
           </div>
@@ -197,7 +197,7 @@ export default function CallsPage() {
           <button
             onClick={handleExport}
             disabled={exporting}
-            className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 shadow-sm transition-all hover:border-brand-300 hover:bg-brand-50 hover:text-brand-700 disabled:cursor-not-allowed disabled:opacity-50 flex-shrink-0"
+            className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-surface px-4 py-2 text-sm font-semibold text-slate-200 shadow-sm transition-all hover:border-brand-400/30 hover:bg-brand-400/10 hover:text-brand-200 disabled:cursor-not-allowed disabled:opacity-50 flex-shrink-0"
             title={hasActiveFilters ? 'Export filtered calls to CSV' : 'Export all calls to CSV'}
           >
             {exporting
@@ -213,7 +213,7 @@ export default function CallsPage() {
           <select
             value={filters.status}
             onChange={(e) => applyFilter('status', e.target.value as Filters['status'])}
-            className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-brand-600"
+            className="rounded-lg border border-white/10 bg-surface px-3 py-2 text-sm text-slate-200 focus:outline-none focus:ring-2 focus:ring-brand-600"
           >
             <option value="">All statuses</option>
             <option value="active">Live</option>
@@ -225,7 +225,7 @@ export default function CallsPage() {
           <select
             value={filters.direction}
             onChange={(e) => applyFilter('direction', e.target.value as Filters['direction'])}
-            className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-brand-600"
+            className="rounded-lg border border-white/10 bg-surface px-3 py-2 text-sm text-slate-200 focus:outline-none focus:ring-2 focus:ring-brand-600"
           >
             <option value="">All directions</option>
             <option value="Inbound">Inbound</option>
@@ -237,7 +237,7 @@ export default function CallsPage() {
             type="date"
             value={filters.dateFrom}
             onChange={(e) => applyFilter('dateFrom', e.target.value)}
-            className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-brand-600"
+            className="rounded-lg border border-white/10 bg-surface px-3 py-2 text-sm text-slate-200 focus:outline-none focus:ring-2 focus:ring-brand-600"
           />
 
           {/* Date to */}
@@ -245,13 +245,13 @@ export default function CallsPage() {
             type="date"
             value={filters.dateTo}
             onChange={(e) => applyFilter('dateTo', e.target.value)}
-            className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-brand-600"
+            className="rounded-lg border border-white/10 bg-surface px-3 py-2 text-sm text-slate-200 focus:outline-none focus:ring-2 focus:ring-brand-600"
           />
 
           {hasActiveFilters && (
             <button
               onClick={clearFilters}
-              className="text-sm text-slate-500 underline-offset-2 hover:text-slate-700 hover:underline transition-colors"
+              className="text-sm text-slate-400 underline-offset-2 hover:text-slate-200 hover:underline transition-colors"
             >
               Clear filters
             </button>
@@ -261,14 +261,14 @@ export default function CallsPage() {
         {/* Content area */}
         {isLoading && (
           <div className="flex items-center justify-center py-20">
-            <Loader2 size={24} className="animate-spin text-brand-600" />
+            <Loader2 size={24} className="animate-spin text-brand-300" />
           </div>
         )}
 
         {isError && (
-          <div className="flex items-center gap-3 rounded-xl border border-red-100 bg-red-50 px-5 py-4">
+          <div className="flex items-center gap-3 rounded-xl border border-red-500/30 bg-red-500/10 px-5 py-4">
             <AlertCircle size={16} className="text-red-500 flex-shrink-0" />
-            <p className="text-sm text-red-700">
+            <p className="text-sm text-red-300">
               {(error as Error)?.message ?? 'Failed to load calls. Please refresh and try again.'}
             </p>
           </div>
@@ -279,27 +279,27 @@ export default function CallsPage() {
             {data.calls.length === 0 ? (
               /* Empty state */
               <div
-                className="relative overflow-hidden rounded-2xl border border-slate-200 bg-white"
+                className="relative overflow-hidden rounded-2xl border border-white/10 bg-surface"
                 style={{ minHeight: 300 }}
               >
                 <div
                   className="pointer-events-none absolute inset-0 opacity-40"
-                  style={{ background: 'radial-gradient(ellipse 70% 60% at 50% 0%, rgba(99,102,241,.08) 0%, transparent 100%)' }}
+                  style={{ background: 'radial-gradient(ellipse 70% 60% at 50% 0%, rgba(33,241,168,.08) 0%, transparent 100%)' }}
                 />
                 <div className="relative flex flex-col items-center justify-center px-8 py-16 text-center">
                   <div
                     className="mb-5 flex h-14 w-14 items-center justify-center rounded-2xl"
                     style={{
-                      background: 'linear-gradient(135deg, rgba(99,102,241,.12), rgba(139,92,246,.12))',
-                      border: '1px solid rgba(99,102,241,.2)',
+                      background: 'linear-gradient(135deg, rgba(33,241,168,.12), rgba(15,201,138,.12))',
+                      border: '1px solid rgba(33,241,168,.2)',
                     }}
                   >
-                    <PhoneCall size={24} className="text-brand-600" strokeWidth={1.8} />
+                    <PhoneCall size={24} className="text-brand-300" strokeWidth={1.8} />
                   </div>
-                  <h2 className="mb-1.5 text-base font-semibold text-slate-800">
+                  <h2 className="mb-1.5 text-base font-semibold text-slate-100">
                     {hasActiveFilters ? 'No calls match your filters' : 'No calls yet'}
                   </h2>
-                  <p className="mb-5 max-w-sm text-sm text-slate-500 leading-relaxed">
+                  <p className="mb-5 max-w-sm text-sm text-slate-400 leading-relaxed">
                     {hasActiveFilters
                       ? 'Try adjusting or clearing your filters.'
                       : 'Once your AI agent takes calls, every conversation will appear here.'}
@@ -307,7 +307,7 @@ export default function CallsPage() {
                   {hasActiveFilters ? (
                     <button
                       onClick={clearFilters}
-                      className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors"
+                      className="rounded-xl border border-white/10 bg-surface px-4 py-2 text-sm font-medium text-slate-200 hover:bg-white/[0.03] transition-colors"
                     >
                       Clear filters
                     </button>
@@ -315,7 +315,7 @@ export default function CallsPage() {
                     <Link
                       to="/agents"
                       className="inline-flex items-center gap-2 rounded-xl px-5 py-2.5 text-sm font-semibold text-white transition-opacity hover:opacity-90"
-                      style={{ background: 'linear-gradient(135deg, #4f46e5, #7c3aed)' }}
+                      style={{ background: 'linear-gradient(135deg, #0FC98A, #0AA271)' }}
                     >
                       <PhoneCall size={14} />
                       View your agent
@@ -327,15 +327,15 @@ export default function CallsPage() {
               /* Call table */
               <>
                 {/* Summary line */}
-                <p className="text-xs text-slate-500">
+                <p className="text-xs text-slate-400">
                   {data.total.toLocaleString()} call{data.total !== 1 ? 's' : ''}
                   {hasActiveFilters && ' matching filters'}
                 </p>
 
-                <div className="overflow-hidden rounded-xl border border-slate-200 bg-white">
+                <div className="overflow-hidden rounded-xl border border-white/10 bg-surface">
                   <table className="w-full text-sm">
                     <thead>
-                      <tr className="border-b border-slate-100 bg-slate-50">
+                      <tr className="border-b border-white/10 bg-white/[0.03]">
                         <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-400">Caller</th>
                         <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-400">Direction</th>
                         <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-400">Status</th>
@@ -344,7 +344,7 @@ export default function CallsPage() {
                         <th className="px-5 py-3 text-right text-xs font-semibold uppercase tracking-wide text-slate-400">Actions</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-slate-100">
+                    <tbody className="divide-y divide-white/10">
                       {data.calls.map((call) => (
                         <tr
                           key={call.id}
@@ -354,11 +354,11 @@ export default function CallsPage() {
                             <div className="flex items-center gap-2.5">
                               <div
                                 className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full"
-                                style={{ background: 'rgba(99,102,241,.08)' }}
+                                style={{ background: 'rgba(33,241,168,.08)' }}
                               >
-                                <PhoneCall size={13} className="text-brand-600" strokeWidth={1.8} />
+                                <PhoneCall size={13} className="text-brand-300" strokeWidth={1.8} />
                               </div>
-                              <span className="font-medium text-slate-800 font-mono text-xs">
+                              <span className="font-medium text-slate-100 font-mono text-xs">
                                 {call.callerNumber}
                               </span>
                             </div>
@@ -370,12 +370,12 @@ export default function CallsPage() {
                             <StatusBadge status={call.status} />
                           </td>
                           <td className="px-5 py-3.5">
-                            <div className="flex items-center gap-1 text-slate-600">
+                            <div className="flex items-center gap-1 text-slate-300">
                               <Clock size={12} className="text-slate-400" />
                               {formatDuration(call.duration)}
                             </div>
                           </td>
-                          <td className="px-5 py-3.5 text-slate-500 text-xs">
+                          <td className="px-5 py-3.5 text-slate-400 text-xs">
                             {formatDate(call.createdAt)}
                           </td>
 
@@ -383,7 +383,7 @@ export default function CallsPage() {
                           <td className="px-5 py-3.5 text-right">
                             <button
                               onClick={() => setSelectedCallId(call.id)}
-                              className="inline-flex items-center justify-center h-8 w-8 rounded-lg border border-slate-200 text-slate-400 opacity-0 group-hover:opacity-100 transition-all hover:border-brand-300 hover:bg-brand-50 hover:text-brand-600 focus:opacity-100"
+                              className="inline-flex items-center justify-center h-8 w-8 rounded-lg border border-white/10 text-slate-400 opacity-0 group-hover:opacity-100 transition-all hover:border-brand-400/30 hover:bg-brand-400/10 hover:text-brand-200 focus:opacity-100"
                               title="View call details"
                               aria-label={`View details for call from ${call.callerNumber}`}
                             >
@@ -399,21 +399,21 @@ export default function CallsPage() {
                 {/* Pagination */}
                 {data.totalPages > 1 && (
                   <div className="flex items-center justify-between">
-                    <p className="text-xs text-slate-500">
+                    <p className="text-xs text-slate-400">
                       Page {data.page} of {data.totalPages}
                     </p>
                     <div className="flex items-center gap-2">
                       <button
                         onClick={() => setPage((p) => Math.max(1, p - 1))}
                         disabled={page <= 1}
-                        className="flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40 transition-colors"
+                        className="flex h-8 w-8 items-center justify-center rounded-lg border border-white/10 text-slate-300 hover:bg-white/[0.03] disabled:cursor-not-allowed disabled:opacity-40 transition-colors"
                       >
                         <ChevronLeft size={14} />
                       </button>
                       <button
                         onClick={() => setPage((p) => Math.min(data.totalPages, p + 1))}
                         disabled={page >= data.totalPages}
-                        className="flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40 transition-colors"
+                        className="flex h-8 w-8 items-center justify-center rounded-lg border border-white/10 text-slate-300 hover:bg-white/[0.03] disabled:cursor-not-allowed disabled:opacity-40 transition-colors"
                       >
                         <ChevronRight size={14} />
                       </button>

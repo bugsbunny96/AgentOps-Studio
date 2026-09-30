@@ -15,8 +15,8 @@ import api from '@/utils/api';
 // ─── Design tokens ────────────────────────────────────────────────────────────
 
 const T = {
-  bg:    '#07070f',
-  bgS:   '#0e0e1a',
+  bg:    '#141414',
+  bgS:   '#1c1c1c',
   bgC:   'rgba(255,255,255,0.04)',
   bdr:   'rgba(255,255,255,0.07)',
   bdrB:  'rgba(255,255,255,0.12)',
@@ -26,12 +26,12 @@ const T = {
   greenL:'#bbf7d0',
   amber: '#f59e0b',
   amberL:'#fde68a',
-  blue:  '#3b82f6',
-  blueL: '#93c5fd',
+  blue:  '#21F1A8',
+  blueL: '#A2FAD9',
   purple:'#a855f7',
-  t1:    '#f8fafc',
-  t2:    '#94a3b8',
-  t3:    '#475569',
+  t1:    '#fafafa',
+  t2:    '#a3a3a3',
+  t3:    '#737373',
 };
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -96,7 +96,7 @@ const deleteAnnouncement = async (id: string): Promise<void> => {
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 const TYPE_META: Record<AnnouncementType, { label: string; color: string; bg: string; icon: React.ReactNode }> = {
-  info:     { label: 'Info',     color: T.blueL, bg: 'rgba(59,130,246,0.15)', icon: <Info     size={13} /> },
+  info:     { label: 'Info',     color: T.blueL, bg: 'rgba(33,241,168,0.15)', icon: <Info     size={13} /> },
   warning:  { label: 'Warning',  color: T.amberL, bg: 'rgba(245,158,11,0.15)', icon: <AlertTriangle size={13} /> },
   critical: { label: 'Critical', color: T.redL,  bg: 'rgba(239,68,68,0.15)',  icon: <Zap      size={13} /> },
 };
@@ -366,7 +366,7 @@ export default function SuperAdminAnnouncementsPage() {
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
           <div style={{
             width: 42, height: 42, borderRadius: 10,
-            background: 'rgba(168,85,247,0.15)',
+            background: 'rgba(33,241,168,0.15)',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
           }}>
             <Megaphone size={20} color={T.purple} />
@@ -383,7 +383,7 @@ export default function SuperAdminAnnouncementsPage() {
           style={{
             display: 'flex', alignItems: 'center', gap: 6,
             padding: '9px 16px', borderRadius: 8, border: 'none',
-            background: T.purple, color: '#fff', fontSize: 13, fontWeight: 600, cursor: 'pointer',
+            background: '#21F1A8', color: '#171717', fontSize: 13, fontWeight: 600, cursor: 'pointer',
           }}
         >
           <Plus size={15} /> New Announcement

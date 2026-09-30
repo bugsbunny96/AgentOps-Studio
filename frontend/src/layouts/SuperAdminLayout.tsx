@@ -30,16 +30,16 @@ const SA_MOBILE_CSS = `
 `;
 
 const T = {
-  bg:    '#07070f',
-  bgS:   '#0e0e1a',
+  bg:    '#141414',
+  bgS:   '#1c1c1c',
   bgC:   'rgba(255,255,255,0.04)',
   bdr:   'rgba(255,255,255,0.07)',
   bdrB:  'rgba(255,255,255,0.12)',
   red:   '#ef4444',
   redL:  '#fca5a5',
-  t1:    '#f8fafc',
-  t2:    '#94a3b8',
-  t3:    '#475569',
+  t1:    '#fafafa',
+  t2:    '#a3a3a3',
+  t3:    '#8a8a8a',
 };
 
 type NavDivider = { divider: string };
@@ -160,7 +160,7 @@ export function SuperAdminLayout() {
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <div style={{
             width: 24, height: 24, borderRadius: 6, flexShrink: 0,
-            background: 'linear-gradient(135deg, #ef4444, #b91c1c)',
+            background: 'linear-gradient(135deg, #21F1A8, #0FC98A)',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
           }}>
             <ShieldCheck size={13} color="#fff" />
@@ -205,13 +205,13 @@ export function SuperAdminLayout() {
           <div style={{
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             width: 32, height: 32, borderRadius: 8, flexShrink: 0,
-            background: 'linear-gradient(135deg, #ef4444, #b91c1c)',
+            background: 'linear-gradient(135deg, #21F1A8, #0FC98A)',
           }}>
             <ShieldCheck size={16} color="#fff" />
           </div>
           <div>
             <p style={{ fontSize: 12, fontWeight: 800, color: T.t1, margin: 0 }}>Super Admin</p>
-            <p style={{ fontSize: 9, color: T.red, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', margin: 0 }}>AgentOps Studio</p>
+            <p style={{ fontSize: 9, color: '#21F1A8', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', margin: 0 }}>AgentOps Studio</p>
           </div>
         </div>
 
@@ -256,9 +256,9 @@ export function SuperAdminLayout() {
                   textDecoration: 'none',
                   transition: 'all 0.15s',
                   ...(isActive ? {
-                    background: 'rgba(239,68,68,0.12)',
-                    color: T.redL,
-                    border: '1px solid rgba(239,68,68,0.2)',
+                    background: 'rgba(33,241,168,0.12)',
+                    color: '#7CF7CB',
+                    border: '1px solid rgba(33,241,168,0.2)',
                   } : {
                     color: T.t2,
                     border: '1px solid transparent',
@@ -268,7 +268,7 @@ export function SuperAdminLayout() {
               >
                 {({ isActive }) => (
                   <>
-                    <Icon size={14} style={{ color: isActive ? T.red : T.t3, flexShrink: 0 }} />
+                    <Icon size={14} style={{ color: isActive ? '#21F1A8' : T.t3, flexShrink: 0 }} />
                     {label}
                   </>
                 )}
@@ -288,8 +288,8 @@ export function SuperAdminLayout() {
               color: T.t3, fontSize: 13, cursor: 'pointer', transition: 'all 0.15s',
             }}
             onMouseEnter={(e) => {
-              e.currentTarget.style.background = 'rgba(239,68,68,0.08)';
-              e.currentTarget.style.color = T.redL;
+              e.currentTarget.style.background = 'rgba(33,241,168,0.08)';
+              e.currentTarget.style.color = '#7CF7CB';
             }}
             onMouseLeave={(e) => {
               e.currentTarget.style.background = 'transparent';

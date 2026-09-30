@@ -64,7 +64,7 @@ const PLANS = [
     ],
     ctaStyle: 'outline' as CtaStyle,
     featured: false,
-    badgeBg: 'rgba(100,116,139,.2)', badgeColor: color.text2, badgeBdr: color.border,
+    badgeBg: 'rgba(115,115,115,.2)', badgeColor: color.text2, badgeBdr: color.border,
     accentColor: color.text2,
   },
   {
@@ -90,7 +90,7 @@ const PLANS = [
     notIncluded: [],
     ctaStyle: 'primary' as CtaStyle,
     featured: true,
-    badgeBg: 'rgba(59,130,246,.15)', badgeColor: color.blueLight, badgeBdr: 'rgba(59,130,246,.3)',
+    badgeBg: 'rgba(33,241,168,.15)', badgeColor: color.blueLight, badgeBdr: 'rgba(33,241,168,.3)',
     accentColor: color.blueLight,
   },
   {
@@ -117,7 +117,7 @@ const PLANS = [
     notIncluded: [],
     ctaStyle: 'outline' as CtaStyle,
     featured: false,
-    badgeBg: 'rgba(139,92,246,.15)', badgeColor: color.violetLight, badgeBdr: 'rgba(139,92,246,.3)',
+    badgeBg: 'rgba(15,201,138,.15)', badgeColor: color.violetLight, badgeBdr: 'rgba(15,201,138,.3)',
     accentColor: color.violetLight,
   },
 ];
@@ -211,7 +211,7 @@ function Cell({ value, isGrowth }: { value: CellValue; isGrowth: boolean }) {
       <span style={{
         display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
         width: 20, height: 20, borderRadius: '50%',
-        background: isGrowth ? 'rgba(59,130,246,.15)' : 'rgba(16,185,129,.12)',
+        background: isGrowth ? 'rgba(33,241,168,.15)' : 'rgba(16,185,129,.12)',
         color: isGrowth ? color.blueLight : color.emerald,
       }}>
         <Check size={12} strokeWidth={3} />
@@ -236,8 +236,8 @@ function HeroSection() {
         WebkitMaskImage: 'radial-gradient(ellipse 80% 60% at 50% 0%, black, transparent)',
       }} />
       {[
-        { w: 500, h: 400, c: 'rgba(59,130,246,.12)', top: -120, left: '10%', dur: 12 },
-        { w: 400, h: 400, c: 'rgba(139,92,246,.1)', top: -80, right: '8%', dur: 15 },
+        { w: 500, h: 400, c: 'rgba(33,241,168,.12)', top: -120, left: '10%', dur: 12 },
+        { w: 400, h: 400, c: 'rgba(15,201,138,.1)', top: -80, right: '8%', dur: 15 },
       ].map(({ w, h, c, dur, ...pos }, i) => (
         <div key={i} style={{
           position: 'absolute', borderRadius: '50%', pointerEvents: 'none', willChange: 'transform',
@@ -287,9 +287,9 @@ function PricingCards() {
                 style={{
                   padding: 28, height: '100%', display: 'flex', flexDirection: 'column',
                   ...(plan.featured ? {
-                    background: 'rgba(59,130,246,.07)',
-                    border: '1px solid rgba(59,130,246,.3)',
-                    boxShadow: '0 0 48px rgba(59,130,246,.12), 0 0 0 1px rgba(139,92,246,.15)',
+                    background: 'rgba(33,241,168,.07)',
+                    border: '1px solid rgba(33,241,168,.3)',
+                    boxShadow: '0 0 48px rgba(33,241,168,.12), 0 0 0 1px rgba(15,201,138,.15)',
                     transform: 'translateY(-4px)',
                   } : {}),
                 }}
@@ -297,8 +297,8 @@ function PricingCards() {
                 {plan.featured && (
                   <div style={{
                     position: 'absolute', top: -1, left: '50%', transform: 'translateX(-50%)',
-                    background: 'linear-gradient(135deg, #3b82f6, #8b5cf6)',
-                    color: '#fff', fontSize: 10, fontWeight: 700,
+                    background: 'linear-gradient(135deg, #21F1A8, #0FC98A)',
+                    color: '#171717', fontSize: 10, fontWeight: 700,
                     padding: '3px 12px', borderRadius: '0 0 8px 8px',
                     letterSpacing: '.08em', textTransform: 'uppercase',
                   }}>
@@ -432,7 +432,7 @@ function ComparisonTable() {
                   <div key={plan.id} style={{
                     padding: '16px 20px', textAlign: 'center', fontSize: 13, fontWeight: 700,
                     color: i === 1 ? color.blueLight : color.text1,
-                    background: i === 1 ? 'rgba(59,130,246,.05)' : 'transparent',
+                    background: i === 1 ? 'rgba(33,241,168,.05)' : 'transparent',
                     borderLeft: `1px solid ${color.border}`,
                   }}>
                     {plan.name}
@@ -465,7 +465,7 @@ function ComparisonTable() {
                         <div key={planKey} style={{
                           padding: '13px 20px', display: 'flex', alignItems: 'center', justifyContent: 'center',
                           borderLeft: `1px solid ${color.border}`,
-                          background: planKey === 'growth' ? 'rgba(59,130,246,.04)' : 'transparent',
+                          background: planKey === 'growth' ? 'rgba(33,241,168,.04)' : 'transparent',
                         }}>
                           <Cell value={row[planKey]} isGrowth={planKey === 'growth'} />
                         </div>
@@ -483,14 +483,14 @@ function ComparisonTable() {
                   <div key={plan.id} style={{
                     padding: 20, borderLeft: `1px solid ${color.border}`,
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    background: i === 1 ? 'rgba(59,130,246,.05)' : 'transparent',
+                    background: i === 1 ? 'rgba(33,241,168,.05)' : 'transparent',
                   }}>
                     <Link
                       to="/register"
                       style={{
                         padding: '7px 16px', borderRadius: 8, fontSize: 12, fontWeight: 700, textDecoration: 'none',
                         ...(i === 1
-                          ? { background: 'linear-gradient(135deg, #3b82f6, #8b5cf6)', color: '#fff' }
+                          ? { background: 'linear-gradient(135deg, #21F1A8, #0FC98A)', color: '#171717' }
                           : { background: 'transparent', color: color.text1, border: `1px solid ${color.borderStrong}` }),
                       }}
                     >
@@ -521,7 +521,7 @@ function TrustStrip() {
           {items.map(({ icon: Icon, label, desc }, i) => (
             <Reveal key={label} delay={i * 60}>
               <div style={{ ...cardStyle({ padding: 18, display: 'flex', alignItems: 'center', gap: 12 }) }}>
-                <IconChip icon={Icon} bg="rgba(59,130,246,.12)" fg={color.blueLight} style={{ marginBottom: 0, flexShrink: 0 }} />
+                <IconChip icon={Icon} bg="rgba(33,241,168,.12)" fg={color.blueLight} style={{ marginBottom: 0, flexShrink: 0 }} />
                 <div>
                   <p style={{ fontSize: 13, fontWeight: 700, color: color.text1, margin: 0 }}>{label}</p>
                   <p style={{ fontSize: 11.5, color: color.text3, margin: 0 }}>{desc}</p>
@@ -554,8 +554,8 @@ function FaqAccordion() {
               <Reveal key={i} delay={i * 40}>
                 <div style={{
                   ...cardStyle({ padding: 0 }),
-                  border: isOpen ? '1px solid rgba(59,130,246,.3)' : `1px solid ${color.border}`,
-                  background: isOpen ? 'rgba(59,130,246,.04)' : color.surface,
+                  border: isOpen ? '1px solid rgba(33,241,168,.3)' : `1px solid ${color.border}`,
+                  background: isOpen ? 'rgba(33,241,168,.04)' : color.surface,
                   transition: 'border-color 0.25s, background 0.25s',
                 }}>
                   <button
@@ -571,7 +571,7 @@ function FaqAccordion() {
                     <span style={{ fontSize: 14, fontWeight: 600, lineHeight: 1.4 }}>{faq.q}</span>
                     <span style={{
                       flexShrink: 0, width: 20, height: 20, borderRadius: '50%',
-                      background: isOpen ? 'rgba(59,130,246,.2)' : 'rgba(255,255,255,0.06)',
+                      background: isOpen ? 'rgba(33,241,168,.2)' : 'rgba(255,255,255,0.06)',
                       display: 'flex', alignItems: 'center', justifyContent: 'center',
                       color: isOpen ? color.blueLight : color.text3,
                       transition: 'transform 0.25s, background 0.25s, color 0.25s',
@@ -610,12 +610,12 @@ function CtaSection() {
     <section style={{ padding: '100px 0', position: 'relative', overflow: 'hidden', borderTop: `1px solid ${color.border}` }}>
       <div style={{
         position: 'absolute', borderRadius: '50%', pointerEvents: 'none', willChange: 'transform',
-        width: 500, height: 350, background: 'radial-gradient(circle, rgba(59,130,246,.15) 0%, transparent 70%)',
+        width: 500, height: 350, background: 'radial-gradient(circle, rgba(33,241,168,.15) 0%, transparent 70%)',
         top: -80, left: -80, animationName: 'floatA', animationDuration: '10s', animationIterationCount: 'infinite',
       }} />
       <div style={{
         position: 'absolute', borderRadius: '50%', pointerEvents: 'none', willChange: 'transform',
-        width: 450, height: 300, background: 'radial-gradient(circle, rgba(139,92,246,.12) 0%, transparent 70%)',
+        width: 450, height: 300, background: 'radial-gradient(circle, rgba(15,201,138,.12) 0%, transparent 70%)',
         bottom: -80, right: -80, animationName: 'floatA', animationDuration: '10s', animationDelay: '-5s', animationIterationCount: 'infinite',
       }} />
 

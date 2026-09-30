@@ -9,9 +9,9 @@ const T = {
   bdr:  'rgba(255,255,255,0.07)',
   red:  '#ef4444',
   redL: '#fca5a5',
-  t1:   '#f8fafc',
-  t2:   '#94a3b8',
-  t3:   '#475569',
+  t1:   '#fafafa',
+  t2:   '#a3a3a3',
+  t3:   '#737373',
   em:   '#10b981',
   warn: '#f59e0b',
 };

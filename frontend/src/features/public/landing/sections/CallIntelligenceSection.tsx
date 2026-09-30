@@ -49,7 +49,7 @@ export function CallIntelligenceSection() {
             {/* Extracted summary — reveals in below the transcript */}
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <IconChip icon={Lightbulb} bg="rgba(59,130,246,.15)" fg={color.blueLight} size={30} style={{ marginBottom: 0 }} />
+                <IconChip icon={Lightbulb} bg="rgba(33,241,168,.15)" fg={color.blueLight} size={30} style={{ marginBottom: 0 }} />
                 <span style={{ fontSize: 13, fontWeight: 700, color: color.text1 }}>Extracted automatically</span>
               </div>
               <Pill bg={RESOLUTION.bg} fg={RESOLUTION.color} border={RESOLUTION.border}>
@@ -64,7 +64,7 @@ export function CallIntelligenceSection() {
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: 7 }}>
                 {INTENTS.map((intent, i) => (
                   <Reveal key={intent} delay={200 + i * 120} style={{ display: 'inline-block' }}>
-                    <Pill bg="rgba(139,92,246,.1)" fg={color.violetLight} border="rgba(139,92,246,.25)">{intent}</Pill>
+                    <Pill bg="rgba(15,201,138,.1)" fg={color.violetLight} border="rgba(15,201,138,.25)">{intent}</Pill>
                   </Reveal>
                 ))}
               </div>
