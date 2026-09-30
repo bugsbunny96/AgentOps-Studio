@@ -1,5 +1,20 @@
 # MVP Development Roadmap - AgentOps Studio
 
+> **Version history**
+> - [2026-09-30 10:40] v1.1 — CEO Agent — Added § 0 "Current roadmap". The 5-week phase plan below is the original plan and is kept for history (see `gaps.md` DOC-01).
+
+## 0. Current roadmap (as of 2026-09-30)
+
+Phases 1–5 below are largely built (status: `TASK-BOARD.md` → As-Built Status). Work now follows these sprints:
+
+| Order | Sprint | Goal | Source |
+|---|---|---|---|
+| 1 | **S-HARDEN** (active) | Close all P0 gaps; fix misleading pricing claims | `TASK-BOARD.md`, `gaps.md` §§ 1–10 |
+| 2 | **S-NICHE** | One beachhead niche + its industry template and evals | `AI-Implementation-Offer-Plan.md` § 6, `gaps.md` GTM-01, IND-01…05 |
+| 3 | **S-IMPLEMENT** | Outgoing webhooks, n8n templates (Sheets/CRM/calendar), booking, follow-up | `gaps.md` INT-01…04 |
+| 4 | **S-PROOF** | ROI report, billable setup fee, client delivery SOP, demo number, first 3 paying clients | `gaps.md` ROI-01, OFR-01…02, GTM-02…03 |
+
+
 The AgentOps Studio MVP is structured as a 5-week execution strategy, grouping features into clean, testable phases.
 
 ---

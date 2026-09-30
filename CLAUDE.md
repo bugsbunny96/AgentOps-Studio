@@ -1,5 +1,9 @@
 # AgentOps Studio — AI Company Operating System
 
+> **Version history**
+> - [2026-09-30 10:40] v2.1 — CEO Agent — Current Project State: added go-to-market direction (AI implementation offer, PROPOSED), post-S-HARDEN sprint sequence, brand palette; Execution System table lists `AI-Implementation-Offer-Plan.md`. Operating framework unchanged.
+> - [2026-09-29 22:57] v2.0 — CEO Agent — Facts refreshed after full codebase audit: tech stack, infra (Render + Vercel, not AWS ECS), voice pipeline (no ElevenLabs by default), active task (S-HARDEN H1.1), new Current Project State section, gaps register added to Execution System. Operating framework unchanged (founder decision).
+
 ## Overview
 
 **Founder**: Rishabh Sharma  
@@ -260,7 +264,7 @@ Next founder action  : [none | describe]
 
 ### 🟠 AI R&D — Research Loop
 - New LLM releases + pricing vs. current model (GPT-4o); migration proposal if warranted
-- Voice-agent latency / accuracy techniques; Deepgram / ElevenLabs changelog
+- Voice-agent latency / accuracy techniques; Vapi / Deepgram / TTS-provider changelogs
 - RAG retrieval improvements; prompt/eval methodology; token-cost reduction
 - Output: model-migration ADR, eval RFC, AI-section TAD append, or R&D log entry
 
@@ -358,12 +362,25 @@ Promote sub-role to its own agent when:
 
 | Layer | Stack |
 |---|---|
-| Frontend | React 19 · Vite · TailwindCSS 4 · shadcn/ui · Redux Toolkit · TanStack Query · React Router · RHF + Zod |
-| Backend | Express.js · Node.js 20 · TypeScript (strict) · MongoDB Atlas · Redis Cloud · BullMQ |
-| Voice | Vobiz SIP → Vapi AI → Deepgram STT → GPT-4o → ElevenLabs TTS |
+| Frontend | React 19 · Vite 6 · TailwindCSS 4 (+ inline-style dark theme) · Radix UI primitives (no shadcn/ui components) · Redux Toolkit · TanStack Query · React Router 7 · RHF + Zod · axios · `@vapi-ai/web` (browser test calls) · Sentry |
+| Backend | Express 4 · Node.js 20+ · TypeScript (strict) · Mongoose 8 / MongoDB Atlas · ioredis / Redis Cloud · BullMQ 5 · Zod · Stripe · Resend (email) · Winston · Vitest + mongodb-memory-server |
+| Voice | Vobiz SIP trunk (shared number pool) → Vapi assistant → Deepgram STT (nova-2 / nova-3 multi) → GPT-4o → TTS: OpenAI `nova` by default; Vapi, Deepgram Aura, ElevenLabs, PlayHT and Azure voices selectable. Live reference agent (Ritu Electricals) uses Vapi voice Naina. Tools: `submit_order`, `end_receptionist_call`; structured output schema per call |
 | Languages | English · Hindi (auto-detect) · Punjabi (auto-detect) |
-| Infra | Docker · AWS ECS/Fargate · GitHub Actions · Vercel · Cloudflare DNS |
-| Docs | `main-project-docs/` — PRD, TAD, Feature Tickets, Timeline, Roadmap |
+| Infra (actual) | Backend: Render web service (free plan, Singapore, keep-alive self-ping) · Frontend: Vercel · MongoDB Atlas · Redis Cloud free tier (30-connection cap → only the callReport worker runs) · GitHub Actions CI. `deploy-backend.yml` still targets AWS ECS and is not the live path |
+| Docs | `main-project-docs/` — gaps.md (current gaps register), PRD, TAD, Feature Tickets, Timeline, Roadmap (PRD/TAD/Timeline/Roadmap describe the original plan, not the as-built system — see gaps.md DOC-01) |
+
+---
+
+## Current Project State (2026-09-30)
+
+- **Positioning**: multi-industry AI voice-receptionist SaaS for Indian SMBs. Electrical retail (Ritu Electricals) is the first live vertical; catalog, orders, prompt and evals are still electrical-specific and must move to per-industry templates.
+- **Built**: auth, 6-step onboarding (with website crawler), KB, Vapi agent provisioning and voice config, Vobiz number picker, Vapi webhook (business hours + minutes quota), calls/transcripts/search, catalog + orders, analytics, team, Stripe billing (Basic ₹9,999 / Standard ₹17,999 / Pro ₹25,999 + 7-day trial), super-admin portal, public marketing site.
+- **Not launch-ready**: 12 P0 gaps (security, dropped call artifact, disabled workers, minutes never reset, likely prod cookie issue). Source of truth: `main-project-docs/gaps.md`; plan: `TASK-BOARD.md` sprint S-HARDEN.
+- **Go-to-market (PROPOSED, awaiting founder D1/D2)**: sell AgentOps Studio as a managed "AI implementation" offer (setup fee + monthly plan) to **one beachhead niche**; clients pay for missed calls, follow-up and booking handled, with their CRM/Sheets/calendar connected through n8n. Plan and specs: `main-project-docs/AI-Implementation-Offer-Plan.md`; new gaps: `gaps.md` § 11 (GTM, INT, ROI, OFR).
+- **Sprint order**: S-HARDEN (active, 0 P0s) → S-NICHE (beachhead template) → S-IMPLEMENT (outgoing webhooks, n8n templates, booking, follow-up) → S-PROOF (ROI report, billable setup fee, delivery SOP, demo, first 3 clients). Do not start integrations or a second niche before S-HARDEN closes.
+- **Brand**: "Tiffany × Dark Gray" — `brand-400` #21F1A8 on `slate-900` #171717, dark-first UI; `surface` #1f1f1f / `surface-2` #262626 for cards; tokens in `frontend/src/styles/index.css`. Red/amber/green are reserved for status; filled mint buttons use dark text.
+- **Roles**: Owner / Member (+ per-section permissions). There is no Admin role in the data model.
+- **Deploy URLs**: API `https://agentops-studio-backend-o2jx.onrender.com` · App `https://agent-ops-studio-eight.vercel.app`.
 
 ---
 
@@ -371,7 +388,9 @@ Promote sub-role to its own agent when:
 
 | File | Purpose |
 |---|---|
-| `TASK-BOARD.md` | Live sprint tracker — every task has all-5-agent rows + R&D swimlane |
+| `TASK-BOARD.md` | Live sprint tracker — as-built status, active sprint (S-HARDEN), founder actions |
+| `main-project-docs/gaps.md` | Gaps register — every known gap with ID, priority (P0–P2), evidence, fix |
+| `main-project-docs/AI-Implementation-Offer-Plan.md` | Go-to-market offer model, post-vs-product gap map, specs for GTM/INT/ROI/OFR gaps, sprints after S-HARDEN, founder decisions D1–D5 |
 | `agents/SOP.md` | Standard Operating Procedure — run at START of every session |
 | `agents/EXECUTION-FRAMEWORK.md` | Multi-layer WBS + Worker Assignment Matrix + Dependency Graph + R&D Queues |
 | `agents/PARALLEL-MATRIX.md` | Quick decomposition reference for CEO |
@@ -383,13 +402,14 @@ Promote sub-role to its own agent when:
 | `agents/rnd/chief-rnd-coordinator.md` | Chief R&D Coordinator — weekly digest generator + RFC index |
 | `main-project-docs/RD-LOG.md` | All R&D findings — append only, timestamped, versioned |
 | `main-project-docs/RD-DIGEST.md` | Weekly cross-domain R&D digest (Chief R&D Coordinator output) |
-| `main-project-docs/ADRs/` | Architecture Decision Records — immutable, append-only |
-| `main-project-docs/RFCs/` | Request for Comments — Draft → Accepted/Rejected lifecycle |
+| `main-project-docs/ADRs/` | Architecture Decision Records — immutable, append-only (folder not created yet) |
+| `main-project-docs/RFCs/` | Request for Comments — Draft → Accepted/Rejected lifecycle (index is empty) |
 
 ### Session Start Order (MANDATORY)
 ```
 1. Read CLAUDE.md                     ← you are here
 2. Read TASK-BOARD.md                 ← current sprint state
+2b. Read main-project-docs/gaps.md    ← known gaps (by ID) before touching related code
 3. Read agents/EXECUTION-FRAMEWORK.md ← WBS + next atomic task
 4. Read agents/SOP.md                 ← session protocol
 5. Announce active WBS node + dispatch all 5 implementation agents + all 5 R&D Workers
@@ -398,7 +418,7 @@ Promote sub-role to its own agent when:
 ### Atomic Task Execution
 Every session executes the next Atomic Task in the WBS (see EXECUTION-FRAMEWORK.md).
 Atomic Task ID format: `L[layer].F[feature].M[module].AT[n]`
-Current active: **L2.F2.M1.AT1** — auth.test.ts setup
+Current active: **S-HARDEN H1.1** — SEC-01: harden the `submit_order` tool webhook secret (see `TASK-BOARD.md` → Active Sprint). The L-series WBS in EXECUTION-FRAMEWORK.md is historical; new tasks use `H<wave>.<n>` IDs mapped to gap IDs.
 
 ### Documentation Update Rule
 After every session, append (never overwrite) to the relevant doc:
