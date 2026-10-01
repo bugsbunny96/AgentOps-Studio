@@ -1,6 +1,8 @@
 # AgentOps Studio — Gaps Register
 
 > **Version history**
+> - [2026-10-01 10:40] v2.3 — CEO Agent — SEC-01 and SEC-13 fixed in code (branch `harden/h1.1-h1.7`); status notes added. Both stay open until deployed.
+> - [2026-10-01 10:15] v2.2 — CEO Agent — Launch-readiness audit against a 20-item "vibe-coded app" checklist (legal, secrets, HTTPS, cookies, SEO, images, speed, contrast, mobile, 404, links, forms, spam, analytics, CTA). Added SEC-13, FE-09…FE-18, § 12 (checklist status) and § 13 (agent operating system, PROPOSED, PROC-01…02). Existing gaps unchanged.
 > - [2026-09-30 10:40] v2.1 — CEO Agent — Added § 11 (AI implementation offer: GTM-01…03, INT-01…04, ROI-01, OFR-01…02) from the post-vs-product review. Full specs in `AI-Implementation-Offer-Plan.md`. Existing gaps unchanged.
 > - [2026-09-29 22:57] v2.0 — CEO Agent (full codebase audit) — Rewrote the register from a line-by-line read of backend, frontend, scripts, CI and docs. Replaces the v1 "Week 1–3 launch blockers" list; its items are tracked in § 10.
 > - v1.0 (undated) — Founder — Week 1–3 launch-blocker checklist.
@@ -20,16 +22,17 @@
 
 | Area | P0 | P1 | P2 |
 |---|---|---|---|
-| Security | 6 | 6 | — |
+| Security | 6 | 7 | — |
 | Core call & onboarding flow | 5 | 4 | — |
 | Multi-industry readiness | — | 5 | — |
 | Plans, billing and limits | 1 | 6 | — |
 | Team, roles and tenancy | — | 4 | — |
 | Super-admin | — | 3 | — |
-| Frontend and marketing site | — | 3 | 5 |
+| Frontend and marketing site | — | 8 | 10 |
 | Tests, CI and ops | — | 3 | 6 |
 | Documentation | — | — | 3 |
 | AI implementation offer (GTM, integrations, ROI) | — | 6 | 4 |
+| Agent operating system (PROPOSED) | — | — | 2 |
 
 ---
 
@@ -37,7 +40,7 @@
 
 | ID | Pri | Gap | Evidence | Impact | Fix |
 |---|---|---|---|---|---|
-| SEC-01 | P0 | The `submit_order` tool webhook secret check is ineffective. It returns `true` when the secret is not configured, when the `x-webhook-secret` header is missing, and when the header length does not match ("POC mode"). | `backend/src/modules/orders/order.routes.ts:27-45` | Anyone who knows or guesses an assistantId can inject fake orders into any org. | Return `false` in all three branches. Configure the header on the Vapi tool. Add tests. |
+| SEC-01 | P0 | The `submit_order` tool webhook secret check is ineffective. It returns `true` when the secret is not configured, when the `x-webhook-secret` header is missing, and when the header length does not match ("POC mode"). | `backend/src/modules/orders/order.routes.ts:27-45` | Anyone who knows or guesses an assistantId can inject fake orders into any org. | Return `false` in all three branches. Configure the header on the Vapi tool. Add tests. **2026-10-01: code fixed** (fails closed; accepts `x-webhook-secret` or `x-vapi-secret`; 10 tests in `orders.submit.test.ts`) on branch `harden/h1.1-h1.7`; closes when the Vapi tool sends the secret and the branch is deployed. |
 | SEC-02 | P0 | Super-admin credentials are hardcoded in committed scripts. | `backend/scripts/create-super-admin.js`, `backend/scripts/seed-super-admin.js` (in git history) | Anyone with repo access can log in to the super-admin portal, which can impersonate any org. | **Rotate the super-admin password now.** Read credentials from env or a CLI prompt. Consider purging git history. |
 | SEC-03 | P0 | The Redis Cloud URL and password sit in a comment line in `backend/.env` and in the stale `backend/.env.bak`. | `backend/.env`, `backend/.env.bak` (gitignored, plaintext on disk) | Credential leak through backups, screenshots or AI tools. | **Rotate the Redis password.** Delete the comment and `.env.bak`. |
 | SEC-04 | P0 | `SA_JWT_SECRET` falls back to a hardcoded default. | `backend/src/config/env.ts:22` | If the variable is unset on Render, anyone can forge super-admin session tokens. | Make it required when `NODE_ENV=production`. Confirm it is set on Render. |
@@ -49,6 +52,7 @@
 | SEC-10 | P1 | Super-admin login has no dedicated rate limit; the auth limiter covers only the customer auth routes. | `backend/src/app.ts` | Brute-force risk on the most privileged login. | Add a strict limiter (e.g. 5 per 15 min) plus lockout. |
 | SEC-11 | P1 | Auth hardening: the email-verification token is stored in plaintext; change-password does not revoke other sessions; `authenticate` does not check user status, so suspended users keep access until their tokens expire. | `backend/src/modules/auth/*`, `backend/src/middleware/authenticate.ts` | Account-takeover window; suspension is not immediate. | Hash the token; revoke the refresh token on password change; check status in `authenticate` (or on refresh). |
 | SEC-12 | P1 | Order org resolution falls back to "the only org" when the assistantId is not found and exactly one org exists. | `backend/src/modules/orders/*` (`resolveOrgByAssistantId`) | Orders get attributed to the wrong tenant (and it hides misconfiguration). | Remove the fallback; reject unknown assistants. |
+| SEC-13 | P1 | Production builds publish source maps: `sourcemap: true` in the Vite config ships 126 `.map` files to Vercel. | `frontend/vite.config.ts:42` | Anyone can read the full, unminified frontend source (routes, API shapes, super-admin pages, internal comments). | Set `sourcemap: 'hidden'`; upload maps to Sentry in CI (`SENTRY_AUTH_TOKEN` is already planned in `.env.example`); confirm no `.map` is served. **2026-10-01: fixed** on branch `harden/h1.1-h1.7` (`vite.config.ts`: `sourcemap: 'hidden'`, maps deleted after build or after Sentry upload). |
 
 ## 2. Core call and onboarding flow
 
@@ -115,6 +119,16 @@
 | FE-06 | P2 | The voice catalog has no Vapi-native voices (the live agent uses Naina v2), and PATCH skips `buildVapiVoice` for the `vapi` provider. | `frontend/src/features/agents/voice-catalog.ts`; `agent.service.ts` | Add the Vapi provider voices and handle the provider on the backend. |
 | FE-07 | P2 | Transcript search exists in the backend (`GET /calls/search`) but has no UI. | `call.routes.ts:63` | Add a search box to the Calls page. |
 | FE-08 | P2 | Clutter: the footer's social links are `href="#"`, "Careers" links to /contact, `frontend/src/assets/files.zip` is committed, and the root contains untracked OpenAI usage CSV exports. | `PublicLayout.tsx:252-288`; repo root | Clean up. |
+| FE-09 | P1 | Signup never records consent to the Terms or Privacy Policy: the Register page has no checkbox or links to `/terms` and `/privacy`, and the user record stores no acceptance. | `frontend/src/features/auth/RegisterPage.tsx`; `backend/src/modules/auth/auth.model.ts` | Required Zod `literal(true)` checkbox with links; store `termsAcceptedAt` and `termsVersion` on the user (backend-validated). Ships with FE-03. |
+| FE-10 | P1 | No bot protection on Register or Contact beyond a honeypot (Contact) and IP rate limits (auth routes). Each signup gets free trial call minutes. | `RegisterPage.tsx`; `ContactPage.tsx`; `backend/src/app.ts` | Add Cloudflare Turnstile (free, cookieless) to both forms, verified server-side; consider a per-domain/email signup cap. |
+| FE-11 | P1 | No web or product analytics: no GA, Plausible, PostHog or Vercel Analytics. Sentry only captures errors. | `frontend/index.html`; `frontend/package.json` | The visit → signup → verify → onboarding → first call funnel cannot be measured. Add a cookieless tool (Plausible or Vercel Web Analytics) and fire `signup`, `email_verified`, `onboarding_complete`, `first_call`. |
+| FE-12 | P1 | The cookie banner says only essential cookies are used and nothing is tracked, but Sentry Session Replay records 5% of sessions (100% of error sessions). The Privacy Policy does not mention session replay. | `frontend/src/components/CookieConsent.tsx`; `frontend/src/lib/sentry.ts` | Either turn Replay off on public routes or gate it behind consent; disclose it in the Privacy Policy. Keep analytics cookieless (FE-11) so the banner stays essential-only. |
+| FE-13 | P1 | The entry JS chunk is 659 KB (211 KB gzip) and loads before the landing page renders. About 1 MB of its source is Sentry (`@sentry/core`, `@sentry/replay`, browser utils). The Vapi SDK adds a 303 KB chunk. No Lighthouse or Web Vitals baseline exists. | Measured with `vite build` on 2026-10-01; `frontend/src/main.tsx` (eager `initSentry`); `vite.config.ts` `manualChunks` | Initialise Sentry after first render (dynamic import) and lazy-load the Replay integration; make sure `@vapi-ai/web` loads only on test-call pages; target mobile Lighthouse ≥ 90 and LCP < 2.5 s on `/`, `/pricing`, `/register`. |
+| FE-14 | P2 | Every route shares the one title and description in `index.html`. Blog posts have no title, description or Open Graph tags of their own. | `frontend/index.html`; `frontend/src/features/public/*` | Use React 19 native `<title>` / `<meta>` in each public page and in each blog post (title, excerpt, cover image). Prerender public routes if social previews need per-page OG. |
+| FE-15 | P2 | Canonical URLs are hard-coded to `agent-ops-studio-eight.vercel.app` in `og:url`, `og:image`, `robots.txt` and `sitemap.xml`. The sitemap is static: it lists `/login` and `/register`, has no blog posts and no `lastmod`. | `frontend/index.html`; `frontend/public/robots.txt`; `frontend/public/sitemap.xml` | After the custom domain (CORE-05), drive the site URL from one env var; generate the sitemap at build time or from the backend, including published blog posts; drop `/login`. |
+| FE-16 | P2 | About 16 text usages fail WCAG AA contrast on the `#171717` background: `#737373`, `#525252`, `text-slate-500`, `text-slate-600` (≈ 3.8:1 or lower). The landing tokens were already fixed (`text3` `#8a8a8a`). | `grep` for those values in `frontend/src` | Replace with `#a3a3a3` / `#8a8a8a` (≥ 4.5:1), or move them into a shared token. |
+| FE-17 | P2 ⚠️ Verify | Inline-style pages use fixed grids that will squash on phones: `repeat(4, 1fr)` on Dashboard (`DashboardPage.tsx:669`), `repeat(3, 1fr)` on Billing (`BillingPage.tsx:761`) and six super-admin pages. The layouts' mobile drawers are fine; pages were never tested at 375 px. | `frontend/src/features/**` | Use `repeat(auto-fit, minmax(160px, 1fr))`; run a 375 px pass on Dashboard, Calls, Billing, Onboarding, Pricing and Register. |
+| FE-18 | P2 | Smaller launch polish: no PNG favicon link or `site.webmanifest` (PNGs exist in `assets/logos`); no Content-Security-Policy in `vercel.json`; unknown URLs return HTTP 200 with the 404 page (soft 404); blog cover images use `alt=""`. | `frontend/index.html`; `frontend/vercel.json`; `BlogPage.tsx:139` | Link the PNG favicons and add a manifest; add a CSP (allow Vapi, Sentry, Google Fonts, the API); add `noindex` on the 404 page; use the post title as alt text. |
 
 ## 8. Tests, CI and ops
 
@@ -148,7 +162,7 @@
 | Verify the Activate test call | 🟡 Built (`@vapi-ai/web` TestCallWidget); needs a manual end-to-end check (and see CORE-05). |
 | Stripe INR prices, customer portal activation | ❓ Founder action: not verifiable from code. `.env.bak` lacks `STRIPE_PRO_PRICE_ID_INR`. |
 | Legal page placeholders | ❌ Still present (FE-03). |
-| Mobile sidebar check | ❓ The drawer is implemented in both layouts; test on a real phone. |
+| Mobile sidebar check | 🟡 The drawers work in all three layouts; page-level fixed grids remain (FE-17). Test on a real phone. |
 | Onboard 5 beta SMBs, Punjabi detection check | ⏳ Not started (no evidence in the repo). |
 | Sentry DSN in production | ❓ Founder action. |
 | CI/CD pipeline | 🟡 `ci.yml` exists; the deploy workflow targets the wrong platform (OPS-01), and e2e is likely broken (OPS-02). |
@@ -172,3 +186,43 @@ Source: `AI-Implementation-Offer-Plan.md` (2026-09-30). These gaps come from com
 | OFR-02 | P2 | No client delivery SOP (`agents/SOP.md` is the internal agent SOP). | `agents/SOP.md` | Delivery depends on the founder's memory; not repeatable or delegable. | Write `Client-Delivery-SOP.md` (plan § 7.7). |
 | GTM-02 | P2 | No niche demo agent or public demo number. | `scripts/vapi-evals` (electrical only) | Harder to run the "simple demo" step. | Demo org on the chosen template with a public number. Depends on GTM-01. |
 | GTM-03 | P2 | No niche-specific 30-day acquisition plan. | `agents/growth-agent.md` (generic ICP) | Outreach is untargeted. | Prospect list, problem-first outreach, discovery questions (plan § 7.8). Depends on GTM-01. |
+
+---
+
+## 12. Launch-readiness checklist (audit of 2026-10-01)
+
+A 20-item pre-launch checklist for AI-built ("vibe-coded") apps, checked against the code. ✅ covered · 🟡 partial · ❌ missing.
+
+| # | Item | Status | Gap IDs |
+|---|---|---|---|
+| 1 | Privacy policy | 🟡 Page exists (DPDPA sections); placeholders remain | FE-03, FE-12 |
+| 2 | Terms & conditions | 🟡 Page exists; placeholders; no consent at signup | FE-03, FE-09 |
+| 3 | Remove frontend secrets | 🟡 Only `VITE_API_URL`, `VITE_SENTRY_DSN`, `VITE_APP_VERSION` (safe); public source maps; committed super-admin password | SEC-13, SEC-02 |
+| 4 | Enforce HTTPS | ✅ Vercel + Render force HTTPS; helmet sends HSTS. CSP missing on the frontend | FE-18 |
+| 5 | Cookie consent banner | 🟡 Present on public pages; copy contradicts Sentry Replay | FE-12 |
+| 6 | Meta titles/descriptions | 🟡 One global title/description only | FE-14 |
+| 7 | Social preview image | ✅ 1200×630 OG + Twitter card; domain hard-coded | FE-15 |
+| 8 | Favicon | ✅ SVG + apple-touch; no PNG fallback / manifest | FE-18 |
+| 9 | Sitemap and robots.txt | ✅ Both present; sitemap static, no blog posts | FE-15 |
+| 10 | Image alt text | ✅ All 9 `<img>` have alt; blog cover `alt=""` | FE-18 |
+| 11 | Image compression | ✅ All images < 45 KB; stray `files.zip` | FE-08 |
+| 12 | Page load speed | ❌ 211 KB gzip entry chunk; no Lighthouse baseline | FE-13 |
+| 13 | Color contrast | 🟡 ~16 failing text usages | FE-16 |
+| 14 | Mobile responsiveness | 🟡 Layout drawers OK; fixed page grids | FE-17 |
+| 15 | Custom 404 page | ✅ `NotFoundPage` + `RouteErrorPage`; soft 404 status | FE-18 |
+| 16 | Broken link fixes | 🟡 All internal routes resolve; footer social `#`; contact form placeholder | FE-08, FE-01 |
+| 17 | Form validation | ✅ RHF + Zod on 11 forms; backend Zod | — |
+| 18 | Spam protection | 🟡 Honeypot + rate limits; no CAPTCHA | FE-10 |
+| 19 | Analytics setup | ❌ None | FE-11 |
+| 20 | Single clear CTA | ✅ "Start Free Trial" → `/register` (demo as secondary) | — |
+
+Planned as **S-HARDEN Wave 5** (`TASK-BOARD.md`). Mostly frontend; runs in parallel with Waves 1–2.
+
+## 13. Agent operating system (PROPOSED — founder decision D6)
+
+From the 2026-10-01 review of the "The Agency" quick-start guide (specialist agents, installed per tool, 3–5 at a time, chained with a review step). The operating framework in `CLAUDE.md` is unchanged until D6 is decided.
+
+| ID | Pri | Gap | Evidence | Fix |
+|---|---|---|---|---|
+| PROC-01 | P2 | The agent personas are plain Markdown prompts with no frontmatter, and `.claude/agents/` is empty, so Claude Code cannot load them as subagents. The `Agent("agents/x.md", …)` dispatch in `CLAUDE.md` is not how the Agent tool selects agents. | `agents/*.md`; `.claude/agents/`; `CLAUDE.md` § Parallel Dispatch Protocol | Convert the 5 implementation agents to `.claude/agents/<name>.md` with `name`, `description`, `tools` frontmatter, keeping their prompts. |
+| PROC-02 | P2 | Dispatching 11 workers on every message (zero-idle rule) adds cost and filler, and there is no dedicated security or code-review specialist even though most P0s are security fixes. | `CLAUDE.md` § Prime Directive; `agents/PARALLEL-MATRIX.md` | Add 3–4 specialists from `msitarzewski/agency-agents` (AppSec engineer, code reviewer, backend architect, reality checker; confirm names with `install.sh --dry-run`). Replace "all agents every turn" with chains per task type, e.g. security fix: AppSec → Engineering → Code Reviewer. Run R&D workers on request or weekly. |
