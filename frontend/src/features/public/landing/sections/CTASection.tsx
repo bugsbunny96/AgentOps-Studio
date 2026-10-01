@@ -23,7 +23,7 @@ export function CTASection() {
           Set up your AI receptionist in <GradientText>30 minutes</GradientText>
         </h2>
         <p style={{ fontSize: 16, color: color.text2, marginBottom: 32, lineHeight: 1.6 }}>
-          Join 200+ Indian businesses that never miss a call. No developers, no long contracts.
+          Answer every call in Hindi, English and Punjabi. No developers, no long contracts.
         </p>
         <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
           <PrimaryButton to="/register" size="lg">Start Free Trial — It's Free →</PrimaryButton>

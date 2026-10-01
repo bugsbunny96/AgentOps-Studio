@@ -128,7 +128,7 @@ function VoiceCard({ voice, delay }: { voice: (typeof VOICES)[number]; delay: nu
 
 export function VoicesSection() {
   return (
-    <section style={{ padding: '80px 0' }}>
+    <section id="voices" style={{ padding: '80px 0', scrollMarginTop: 80 }}>
       <div style={{ maxWidth: maxW, margin: '0 auto', padding: '0 20px' }}>
         <Reveal style={{ textAlign: 'center', maxWidth: 560, margin: '0 auto' }}>
           <SectionEyebrow>Voices</SectionEyebrow>

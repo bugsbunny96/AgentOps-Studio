@@ -421,7 +421,7 @@ Promote sub-role to its own agent when:
 ### Atomic Task Execution
 Every session executes the next Atomic Task in the WBS (see EXECUTION-FRAMEWORK.md).
 Atomic Task ID format: `L[layer].F[feature].M[module].AT[n]`
-Current active: **S-HARDEN H1.2** — SEC-02: rotate the super-admin password and move script credentials to env (H1.1 + H1.7 code done on branch `harden/h1.1-h1.7`, awaiting Vapi tool secret before merge; see `TASK-BOARD.md` → Active Sprint). The L-series WBS in EXECUTION-FRAMEWORK.md is historical; new tasks use `H<wave>.<n>` IDs mapped to gap IDs.
+Current active: **S-HARDEN H1.2** — SEC-02: rotate the super-admin password and move script credentials to env (H1.1 + H1.7 merged to `dev` via PR #6; set the Vapi tool secret before it reaches production; see `TASK-BOARD.md` → Active Sprint). The L-series WBS in EXECUTION-FRAMEWORK.md is historical; new tasks use `H<wave>.<n>` IDs mapped to gap IDs.
 
 ### Documentation Update Rule
 After every session, append (never overwrite) to the relevant doc:

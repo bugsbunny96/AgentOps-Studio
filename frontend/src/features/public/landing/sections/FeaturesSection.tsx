@@ -11,9 +11,10 @@ const KB_ITEMS = [
 const ANALYTICS_BARS = [45, 65, 50, 80, 70, 95, 75, 85];
 
 const STAT_CARDS: { stat: string; label: string; tag: string | null; tagColor?: string; tagBg?: string; tagBdr?: string }[] = [
-  { stat: '0', label: 'Missed calls\nafter going live', tag: '24 / 7 / 365', tagColor: color.emerald, tagBg: 'rgba(16,185,129,.1)', tagBdr: 'rgba(16,185,129,.2)' },
-  { stat: '<500ms', label: 'Average voice\nresponse latency', tag: null },
-  { stat: '30min', label: 'Average time\nfrom signup to live', tag: null },
+  // Product facts only (FE-19): no measured-outcome numbers until we have real data.
+  { stat: '24/7', label: 'Answers every call,\nday or night', tag: null },
+  { stat: '3', label: 'Languages, detected\nautomatically (EN · HI · PA)', tag: null },
+  { stat: '~30min', label: 'Typical setup,\nno code needed', tag: null },
 ] as const;
 
 export function FeaturesSection() {

@@ -251,7 +251,7 @@ function HeroSection() {
       <div style={{ position: 'relative', zIndex: 1, maxWidth: 680, margin: '0 auto', padding: '0 20px' }}>
         <Reveal>
           <Pill bg="rgba(16,185,129,.12)" fg={color.emerald} border="rgba(16,185,129,.25)" live>
-            Loved by 200+ Indian businesses
+            7-day free trial · no credit card
           </Pill>
         </Reveal>
 

@@ -9,6 +9,7 @@
 > **Execution Framework**: `agents/EXECUTION-FRAMEWORK.md` · **SOP**: `agents/SOP.md` · **R&D Log**: `main-project-docs/RD-LOG.md`
 
 **Version history**
+- [2026-10-01 11:05] v2.4 — CEO Agent — Design review (FE-19…FE-24, `gaps.md` § 12.1) → Wave 5 tasks H5.9–H5.14. H5.9 (remove false claims) landing part done on `dev`.
 - [2026-10-01 10:40] v2.3 — CEO Agent — H1.1 (SEC-01) and H1.7 (SEC-13) code done on branch `harden/h1.1-h1.7`; active task → H1.2; founder action added to configure the Vapi tool secret before merge.
 - [2026-10-01 10:15] v2.2 — CEO Agent — Launch-readiness audit (20-item checklist; `gaps.md` § 12). Added H1.7 (SEC-13 public source maps), Wave 5 (launch readiness: spam, analytics, cookies, speed, SEO, contrast, mobile, polish), FE-09 consent checkbox into H4.9, founder actions for Turnstile/analytics, and PROPOSED decision D6 (agent operating system, `gaps.md` § 13). No code changed.
 - [2026-09-30 10:40] v2.1 — CEO Agent — Added Upcoming Sprints (S-NICHE → S-IMPLEMENT → S-PROOF) from `AI-Implementation-Offer-Plan.md`; H4.2 pulled forward into S-HARDEN; founder decisions D1–D5 added; "pick 2–3 launch industries" replaced by one beachhead niche (GTM-01); brand palette change logged. S-HARDEN scope otherwise unchanged.
@@ -86,19 +87,19 @@ Every sprint task has a lead agent. Every other agent runs a supporting or backg
 ## 🚀 Active Sprint — S-HARDEN: Launch Hardening
 
 **Goal**: close every P0 in `gaps.md`, then the P1s that block the first paying customer (multi-industry).  
-**Active task**: **H1.2 — SEC-02: rotate the super-admin password; move script credentials to env**. (H1.1 + H1.7 code done on branch `harden/h1.1-h1.7`, awaiting the Vapi tool config before merge.)
+**Active task**: **H1.2 — SEC-02: rotate the super-admin password; move script credentials to env**. (H1.1 + H1.7 merged to `dev` via PR #6; the Vapi tool secret must be set before `dev` reaches production.)
 
 ### Wave 1 — Security P0 (do first; mostly small changes)
 
 | Task | Gap | Description | Lead | Status |
 |---|---|---|---|---|
-| H1.1 | SEC-01 | Reject missing, mismatched or wrong-length `x-webhook-secret`; configure the header on the Vapi tool; add tests | 🟢 | 🟡 code + 10 tests done (branch `harden/h1.1-h1.7`); fails closed, accepts `x-webhook-secret` or `x-vapi-secret`. **Deploy blocked** until the Vapi tool sends the secret (Founder Actions) |
+| H1.1 | SEC-01 | Reject missing, mismatched or wrong-length `x-webhook-secret`; configure the header on the Vapi tool; add tests | 🟢 | 🟡 code + 10 tests merged to `dev` (PR #6); fails closed, accepts `x-webhook-secret` or `x-vapi-secret`. **Deploy blocked** until the Vapi tool sends the secret (Founder Actions) |
 | H1.2 | SEC-02 | Rotate the super-admin password; move script credentials to env or a prompt | 🟢 + Founder | ⏳ |
 | H1.3 | SEC-03 | Rotate the Redis password; strip the `.env` comment; delete `.env.bak` | Founder | ⏳ |
 | H1.4 | SEC-04 | Make `SA_JWT_SECRET` required in production; confirm it is set on Render | 🟢 | ⏳ |
 | H1.5 | SEC-05 | Mount `validateOrganization` + `attachEffectivePlan` + role/permission checks on all org routes; honour `X-Organization-ID` | 🟢 | ⏳ |
 | H1.6 | SEC-06 | Phone-number link: uniqueness + ownership check, Owner-only; retire manual UUID entry | 🟢 | ⏳ |
-| H1.7 | SEC-13 | Stop publishing source maps: `sourcemap: 'hidden'` + Sentry upload in CI; verify no `.map` is served | 🟢 | ✅ code done (same branch): build leaves 0 `.map` files; Sentry uploads then deletes when `SENTRY_AUTH_TOKEN` is set |
+| H1.7 | SEC-13 | Stop publishing source maps: `sourcemap: 'hidden'` + Sentry upload in CI; verify no `.map` is served | 🟢 | ✅ code merged to `dev` (PR #6): build leaves 0 `.map` files; Sentry uploads then deletes when `SENTRY_AUTH_TOKEN` is set |
 
 ### Wave 2 — Core flow P0
 
@@ -151,6 +152,12 @@ Mostly frontend; can run in parallel with Waves 1–2. Checklist status: `gaps.m
 | H5.6 | FE-16 | Replace the ~16 failing grey text colours with AA-passing tokens | 🟢 | ⏳ |
 | H5.7 | FE-17 | Responsive grids (`auto-fit`) + 375 px pass on Dashboard, Calls, Billing, Onboarding, Pricing, Register | 🟢 + 🟣 | ⏳ |
 | H5.8 | FE-18, FE-08 | PNG favicon + manifest, CSP in `vercel.json`, `noindex` on 404, blog cover alt, footer social links, delete `files.zip` | 🟢 | ⏳ |
+| H5.9 | FE-19, FE-02 | **Remove false / unmeasured claims** — Critical (trust, consumer-protection risk) | 🟢 + 🟡 | 🟡 landing + Pricing pill done (on `dev`); Services + Industries copy with GTM-01, Pricing features with H4.2 |
+| H5.10 | FE-20, FE-17 | Mobile first screen: no horizontal overflow at 320/375/414 px, short header CTA, compact cookie bar | 🟢 | ⏳ |
+| H5.11 | FE-21 | Hero rewrite (5-second test): eyebrow (who), H1 (what), outcome line, one CTA + "Hear the voices", 3-fact row | 🟡 + 🟢 | ⏳ (final copy after D2) |
+| H5.12 | FE-22 | Remove the AI look: blobs, grid bg, "New" pill, extra gradients/pills/CTAs; merge or drop low-value sections | 🟢 | ⏳ |
+| H5.13 | FE-23, FE-24 | Colour + motion rules: rename tokens, one accent, neutral step numbers; one hero entrance, drop repeated `Reveal`, progress bar, decorative loops | 🟢 | ⏳ |
+| H5.14 | — (process) | Designer pass each release: screenshot public pages at 375 px and 1366 px, list the top 10 issues, fix, re-check; later Playwright visual snapshots in CI | 🟢 + 🔵 | ⏳ recurring |
 
 ### Supporting lanes this sprint (zero-idle)
 
@@ -159,7 +166,7 @@ Mostly frontend; can run in parallel with Waves 1–2. Checklist status: `gaps.m
 | 🔵 Product | Score candidate niches and recommend one beachhead (GTM-01, plan § 7.1); acceptance criteria for H3.1 |
 | 🟢 Engineering | Lead on Waves 1, 2 and 4 |
 | 🟠 AI | Prompt + eval work (H3.4, H3.5); verify structured output after H2.1 |
-| 🟡 Growth | Pricing and feature-claim cleanup (H4.2); real testimonials from beta users; per-page titles/descriptions copy (H5.4); define funnel events (H5.2) |
+| 🟡 Growth | Pricing and feature-claim cleanup (H4.2); real, consented testimonials from beta users (replaces FE-19 removals); per-page titles/descriptions copy (H5.4); define funnel events (H5.2); hero copy (H5.11) |
 | 🟣 Customer | Beta onboarding checklist; watch minutes-gate and crawl failures once fixed; 375 px mobile QA (H5.7) |
 
 ---
@@ -205,7 +212,7 @@ Source and full specs: `main-project-docs/AI-Implementation-Offer-Plan.md`. Gap 
 
 | Priority | Action | Why |
 |---|---|---|
-| 🔴 P0 | **Before merging `harden/h1.1-h1.7`**: in the Vapi dashboard, open the `submit_order` tool → Server → set **Secret** to the same value as `VAPI_TOOL_WEBHOOK_SECRET` (Vapi then sends `x-vapi-secret`), and confirm that variable is set on Render. Otherwise every order tool call returns 401 after deploy. Then place one test order by phone | SEC-01 |
+| 🔴 P0 | **Before `dev` (with PR #6) is deployed to production**: in the Vapi dashboard, open the `submit_order` tool → Server → set **Secret** to the same value as `VAPI_TOOL_WEBHOOK_SECRET` (Vapi then sends `x-vapi-secret`), and confirm that variable is set on Render. Otherwise every order tool call returns 401 after deploy. Then place one test order by phone | SEC-01 |
 | 🔴 P0 | Rotate the **super-admin password** (it is committed in `backend/scripts/*super-admin*.js`) | SEC-02 |
 | 🔴 P0 | Rotate the **Redis Cloud password**; remove the commented URL from `backend/.env`; delete `backend/.env.bak` | SEC-03 |
 | 🔴 P0 | Confirm `SA_JWT_SECRET`, `VAPI_WEBHOOK_SECRET` and `VAPI_TOOL_WEBHOOK_SECRET` are set on Render | SEC-01, SEC-04 |
