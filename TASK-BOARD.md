@@ -2,13 +2,15 @@
 
 > **Founder**: Rishabh Sharma  
 > **CEO Agent**: Claude (orchestrator)  
-> **Last updated**: 2026-09-30 10:40 IST (AI implementation offer plan + brand palette)  
+> **Last updated**: 2026-10-01 10:15 IST (launch-readiness checklist audit → Wave 5)
 > **Operating model**: All 5 agents work in parallel on every task. No idle agents.  
 > **Gaps register**: `main-project-docs/gaps.md` — every task ID below links to a gap ID there  
 > **Go-to-market plan**: `main-project-docs/AI-Implementation-Offer-Plan.md` — sprints after S-HARDEN  
 > **Execution Framework**: `agents/EXECUTION-FRAMEWORK.md` · **SOP**: `agents/SOP.md` · **R&D Log**: `main-project-docs/RD-LOG.md`
 
 **Version history**
+- [2026-10-01 10:40] v2.3 — CEO Agent — H1.1 (SEC-01) and H1.7 (SEC-13) code done on branch `harden/h1.1-h1.7`; active task → H1.2; founder action added to configure the Vapi tool secret before merge.
+- [2026-10-01 10:15] v2.2 — CEO Agent — Launch-readiness audit (20-item checklist; `gaps.md` § 12). Added H1.7 (SEC-13 public source maps), Wave 5 (launch readiness: spam, analytics, cookies, speed, SEO, contrast, mobile, polish), FE-09 consent checkbox into H4.9, founder actions for Turnstile/analytics, and PROPOSED decision D6 (agent operating system, `gaps.md` § 13). No code changed.
 - [2026-09-30 10:40] v2.1 — CEO Agent — Added Upcoming Sprints (S-NICHE → S-IMPLEMENT → S-PROOF) from `AI-Implementation-Offer-Plan.md`; H4.2 pulled forward into S-HARDEN; founder decisions D1–D5 added; "pick 2–3 launch industries" replaced by one beachhead niche (GTM-01); brand palette change logged. S-HARDEN scope otherwise unchanged.
 - [2026-09-29 22:57] v2.0 — CEO Agent — Rewrote the board from a full code audit. Replaced the stale 2026-07-30 sprint (L2.F2 auth tests; the "L3–L5 pending" backlog) with the as-built status, a new Launch Hardening sprint mapped to `gaps.md`, and current founder actions. Old session logs are condensed under "Completed work"; the background-lane log and decision log are kept.
 - 2026-07-30 v1.x — CEO Agent — Session logs from 2026-06-22 to 2026-07-30 (see git history of this file for full text).
@@ -74,7 +76,7 @@ Every sprint task has a lead agent. Every other agent runs a supporting or backg
 | Team + permissions | `modules/team` | TeamPage | 🟡 | TEAM-01…03, SEC-08 |
 | Billing (Stripe checkout/portal/webhook, INR prices, trial, minutes meter) | `modules/billing` | BillingPage | 🟡 | BIZ-01…05 |
 | Super-admin portal (~85 endpoints, ~30 pages) | `modules/superadmin` | `features/superadmin/*` | 🟡 | SA-01…03, SEC-02, SEC-04, SEC-10 |
-| Public site (landing, pricing, blog, changelog, legal, contact) | blog/changelog/announcements APIs | `features/public/*` | 🟡 | FE-01…04, BIZ-07 |
+| Public site (landing, pricing, blog, changelog, legal, contact) | blog/changelog/announcements APIs | `features/public/*` | 🟡 | FE-01…04, FE-08…18, SEC-13, BIZ-07 |
 | Background jobs (8 queues) | `jobs/*` | Job Inspector | 🟡 only callReport runs | CORE-02, OPS-04 |
 | CI/CD + hosting | `ci.yml`, `render.yaml`, `vercel.json` | — | 🟡 | OPS-01, OPS-02, OPS-05 |
 | Evals | `scripts/vapi-evals` (23 cases, Ritu Electricals) | — | 🟡 21/23 locally | OPS-06, IND-03 |
@@ -84,18 +86,19 @@ Every sprint task has a lead agent. Every other agent runs a supporting or backg
 ## 🚀 Active Sprint — S-HARDEN: Launch Hardening
 
 **Goal**: close every P0 in `gaps.md`, then the P1s that block the first paying customer (multi-industry).  
-**Active task**: **H1.1 — SEC-01: harden the `submit_order` tool secret**.
+**Active task**: **H1.2 — SEC-02: rotate the super-admin password; move script credentials to env**. (H1.1 + H1.7 code done on branch `harden/h1.1-h1.7`, awaiting the Vapi tool config before merge.)
 
 ### Wave 1 — Security P0 (do first; mostly small changes)
 
 | Task | Gap | Description | Lead | Status |
 |---|---|---|---|---|
-| H1.1 | SEC-01 | Reject missing, mismatched or wrong-length `x-webhook-secret`; configure the header on the Vapi tool; add tests | 🟢 | ⏳ NEXT |
+| H1.1 | SEC-01 | Reject missing, mismatched or wrong-length `x-webhook-secret`; configure the header on the Vapi tool; add tests | 🟢 | 🟡 code + 10 tests done (branch `harden/h1.1-h1.7`); fails closed, accepts `x-webhook-secret` or `x-vapi-secret`. **Deploy blocked** until the Vapi tool sends the secret (Founder Actions) |
 | H1.2 | SEC-02 | Rotate the super-admin password; move script credentials to env or a prompt | 🟢 + Founder | ⏳ |
 | H1.3 | SEC-03 | Rotate the Redis password; strip the `.env` comment; delete `.env.bak` | Founder | ⏳ |
 | H1.4 | SEC-04 | Make `SA_JWT_SECRET` required in production; confirm it is set on Render | 🟢 | ⏳ |
 | H1.5 | SEC-05 | Mount `validateOrganization` + `attachEffectivePlan` + role/permission checks on all org routes; honour `X-Organization-ID` | 🟢 | ⏳ |
 | H1.6 | SEC-06 | Phone-number link: uniqueness + ownership check, Owner-only; retire manual UUID entry | 🟢 | ⏳ |
+| H1.7 | SEC-13 | Stop publishing source maps: `sourcemap: 'hidden'` + Sentry upload in CI; verify no `.map` is served | 🟢 | ✅ code done (same branch): build leaves 0 `.map` files; Sentry uploads then deletes when `SENTRY_AUTH_TOKEN` is set |
 
 ### Wave 2 — Core flow P0
 
@@ -131,8 +134,23 @@ Every sprint task has a lead agent. Every other agent runs a supporting or backg
 | H4.6 | SA-01, SA-02 | Fix broadcast and transfer-ownership queries; wire or hide unused super-admin features | 🟢 | ⏳ |
 | H4.7 | SEC-07…12 | Remaining security P1s (SSRF, access-log membership, email escaping, SA rate limit, auth hardening, order fallback) | 🟢 | ⏳ |
 | H4.8 | CORE-06, 08, 09 | `status-update` handling, real transcript timestamps, crawl-poll timeout | 🟢 | ⏳ |
-| H4.9 | FE-01…03 | Contact form endpoint, real testimonials, legal placeholders | 🟡 + Founder | ⏳ |
+| H4.9 | FE-01…03, FE-09 | Contact form endpoint, real testimonials, legal placeholders; required Terms/Privacy consent checkbox at signup + `termsAcceptedAt` | 🟡 + 🟢 + Founder | ⏳ |
 | H4.10 | OPS-01…03 | Remove the ECS deploy workflow; fix CI e2e; add webhook, orders and minutes tests | 🟢 | ⏳ |
+
+### Wave 5 — Launch readiness (site, legal, SEO, performance) — from the 2026-10-01 checklist audit
+
+Mostly frontend; can run in parallel with Waves 1–2. Checklist status: `gaps.md` § 12.
+
+| Task | Gap | Description | Lead | Status |
+|---|---|---|---|---|
+| H5.1 | FE-10 | Cloudflare Turnstile on Register + Contact, verified on the backend | 🟢 | ⏳ |
+| H5.2 | FE-11, FE-12 | Cookieless analytics (Plausible or Vercel) + funnel events (`signup`, `email_verified`, `onboarding_complete`, `first_call`); align cookie banner + Privacy Policy with Sentry Replay | 🟢 + 🟣 | ⏳ |
+| H5.3 | FE-13 | Defer Sentry init + lazy Replay; Vapi SDK only on test-call pages; Lighthouse baseline (mobile ≥ 90, LCP < 2.5 s) on `/`, `/pricing`, `/register` | 🟢 | ⏳ |
+| H5.4 | FE-14 | Per-route `<title>`/`<meta>` (React 19 native) for public pages and blog posts | 🟢 + 🟡 | ⏳ |
+| H5.5 | FE-15 | Site URL from one env var; generated sitemap (blog posts, `lastmod`, no `/login`); fix `og:url`/robots — after CORE-05 custom domain | 🟢 | ⏳ |
+| H5.6 | FE-16 | Replace the ~16 failing grey text colours with AA-passing tokens | 🟢 | ⏳ |
+| H5.7 | FE-17 | Responsive grids (`auto-fit`) + 375 px pass on Dashboard, Calls, Billing, Onboarding, Pricing, Register | 🟢 + 🟣 | ⏳ |
+| H5.8 | FE-18, FE-08 | PNG favicon + manifest, CSP in `vercel.json`, `noindex` on 404, blog cover alt, footer social links, delete `files.zip` | 🟢 | ⏳ |
 
 ### Supporting lanes this sprint (zero-idle)
 
@@ -141,8 +159,8 @@ Every sprint task has a lead agent. Every other agent runs a supporting or backg
 | 🔵 Product | Score candidate niches and recommend one beachhead (GTM-01, plan § 7.1); acceptance criteria for H3.1 |
 | 🟢 Engineering | Lead on Waves 1, 2 and 4 |
 | 🟠 AI | Prompt + eval work (H3.4, H3.5); verify structured output after H2.1 |
-| 🟡 Growth | Pricing and feature-claim cleanup (H4.2); real testimonials from beta users |
-| 🟣 Customer | Beta onboarding checklist; watch minutes-gate and crawl failures once fixed |
+| 🟡 Growth | Pricing and feature-claim cleanup (H4.2); real testimonials from beta users; per-page titles/descriptions copy (H5.4); define funnel events (H5.2) |
+| 🟣 Customer | Beta onboarding checklist; watch minutes-gate and crawl failures once fixed; 375 px mobile QA (H5.7) |
 
 ---
 
@@ -187,6 +205,7 @@ Source and full specs: `main-project-docs/AI-Implementation-Offer-Plan.md`. Gap 
 
 | Priority | Action | Why |
 |---|---|---|
+| 🔴 P0 | **Before merging `harden/h1.1-h1.7`**: in the Vapi dashboard, open the `submit_order` tool → Server → set **Secret** to the same value as `VAPI_TOOL_WEBHOOK_SECRET` (Vapi then sends `x-vapi-secret`), and confirm that variable is set on Render. Otherwise every order tool call returns 401 after deploy. Then place one test order by phone | SEC-01 |
 | 🔴 P0 | Rotate the **super-admin password** (it is committed in `backend/scripts/*super-admin*.js`) | SEC-02 |
 | 🔴 P0 | Rotate the **Redis Cloud password**; remove the commented URL from `backend/.env`; delete `backend/.env.bak` | SEC-03 |
 | 🔴 P0 | Confirm `SA_JWT_SECRET`, `VAPI_WEBHOOK_SECRET` and `VAPI_TOOL_WEBHOOK_SECRET` are set on Render | SEC-01, SEC-04 |
@@ -200,6 +219,9 @@ Source and full specs: `main-project-docs/AI-Implementation-Offer-Plan.md`. Gap 
 | 🟢 P2 | Formspree form ID (or approve a backend contact endpoint); real testimonials | FE-01, FE-02 |
 | 🟢 P2 | Set `VITE_SENTRY_DSN` in production; UptimeRobot on `/api/v1/health` | Monitoring |
 | 🟢 P2 | Update `CLIENT_URL` in `render.yaml` / Render to the real Vercel URL | OPS-05 |
+| 🟡 P1 | Create a Cloudflare Turnstile site (site key + secret) for Register and Contact | FE-10 |
+| 🟡 P1 | Pick the analytics tool: Plausible (paid, cookieless) or Vercel Web Analytics; decide whether Sentry Replay stays on public pages | FE-11, FE-12 |
+| 🟢 P2 | **D6**: approve converting the 5 agents to Claude Code subagents + adding 3–4 specialists (AppSec, code reviewer) with chained handoffs instead of all-agents-every-turn | `gaps.md` § 13 |
 
 ---
 
@@ -256,6 +278,8 @@ Source and full specs: `main-project-docs/AI-Implementation-Offer-Plan.md`. Gap 
 
 | Date | Decision | Owner | Rationale |
 |---|---|---|---|
+| 2026-10-01 | Launch-readiness checklist audit: 9/20 covered, 9 partial, 2 missing (page speed, analytics). Added S-HARDEN Wave 5 + H1.7 | CEO Agent | Gaps SEC-13, FE-09…18 (`gaps.md` § 12) |
+| 2026-10-01 | **PROPOSED (D6)**: real Claude Code subagents + 3–4 Agency specialists, chained per task type; retire the zero-idle rule | CEO Agent → Founder (T0) | Agent files are not loadable as subagents; 11-agent dispatch costs more than it returns (`gaps.md` § 13) |
 | 2026-09-30 | **PROPOSED (awaiting D1/D2)**: go to market as platform + managed "AI implementation" offer for one beachhead niche; sprints S-NICHE → S-IMPLEMENT → S-PROOF after S-HARDEN | CEO Agent → Founder (T0) | Product already solves missed calls; clients pay for the problem handled; follow-up, booking, CRM/calendar via n8n and ROI proof are missing (`gaps.md` § 11) |
 | 2026-09-30 | Brand palette = "Tiffany × Dark Gray" (#21F1A8 / #171717), dark-first UI across the app | Founder | Chosen from 3 shortlisted combos (design.deb Color Combo Part 09) |
 | 2026-09-29 | Product is a **multi-industry SaaS**; electrical retail (Ritu Electricals) is the first vertical, generalised via industry templates | Founder (T0) | Catalog, orders, prompt and evals are electrical-only today; industry templates avoid a rewrite per vertical |
