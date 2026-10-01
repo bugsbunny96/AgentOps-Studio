@@ -1,14 +1,14 @@
 /**
  * Order Routes
  *
- * POST /api/v1/orders/submit   — Vapi tool-call webhook (x-webhook-secret auth, NOT the user JWT)
+ * POST /api/v1/orders/submit   — Vapi tool-call webhook (x-webhook-secret or x-vapi-secret auth, NOT the user JWT)
  * GET  /api/v1/orders          — List orders (JWT auth, org-scoped)
  * GET  /api/v1/orders/:orderId — Get single order detail (JWT auth, org-scoped)
  * PATCH /api/v1/orders/:orderId/status — Update order status (JWT auth, org-scoped)
  *
  * The submit endpoint is deliberately NOT behind requireAuth because Vapi calls it
  * from its tool server infrastructure — there's no user session. Instead it uses
- * the x-webhook-secret header to authenticate (same pattern as the POC guard).
+ * a shared secret (VAPI_TOOL_WEBHOOK_SECRET) and fails closed — see verifyToolWebhookSecret.
  */
 
 import { Router, type Request, type Response, type NextFunction } from 'express';
@@ -22,45 +22,58 @@ import * as orderService from './order.service';
 
 const router = Router();
 
-// ── Webhook secret verification ───────────────────────────────────────────────
+// ── Webhook secret verification (SEC-01) ──────────────────────────────────────
+//
+// Fails closed. The tool call is accepted only when the request carries the
+// shared secret in either header:
+//   • x-webhook-secret — custom header set in the Vapi tool's server.headers
+//   • x-vapi-secret    — Vapi's native header, sent when the tool's server.secret is set
+// When VAPI_TOOL_WEBHOOK_SECRET is unset, calls are rejected in production and
+// allowed (with a warning) only in development/test so local simulation still works.
 
-function verifyToolWebhookSecret(incoming: string | undefined): boolean {
+function headerValue(value: string | string[] | undefined): string | undefined {
+  return Array.isArray(value) ? value[0] : value;
+}
+
+function safeEqual(expected: string, incoming: string): boolean {
+  const a = Buffer.from(expected);
+  const b = Buffer.from(incoming);
+  // timingSafeEqual throws on unequal lengths — treat as mismatch
+  return a.length === b.length && timingSafeEqual(a, b);
+}
+
+export function verifyToolWebhookSecret(req: Request): boolean {
   const expected = env.VAPI_TOOL_WEBHOOK_SECRET;
   if (!expected) {
-    logger.warn('VAPI_TOOL_WEBHOOK_SECRET not configured — accepting tool call without verification');
-    return true;
-  }
-  if (!incoming) {
-    // Secret is configured but Vapi sent no header. Log and allow for now so
-    // tool calls are not silently blocked during POC. Re-harden once confirmed working:
-    // change this return to `false` and ensure Vapi tool sends x-webhook-secret header.
-    logger.warn('submit_order: VAPI_TOOL_WEBHOOK_SECRET configured but x-webhook-secret header is missing — allowing (POC mode)');
-    return true;
-  }
-  try {
-    const a = Buffer.from(expected);
-    const b = Buffer.from(incoming);
-    if (a.length !== b.length) {
-      logger.warn('submit_order: x-webhook-secret header length mismatch — allowing (POC mode)');
-      return true;
+    if (env.NODE_ENV === 'production') {
+      logger.error('submit_order: VAPI_TOOL_WEBHOOK_SECRET is not set in production — rejecting tool call');
+      return false;
     }
-    if (!timingSafeEqual(a, b)) {
-      logger.warn('submit_order: x-webhook-secret header value mismatch — allowing (POC mode)');
-      return true;
-    }
-    return true;
-  } catch {
-    logger.warn('submit_order: secret comparison threw — allowing (POC mode)');
+    logger.warn('submit_order: VAPI_TOOL_WEBHOOK_SECRET not set — accepting tool call (non-production only)');
     return true;
   }
+
+  const candidates = [
+    headerValue(req.headers['x-webhook-secret']),
+    headerValue(req.headers['x-vapi-secret']),
+  ].filter((v): v is string => typeof v === 'string' && v.length > 0);
+
+  if (candidates.length === 0) {
+    logger.warn('submit_order: rejected — no x-webhook-secret / x-vapi-secret header', { ip: req.ip });
+    return false;
+  }
+  if (!candidates.some((c) => safeEqual(expected, c))) {
+    logger.warn('submit_order: rejected — webhook secret mismatch', { ip: req.ip });
+    return false;
+  }
+  return true;
 }
 
 // ── POST /api/v1/orders/submit (Vapi tool call) ───────────────────────────────
 
 router.post('/submit', async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const secret = req.headers['x-webhook-secret'] as string | undefined;
-    if (!verifyToolWebhookSecret(secret)) {
+    if (!verifyToolWebhookSecret(req)) {
       res.status(401).json({ error: 'Unauthorized' });
       return;
     }
