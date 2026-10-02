@@ -9,6 +9,7 @@
 > **Execution Framework**: `agents/EXECUTION-FRAMEWORK.md` · **SOP**: `agents/SOP.md` · **R&D Log**: `main-project-docs/RD-LOG.md`
 
 **Version history**
+- [2026-10-02 18:10] v2.9 — CEO Agent — Wave 3 on `harden/wave3`: CORE-05 (Vercel /api rewrite), CORE-02 (shared worker client, all 8 workers + schedules on), SEC-07 (SSRF-safe crawler). Decisions: stay on Render + free Redis.
 - [2026-10-02 17:30] v2.8 — CEO Agent — Incident: SEC-12 single-org fallback overwrote Ritu's `vapiAssistantId` (restored). Wave 1: SEC-12 (`harden/wave1`), CI/OPS-01…03 + SEC-04 + SEC-02 (`harden/wave1b`), SEC-05 + SEC-06 (`harden/wave1c`).
 - [2026-10-02 16:20] v2.7 — CEO Agent — Wave 2: H2.1–H2.4 code done on `harden/wave2` (branched from `feat/cost-reduction`); both branches committed locally, not pushed. Pre-existing failures: frontend AuthGuard + GuestGuard tests.
 - [2026-10-02 16:10] v2.6 — CEO Agent — Premium Voices add-on (founder decision: Pro free; ₹2,999 Basic / ₹4,999 Standard) built as C7; tool safety net C8; founder action to create the Stripe add-on prices.
@@ -113,8 +114,8 @@ Every sprint task has a lead agent. Every other agent runs a supporting or backg
 | H2.2 | BIZ-01 | Minutes gate + billing status respect the month boundary | 🟢 | 🟡 code on `harden/wave2` (`utils/callMinutes.ts`) + gate tests |
 | H2.3 | CORE-03 | Exclude Vapi webhook and tool routes from the global rate limiter | 🟢 | 🟡 code on `harden/wave2` (`middleware/rateLimitExempt.ts`: webhooks/vapi, orders/submit, tools) + tests |
 | H2.4 | CORE-04 | Fix Dashboard response unwrapping (`/agents`, `/calls`) | 🟢 | 🟡 code on `harden/wave2` (`utils/unwrapList.ts`) + frontend test |
-| H2.5 | CORE-05 | Verify production login; add a custom domain or a Vercel `/api` rewrite | 🟢 + Founder | ⏳ |
-| H2.6 | CORE-02 | Consolidate worker Redis connections, or upgrade Redis; re-enable crawl → kb → callMinutesReset → followUpAlert → trial jobs | 🟢 | ⏳ |
+| H2.5 | CORE-05 | Verify production login; add a custom domain or a Vercel `/api` rewrite | 🟢 + Founder | 🟡 code on `harden/wave3`: Vercel `/api` rewrite → Render (founder decision: keep Render, no domain yet); trust proxy 2 + per-account auth limit. Verify login after deploy |
+| H2.6 | CORE-02 | Consolidate worker Redis connections, or upgrade Redis; re-enable crawl → kb → callMinutesReset → followUpAlert → trial jobs | 🟢 | 🟡 code on `harden/wave3` (founder decision: stay on free Redis): all 8 workers on one shared client — measured 16 → 9 connections for 8 workers (bullmq 5.79.1); `jobs/registry.ts`, `WORKERS_DISABLED`; schedules on. SEC-07 SSRF fixed first (`utils/safeFetch.ts`) |
 
 ### Wave 3 — Multi-industry foundation (P1)
 
@@ -307,6 +308,7 @@ Source and full specs: `main-project-docs/AI-Implementation-Offer-Plan.md`. Gap 
 
 | Date | Decision | Owner | Rationale |
 |---|---|---|---|
+| 2026-10-02 | Keep the backend on Render (not Vercel); API reached through a Vercel `/api` rewrite; stay on the Redis Cloud free tier | Founder (T0) | Backend needs a long-running process (BullMQ workers, fast Vapi webhooks); rewrite makes cookies first-party without a domain; shared worker client fits 8 workers in ~11 connections |
 | 2026-10-02 | Premium voices: **included on Pro; add-on ₹2,999/mo on Basic, ₹4,999/mo on Standard** (+ GST); not sold on the trial | Founder (T0) | Covers the extra ElevenLabs cost at full usage; Standard + add-on stays below Pro (pricing doc § 11) |
 | 2026-10-02 | **PROPOSED**: default LLM GPT-4o → GPT-4o-mini (env `LLM_MODEL`, revert anytime); stay on Vapi (own platform revisit at ~20–30k min/month) | CEO Agent → Founder (T0 for pricing part) | GPT-4o was the largest controllable cost per minute; Vapi fee ($0.05/min) only pays back at volume (`gaps.md` § 14). Supersedes 2026-06-26 "GPT-4o default" once evals pass |
 | 2026-10-01 | Launch-readiness checklist audit: 9/20 covered, 9 partial, 2 missing (page speed, analytics). Added S-HARDEN Wave 5 + H1.7 | CEO Agent | Gaps SEC-13, FE-09…18 (`gaps.md` § 12) |

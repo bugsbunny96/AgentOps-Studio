@@ -1,5 +1,5 @@
 import { Worker } from 'bullmq';
-import { bullmqConnection } from '../config/bullmq-connection';
+import { getSharedWorkerClient } from '../config/bullmq-connection';
 import { crawlWebsite } from '../modules/onboarding/crawler.service';
 import { logger } from '../utils/logger';
 import type { CrawlJobData, CrawlJobName } from './crawl.queue';
@@ -18,7 +18,7 @@ export function startCrawlWorker() {
       await crawlWebsite(orgId, websiteUrl);
     },
     {
-      connection: bullmqConnection,
+      connection: getSharedWorkerClient(),   // CORE-02: 1 Redis connection per worker
       concurrency: 3,
     },
   );

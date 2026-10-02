@@ -21,3 +21,15 @@ export function isRateLimitExempt(url: string | undefined): boolean {
     (prefix) => path === prefix || path.startsWith(`${prefix}/`),
   );
 }
+
+/**
+ * Key for per-account auth limits: the normalised email in the JSON body.
+ * Used alongside the per-IP limit because X-Forwarded-For can be spoofed by
+ * callers that bypass the Vercel proxy (CORE-05).
+ */
+export function authAccountKey(req: { body?: unknown }): string | undefined {
+  const email = (req.body as { email?: unknown } | undefined)?.email;
+  if (typeof email !== 'string') return undefined;
+  const normalised = email.trim().toLowerCase();
+  return normalised ? `acct:${normalised}` : undefined;
+}
