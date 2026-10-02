@@ -3,6 +3,8 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
+export const DEV_SA_JWT_SECRET = 'sa-dev-secret-change-in-production-32chars';
+
 const envSchema = z.object({
   // ── Server ──────────────────────────────────────────────────────────
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
@@ -19,7 +21,8 @@ const envSchema = z.object({
   JWT_REFRESH_SECRET: z.string().min(32, 'JWT_REFRESH_SECRET must be at least 32 characters'),
   JWT_ACCESS_EXPIRES_IN: z.string().default('15m'),
   JWT_REFRESH_EXPIRES_IN: z.string().default('7d'),
-  SA_JWT_SECRET: z.string().min(32, 'SA_JWT_SECRET must be at least 32 characters').default('sa-dev-secret-change-in-production-32chars'),
+  // Dev default only — rejected in production by productionEnvProblems() (SEC-04)
+  SA_JWT_SECRET: z.string().min(32, 'SA_JWT_SECRET must be at least 32 characters').default(DEV_SA_JWT_SECRET),
 
   // ── CORS ──────────────────────────────────────────────────────────────
   CLIENT_URL: z.string().default('http://localhost:5173'),
@@ -157,6 +160,31 @@ if (!parsed.success) {
     console.error(`  ${key}: ${messages?.join(', ')}`);
   });
   console.error('\n  → Copy backend/.env.example to backend/.env and fill in the values.\n');
+  process.exit(1);
+}
+
+/**
+ * Production-only checks that the schema can't express (SEC-04).
+ * Without SA_JWT_SECRET the hardcoded dev default would sign super-admin
+ * tokens, so anyone could forge a super-admin session.
+ */
+export function productionEnvProblems(e: { NODE_ENV: string; SA_JWT_SECRET: string; JWT_ACCESS_SECRET: string }): string[] {
+  if (e.NODE_ENV !== 'production') return [];
+  const problems: string[] = [];
+  if (e.SA_JWT_SECRET === DEV_SA_JWT_SECRET) {
+    problems.push('SA_JWT_SECRET: must be set in production (the dev default is public)');
+  }
+  if (e.SA_JWT_SECRET === e.JWT_ACCESS_SECRET) {
+    problems.push('SA_JWT_SECRET: must differ from JWT_ACCESS_SECRET');
+  }
+  return problems;
+}
+
+const prodProblems = productionEnvProblems(parsed.data);
+if (prodProblems.length > 0) {
+  console.error('❌  Unsafe production configuration:\n');
+  prodProblems.forEach((p) => console.error(`  ${p}`));
+  console.error('');
   process.exit(1);
 }
 

@@ -46,7 +46,6 @@ const UserSchema = new Schema<IUser>(
 );
 
 // Never return sensitive fields in JSON responses
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 UserSchema.set('toJSON', {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   transform: (_doc: any, ret: any) => {

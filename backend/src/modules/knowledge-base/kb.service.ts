@@ -3,7 +3,7 @@
  *
  * All operations are scoped to the authenticated owner's organization.
  * Org lookup follows the same pattern as agent.service.ts:
- *   MembershipModel.findOne({ userId, role: 'Owner' }).populate('organizationId')
+ *   MembershipModel.findOne(membershipFilter(userId, { role: 'Owner' as const })).populate('organizationId')
  *
  * Functions:
  *   listDocs(userId)                          → paginated KB document list
@@ -32,6 +32,7 @@ import { PLAN_LIMITS }                         from '../billing/billing.service'
 import { computeTrialState }                   from '../billing/trial.service';
 import type { Plan }                           from '../organization/organization.model';
 import { logger }                              from '../../utils/logger';
+import { membershipFilter } from '../../utils/requestContext';
 
 // ─── Internal helpers ─────────────────────────────────────────────────────────
 
@@ -40,7 +41,7 @@ async function resolveOwnerOrg(userId: string): Promise<{
   orgId: mongoose.Types.ObjectId;
 }> {
   const membership = await MembershipModel
-    .findOne({ userId, role: 'Owner' })
+    .findOne(membershipFilter(userId, { role: 'Owner' as const }))
     .populate<{ organizationId: IOrganization }>('organizationId');
   if (!membership) throw NotFound('Organization');
   const org = membership.organizationId as IOrganization;

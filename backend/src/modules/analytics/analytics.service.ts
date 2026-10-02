@@ -13,11 +13,12 @@ import mongoose from 'mongoose';
 import { MembershipModel, type IOrganization } from '../organization/organization.model';
 import { CallModel, SummaryModel } from '../calls/call.model';
 import { NotFound }                from '../../middleware/errorHandler';
+import { membershipFilter } from '../../utils/requestContext';
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
 async function resolveOrgId(userId: string): Promise<mongoose.Types.ObjectId> {
-  const membership = await MembershipModel.findOne({ userId }).populate<{
+  const membership = await MembershipModel.findOne(membershipFilter(userId)).populate<{
     organizationId: IOrganization;
   }>('organizationId');
   if (!membership) throw NotFound('Organization');

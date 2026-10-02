@@ -1,4 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
+import mongoose from 'mongoose';
 import {
   superAdminLogin,
   getPlatformStats,
@@ -102,7 +103,7 @@ export async function saStatsHandler(req: Request, res: Response, next: NextFunc
 // ─── Platform Health ──────────────────────────────────────────────────────────
 export async function saHealthHandler(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
-    const mongoState = require('mongoose').connection.readyState;
+    const mongoState = mongoose.connection.readyState;
     const mongoStatus = ['disconnected', 'connected', 'connecting', 'disconnecting'][mongoState] ?? 'unknown';
 
     let redisStatus = 'unknown';
@@ -455,7 +456,6 @@ import {
 
 export async function saHealthEnhancedHandler(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
-    const mongoose = require('mongoose') as typeof import('mongoose');
     const mongoState = mongoose.connection.readyState;
     const mongoStatus = ['disconnected', 'connected', 'connecting', 'disconnecting'][mongoState] ?? 'unknown';
 

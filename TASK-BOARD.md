@@ -9,6 +9,7 @@
 > **Execution Framework**: `agents/EXECUTION-FRAMEWORK.md` · **SOP**: `agents/SOP.md` · **R&D Log**: `main-project-docs/RD-LOG.md`
 
 **Version history**
+- [2026-10-02 17:30] v2.8 — CEO Agent — Incident: SEC-12 single-org fallback overwrote Ritu's `vapiAssistantId` (restored). Wave 1: SEC-12 (`harden/wave1`), CI/OPS-01…03 + SEC-04 + SEC-02 (`harden/wave1b`), SEC-05 + SEC-06 (`harden/wave1c`).
 - [2026-10-02 16:20] v2.7 — CEO Agent — Wave 2: H2.1–H2.4 code done on `harden/wave2` (branched from `feat/cost-reduction`); both branches committed locally, not pushed. Pre-existing failures: frontend AuthGuard + GuestGuard tests.
 - [2026-10-02 16:10] v2.6 — CEO Agent — Premium Voices add-on (founder decision: Pro free; ₹2,999 Basic / ₹4,999 Standard) built as C7; tool safety net C8; founder action to create the Stripe add-on prices.
 - [2026-10-02 09:50] v2.5 — CEO Agent — Cost reduction (founder request, steps 1–4): new S-HARDEN Wave 6 (C1–C6, `gaps.md` § 14) — code done on branch `feat/cost-reduction`; founder actions added for evals + live model switch; decision log updated (GPT-4o → GPT-4o-mini default, PROPOSED).
@@ -97,11 +98,11 @@ Every sprint task has a lead agent. Every other agent runs a supporting or backg
 | Task | Gap | Description | Lead | Status |
 |---|---|---|---|---|
 | H1.1 | SEC-01 | Reject missing, mismatched or wrong-length `x-webhook-secret`; configure the header on the Vapi tool; add tests | 🟢 | 🟡 code + 10 tests merged to `dev` (PR #6); fails closed, accepts `x-webhook-secret` or `x-vapi-secret`. **Deploy blocked** until the Vapi tool sends the secret (Founder Actions) |
-| H1.2 | SEC-02 | Rotate the super-admin password; move script credentials to env or a prompt | 🟢 + Founder | ⏳ |
+| H1.2 | SEC-02 | Rotate the super-admin password; move script credentials to env or a prompt | 🟢 + Founder | ✅ scripts read env/hidden prompt (`harden/wave1b`); password rotated 2026-10-02 |
 | H1.3 | SEC-03 | Rotate the Redis password; strip the `.env` comment; delete `.env.bak` | Founder | ⏳ |
-| H1.4 | SEC-04 | Make `SA_JWT_SECRET` required in production; confirm it is set on Render | 🟢 | ⏳ |
-| H1.5 | SEC-05 | Mount `validateOrganization` + `attachEffectivePlan` + role/permission checks on all org routes; honour `X-Organization-ID` | 🟢 | ⏳ |
-| H1.6 | SEC-06 | Phone-number link: uniqueness + ownership check, Owner-only; retire manual UUID entry | 🟢 | ⏳ |
+| H1.4 | SEC-04 | Make `SA_JWT_SECRET` required in production; confirm it is set on Render | 🟢 | 🟡 code on `harden/wave1b` (boot refuses dev default) — confirm Render value |
+| H1.5 | SEC-05 | Mount `validateOrganization` + `attachEffectivePlan` + role/permission checks on all org routes; honour `X-Organization-ID` | 🟢 | 🟡 code on `harden/wave1c`: `orgContext` + `requireOwner`/`requirePermission` on every org router; services use `membershipFilter` (AsyncLocalStorage); `attachEffectivePlan` left for H4.1 |
+| H1.6 | SEC-06 | Phone-number link: uniqueness + ownership check, Owner-only; retire manual UUID entry | 🟢 | 🟡 code on `harden/wave1c` (Owner-only, UUID format, 409 if held by another org); manual entry not yet retired |
 | H1.7 | SEC-13 | Stop publishing source maps: `sourcemap: 'hidden'` + Sentry upload in CI; verify no `.map` is served | 🟢 | ✅ code merged to `dev` (PR #6): build leaves 0 `.map` files; Sentry uploads then deletes when `SENTRY_AUTH_TOKEN` is set |
 
 ### Wave 2 — Core flow P0

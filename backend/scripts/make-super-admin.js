@@ -19,7 +19,7 @@ if (!email) {
 
 async function run() {
   await mongoose.connect(process.env.MONGODB_URI);
-  console.log('Connected to MongoDB:', process.env.MONGODB_URI);
+  console.log('Connected to MongoDB');
 
   const result = await mongoose.connection.db
     .collection('users')

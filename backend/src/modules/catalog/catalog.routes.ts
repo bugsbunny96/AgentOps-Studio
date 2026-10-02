@@ -14,18 +14,20 @@ import mongoose from 'mongoose';
 import { authenticate } from '../../middleware/authenticate';
 import { MembershipModel } from '../organization/organization.model';
 import * as catalogService from './catalog.service';
+import { membershipFilter } from '../../utils/requestContext';
+import { orgContext, requirePermission } from '../../middleware/orgContext';
 
 const router = Router();
 
 /** Resolve the authenticated user's orgId — shared across handlers */
 async function resolveOrgId(userId: string): Promise<mongoose.Types.ObjectId> {
-  const membership = await MembershipModel.findOne({ userId });
+  const membership = await MembershipModel.findOne(membershipFilter(userId));
   if (!membership) throw new Error('Organization not found');
   return membership.organizationId as mongoose.Types.ObjectId;
 }
 
 // All routes require authentication
-router.use(authenticate);
+router.use(authenticate, orgContext);   // SEC-05
 
 // ── GET /api/v1/catalog ───────────────────────────────────────────────────────
 
@@ -63,7 +65,7 @@ router.get('/:id', async (req: Request, res: Response, next: NextFunction) => {
 
 // ── POST /api/v1/catalog ─────────────────────────────────────────────────────
 
-router.post('/', async (req: Request, res: Response, next: NextFunction) => {
+router.post('/', requirePermission('knowledgeBase'), async (req: Request, res: Response, next: NextFunction) => {
   try {
     const orgId = await resolveOrgId(req.userId!);
     const item = await catalogService.createItem(orgId, req.body);
@@ -75,7 +77,7 @@ router.post('/', async (req: Request, res: Response, next: NextFunction) => {
 
 // ── PATCH /api/v1/catalog/:id ─────────────────────────────────────────────────
 
-router.patch('/:id', async (req: Request, res: Response, next: NextFunction) => {
+router.patch('/:id', requirePermission('knowledgeBase'), async (req: Request, res: Response, next: NextFunction) => {
   try {
     const orgId = await resolveOrgId(req.userId!);
     const item = await catalogService.updateItem(orgId, req.params.id as string, req.body);
@@ -92,7 +94,7 @@ router.patch('/:id', async (req: Request, res: Response, next: NextFunction) => 
 
 // ── DELETE /api/v1/catalog/:id ────────────────────────────────────────────────
 
-router.delete('/:id', async (req: Request, res: Response, next: NextFunction) => {
+router.delete('/:id', requirePermission('knowledgeBase'), async (req: Request, res: Response, next: NextFunction) => {
   try {
     const orgId = await resolveOrgId(req.userId!);
     const item = await catalogService.deactivateItem(orgId, req.params.id as string);

@@ -14,7 +14,7 @@ import {
   Conflict,
   errorHandler,
 } from '@/middleware/errorHandler';
-import { ZodError, z } from 'zod';
+import { z } from 'zod';
 
 // ── Helper: build a minimal Express app that throws a given error ────────────
 function buildTestApp(thrower: (req: Request, res: Response, next: NextFunction) => void) {

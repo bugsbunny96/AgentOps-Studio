@@ -9,6 +9,7 @@ import { Conflict, NotFound } from '../../middleware/errorHandler';
 import type { CreateOrgDto, UpdateOrgDto } from './onboarding.schema';
 import { crawlQueue } from '../../jobs/crawl.queue';
 import type { CrawlJobName } from '../../jobs/crawl.queue';
+import { membershipFilter } from '../../utils/requestContext';
 
 // ─── Slug generation ───────────────────────────────────────────────────────
 
@@ -66,7 +67,7 @@ export async function generateUniqueSlug(name: string): Promise<string> {
  */
 export async function createOrg(userId: string, dto: CreateOrgDto) {
   // Enforce 1-org-per-user during onboarding
-  const existingOwnership = await MembershipModel.findOne({ userId, role: 'Owner' });
+  const existingOwnership = await MembershipModel.findOne(membershipFilter(userId, { role: 'Owner' as const }));
   if (existingOwnership) {
     throw Conflict(
       'You already own an organization. Additional organizations can be created from Settings.',
@@ -131,7 +132,7 @@ export async function createOrg(userId: string, dto: CreateOrgDto) {
  * Advances onboardingStatus to the next state after each step.
  */
 export async function updateOrgStep(userId: string, dto: UpdateOrgDto) {
-  const membership = await MembershipModel.findOne({ userId, role: 'Owner' }).populate<{
+  const membership = await MembershipModel.findOne(membershipFilter(userId, { role: 'Owner' as const })).populate<{
     organizationId: IOrganization;
   }>('organizationId');
 
@@ -193,7 +194,7 @@ export async function updateOrgStep(userId: string, dto: UpdateOrgDto) {
  * Polled by the frontend CrawlLoadingPage every 2 seconds.
  */
 export async function getCrawlStatus(userId: string) {
-  const membership = await MembershipModel.findOne({ userId, role: 'Owner' }).populate<{
+  const membership = await MembershipModel.findOne(membershipFilter(userId, { role: 'Owner' as const })).populate<{
     organizationId: IOrganization;
   }>('organizationId');
 
@@ -217,7 +218,7 @@ export async function getCrawlStatus(userId: string) {
  * even after a page refresh (when Redux only has the lean /auth/me shape).
  */
 export async function getOrgForOnboarding(userId: string) {
-  const membership = await MembershipModel.findOne({ userId, role: 'Owner' }).populate<{
+  const membership = await MembershipModel.findOne(membershipFilter(userId, { role: 'Owner' as const })).populate<{
     organizationId: IOrganization;
   }>('organizationId');
 
@@ -236,7 +237,7 @@ export async function getOrgForOnboarding(userId: string) {
  * After this, OrgGuard will allow access to the /dashboard/* routes.
  */
 export async function completeOnboarding(userId: string) {
-  const membership = await MembershipModel.findOne({ userId, role: 'Owner' }).populate<{
+  const membership = await MembershipModel.findOne(membershipFilter(userId, { role: 'Owner' as const })).populate<{
     organizationId: IOrganization;
   }>('organizationId');
 
