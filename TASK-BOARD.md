@@ -9,6 +9,7 @@
 > **Execution Framework**: `agents/EXECUTION-FRAMEWORK.md` · **SOP**: `agents/SOP.md` · **R&D Log**: `main-project-docs/RD-LOG.md`
 
 **Version history**
+- [2026-10-02 16:20] v2.7 — CEO Agent — Wave 2: H2.1–H2.4 code done on `harden/wave2` (branched from `feat/cost-reduction`); both branches committed locally, not pushed. Pre-existing failures: frontend AuthGuard + GuestGuard tests.
 - [2026-10-02 16:10] v2.6 — CEO Agent — Premium Voices add-on (founder decision: Pro free; ₹2,999 Basic / ₹4,999 Standard) built as C7; tool safety net C8; founder action to create the Stripe add-on prices.
 - [2026-10-02 09:50] v2.5 — CEO Agent — Cost reduction (founder request, steps 1–4): new S-HARDEN Wave 6 (C1–C6, `gaps.md` § 14) — code done on branch `feat/cost-reduction`; founder actions added for evals + live model switch; decision log updated (GPT-4o → GPT-4o-mini default, PROPOSED).
 - [2026-10-01 11:05] v2.4 — CEO Agent — Design review (FE-19…FE-24, `gaps.md` § 12.1) → Wave 5 tasks H5.9–H5.14. H5.9 (remove false claims) landing part done on `dev`.
@@ -107,10 +108,10 @@ Every sprint task has a lead agent. Every other agent runs a supporting or backg
 
 | Task | Gap | Description | Lead | Status |
 |---|---|---|---|---|
-| H2.1 | CORE-01 | Pass `artifact` into the call-report job; webhook test | 🟢 + 🟠 | ⏳ |
-| H2.2 | BIZ-01 | Minutes gate + billing status respect the month boundary | 🟢 | ⏳ |
-| H2.3 | CORE-03 | Exclude Vapi webhook and tool routes from the global rate limiter | 🟢 | ⏳ |
-| H2.4 | CORE-04 | Fix Dashboard response unwrapping (`/agents`, `/calls`) | 🟢 | ⏳ |
+| H2.1 | CORE-01 | Pass `artifact` into the call-report job; webhook test | 🟢 + 🟠 | 🟡 code on `harden/wave2`: shared mapper also carries `costBreakdown` + `call.cost` (were dropped too); tests in `hardening-wave2.test.ts` |
+| H2.2 | BIZ-01 | Minutes gate + billing status respect the month boundary | 🟢 | 🟡 code on `harden/wave2` (`utils/callMinutes.ts`) + gate tests |
+| H2.3 | CORE-03 | Exclude Vapi webhook and tool routes from the global rate limiter | 🟢 | 🟡 code on `harden/wave2` (`middleware/rateLimitExempt.ts`: webhooks/vapi, orders/submit, tools) + tests |
+| H2.4 | CORE-04 | Fix Dashboard response unwrapping (`/agents`, `/calls`) | 🟢 | 🟡 code on `harden/wave2` (`utils/unwrapList.ts`) + frontend test |
 | H2.5 | CORE-05 | Verify production login; add a custom domain or a Vercel `/api` rewrite | 🟢 + Founder | ⏳ |
 | H2.6 | CORE-02 | Consolidate worker Redis connections, or upgrade Redis; re-enable crawl → kb → callMinutesReset → followUpAlert → trial jobs | 🟢 | ⏳ |
 
