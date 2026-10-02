@@ -9,7 +9,7 @@
  */
 
 import { Worker } from 'bullmq';
-import { bullmqConnection } from '../config/bullmq-connection';
+import { getSharedWorkerClient } from '../config/bullmq-connection';
 import { scoreAllOrgsChurnRisk, scoreOrgChurnRisk } from '../modules/superadmin/churn-risk.service';
 import { logger } from '../utils/logger';
 import type { ChurnRiskJobData, ChurnRiskJobName } from './churnRisk.queue';
@@ -31,7 +31,7 @@ export function startChurnRiskWorker() {
       }
     },
     {
-      connection:  bullmqConnection,
+      connection:  getSharedWorkerClient(),   // CORE-02: 1 Redis connection per worker
       concurrency: 1,  // sequential — avoids DB hammering
     },
   );

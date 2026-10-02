@@ -35,6 +35,7 @@ import { KbDocumentModel, KB_CATEGORIES, seedCategoriesForOrg, categorizeByUrl, 
 import { importFaqsToKb, syncKbToVapi } from '../knowledge-base/kb.service';
 import { env } from '../../config/env';
 import { logger } from '../../utils/logger';
+import { safeFetch, assertPublicHttpUrl, UnsafeUrlError } from '../../utils/safeFetch';
 
 // ─── Config ──────────────────────────────────────────────────────────────────
 
@@ -120,14 +121,13 @@ async function fetchText(
   try {
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
-    const resp = await fetch(url, {
+    const resp = await safeFetch(url, {   // SEC-07: blocks private/internal targets + checks redirects
       signal: controller.signal,
       headers: {
         'User-Agent':      'AgentOps-Crawler/3.0 (+https://agentops.studio/bot)',
         'Accept':          acceptHeader,
         'Accept-Language': 'en-US,en;q=0.9',
       },
-      redirect: 'follow',
     });
     clearTimeout(timer);
     if (!resp.ok) return null;
@@ -142,14 +142,13 @@ async function fetchHtml(url: string): Promise<string | null> {
   try {
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
-    const resp = await fetch(url, {
+    const resp = await safeFetch(url, {   // SEC-07: blocks private/internal targets + checks redirects
       signal: controller.signal,
       headers: {
         'User-Agent':      'AgentOps-Crawler/3.0 (+https://agentops.studio/bot)',
         'Accept':          'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
         'Accept-Language': 'en-US,en;q=0.9',
       },
-      redirect: 'follow',
     });
     clearTimeout(timer);
     if (!resp.ok) return null;
@@ -218,6 +217,8 @@ async function discoverUrlsFromSitemap(baseUrl: string): Promise<string[]> {
     for (const sitemapUrl of batch) {
       if (processedSitemaps.has(sitemapUrl)) continue;
       processedSitemaps.add(sitemapUrl);
+      // SEC-07: robots.txt / sitemap indexes may list other hosts — stay same-origin
+      try { if (new URL(sitemapUrl).origin !== origin) continue; } catch { continue; }
 
       const xml = await fetchText(sitemapUrl, 'text/xml,application/xml,*/*;q=0.8');
       if (!xml || xml.trim().length < 20) continue;
@@ -882,6 +883,15 @@ export async function crawlWebsite(orgId: string, websiteUrl: string): Promise<C
   try {
     const baseUrl = websiteUrl.replace(/\/$/, '');
     const origin  = new URL(baseUrl).origin;
+
+    // SEC-07: refuse internal/private targets before doing any work
+    try {
+      await assertPublicHttpUrl(baseUrl);
+    } catch (err) {
+      throw new Error(err instanceof UnsafeUrlError
+        ? `This website address can't be crawled: ${err.message}.`
+        : 'Could not reach your website. Please check the URL and try again.');
+    }
 
     const visited = new Set<string>();
 

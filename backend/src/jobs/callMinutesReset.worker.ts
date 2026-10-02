@@ -16,7 +16,7 @@
  */
 
 import { Worker } from 'bullmq';
-import { bullmqConnection }  from '../config/bullmq-connection';
+import { getSharedWorkerClient } from '../config/bullmq-connection';
 import { OrganizationModel } from '../modules/organization/organization.model';
 import { logger }            from '../utils/logger';
 import type { CallMinutesResetJobData, CallMinutesResetJobName } from './callMinutesReset.queue';
@@ -49,7 +49,7 @@ export function startCallMinutesResetWorker() {
       });
     },
     {
-      connection:  bullmqConnection,
+      connection:  getSharedWorkerClient(),   // CORE-02: 1 Redis connection per worker
       concurrency: 1, // one job at a time — updateMany is already a bulk op
     },
   );

@@ -10,12 +10,13 @@
  *      Workers keep their own `ConnectionOptions` — blocking commands require
  *      a dedicated connection and `maxRetriesPerRequest: null`.
  *
- * Connection budget post-fix:
+ * Connection budget (CORE-02, see getSharedWorkerClient below):
  *   1  shared queue client
- *   8  workers × 2 connections each = 16
+ *   1  shared worker client
+ *   8  workers × 1 blocking connection = 8
  *   1  main app Redis client (config/redis.ts)
  *   ─────────────────────────────────────────
- *   18 total (well under the 30-connection limit)
+ *   11 per instance (~22 while Render overlaps two instances on deploy)
  */
 
 import Redis, { type RedisOptions } from 'ioredis';
@@ -60,7 +61,10 @@ function parseWorkerOptions(): ConnectionOptions {
   };
 }
 
-/** Pass to every Worker constructor — each Worker creates its own IORedis from these options. */
+/**
+ * Plain worker options (each Worker would open 2 connections from these).
+ * Workers now use getSharedWorkerClient() instead — kept for scripts/tests.
+ */
 export const bullmqConnection: ConnectionOptions = parseWorkerOptions();
 
 // ── Shared Queue client (all Queues reuse the same IORedis connection) ──────────
@@ -85,4 +89,38 @@ export function getSharedQueueClient(): Redis {
     _sharedQueueClient = new Redis(opts);
   }
   return _sharedQueueClient;
+}
+
+// ── Shared Worker client (CORE-02) ──────────────────────────────────────────────
+//
+// BullMQ 5: a Worker given an IORedis *instance* reuses it for normal commands
+// and duplicates it once for its blocking connection (Worker constructor:
+// `opts.connection.duplicate()`). Given plain options it opens two. So with one
+// shared instance each Worker costs 1 connection instead of 2:
+//
+//   8 workers × 1 blocking + 1 shared worker client + 1 shared queue client
+//   + 1 app client (config/redis.ts) = 11 per instance, ~22 during a Render
+//   redeploy overlap — inside the Redis Cloud free tier's 30.
+
+let _sharedWorkerClient: Redis | null = null;
+
+/**
+ * Typed as ConnectionOptions because BullMQ bundles its own ioredis copy; the
+ * instance is detected at runtime by duck-typing (same cast the queues use).
+ */
+export function getSharedWorkerClient(): ConnectionOptions {
+  if (!_sharedWorkerClient) {
+    _sharedWorkerClient = new Redis({ ...(parseWorkerOptions() as RedisOptions), connectionName: 'aos:workers' });
+  }
+  return _sharedWorkerClient as unknown as ConnectionOptions;
+}
+
+/** Quit the shared clients (call after all Workers are closed). */
+export async function closeSharedBullmqClients(): Promise<void> {
+  await Promise.allSettled([
+    _sharedWorkerClient?.quit(),
+    _sharedQueueClient?.quit(),
+  ]);
+  _sharedWorkerClient = null;
+  _sharedQueueClient = null;
 }

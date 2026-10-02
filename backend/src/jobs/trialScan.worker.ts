@@ -7,7 +7,7 @@
  */
 
 import { Worker } from 'bullmq';
-import { bullmqConnection } from '../config/bullmq-connection';
+import { getSharedWorkerClient } from '../config/bullmq-connection';
 import { scanAndEnqueueTrialEmails } from '../modules/billing/trial.service';
 import { logger } from '../utils/logger';
 import type { TrialScanJobName } from './trialScan.queue';
@@ -21,7 +21,7 @@ export function startTrialScanWorker() {
       logger.info('Trial scan worker: daily scan complete', result);
     },
     {
-      connection:  bullmqConnection,
+      connection:  getSharedWorkerClient(),   // CORE-02: 1 Redis connection per worker
       concurrency: 1,
     },
   );

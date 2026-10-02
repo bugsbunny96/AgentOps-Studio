@@ -30,12 +30,16 @@ import {
   publicEnterpriseLinkHandler,
   publicOrgBrandingHandler,
 } from './modules/superadmin/superadmin.controller';
-import { isRateLimitExempt } from './middleware/rateLimitExempt';
+import { isRateLimitExempt, authAccountKey } from './middleware/rateLimitExempt';
 
 const app = express();
 
-// ─── Trust proxy (needed behind ALB / Cloudflare) ────────────────────
-app.set('trust proxy', 1);
+// ─── Trust proxy ─────────────────────────────────────────────────────
+// Browser traffic: client → Vercel rewrite (/api/*) → Render proxy → app = 2 hops.
+// Vapi traffic hits Render directly (1 hop); with 2, req.ip is still the caller.
+// A direct caller can spoof X-Forwarded-For, so brute-forceable auth routes are
+// ALSO limited per account (authAccountKey) — not only per IP (CORE-05).
+app.set('trust proxy', 2);
 
 // ─── Security Headers ────────────────────────────────────────────────
 app.use(helmet({
@@ -99,6 +103,17 @@ app.use(['/api/v1/auth/login', '/api/v1/auth/register', '/api/v1/auth/forgot-pas
   standardHeaders: true,
   legacyHeaders: false,
   message: { success: false, code: 'RATE_LIMITED', message: 'Too many authentication attempts. Try again in 15 minutes.' },
+}));
+
+// Auth per account: 10 attempts per 15 min per email, whatever the IP
+app.use(['/api/v1/auth/login', '/api/v1/auth/forgot-password'], rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 10,
+  skip: (req) => skipInTest() || !authAccountKey(req),
+  keyGenerator: (req) => authAccountKey(req) ?? 'none',
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { success: false, code: 'RATE_LIMITED', message: 'Too many attempts for this account. Try again in 15 minutes.' },
 }));
 
 // Crawl: 3 per hour per IP (prevent abuse of crawl infrastructure)

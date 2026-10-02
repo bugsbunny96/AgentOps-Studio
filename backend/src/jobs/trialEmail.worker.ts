@@ -6,7 +6,7 @@
  */
 
 import { Worker } from 'bullmq';
-import { bullmqConnection } from '../config/bullmq-connection';
+import { getSharedWorkerClient } from '../config/bullmq-connection';
 import { sendTrialDay5Email, sendTrialDay7Email } from '../utils/email';
 import { logger } from '../utils/logger';
 import type { TrialEmailJobData, TrialEmailJobName } from './trialEmail.queue';
@@ -34,7 +34,7 @@ export function startTrialEmailWorker() {
       }
     },
     {
-      connection:  bullmqConnection,
+      connection:  getSharedWorkerClient(),   // CORE-02: 1 Redis connection per worker
       concurrency: 5,   // email sending is I/O-bound; allow parallelism
     },
   );
