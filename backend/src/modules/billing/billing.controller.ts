@@ -1,5 +1,5 @@
 import type { Request, Response, NextFunction } from 'express';
-import { createCheckoutSession, handleStripeWebhook, getBillingStatus, createPortalSession } from './billing.service';
+import { createCheckoutSession, handleStripeWebhook, getBillingStatus, createPortalSession, createPremiumVoiceAddonCheckout } from './billing.service';
 import { BadRequest } from '../../middleware/errorHandler';
 
 /**
@@ -77,6 +77,24 @@ export async function getBillingStatusHandler(
   try {
     const status = await getBillingStatus(req.userId!);
     res.status(200).json({ success: true, data: status });
+  } catch (err) {
+    next(err);
+  }
+}
+
+/**
+ * POST /api/v1/billing/addons/premium-voices/checkout
+ * Stripe Checkout for the Premium Voices add-on (Basic ₹2,999 / Standard ₹4,999 a month).
+ * Returns: { url } — redirect the browser to this Stripe Checkout URL
+ */
+export async function createPremiumVoiceAddonCheckoutHandler(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
+  try {
+    const result = await createPremiumVoiceAddonCheckout(req.userId!);
+    res.status(200).json({ success: true, data: result });
   } catch (err) {
     next(err);
   }

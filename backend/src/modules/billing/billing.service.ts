@@ -20,6 +20,7 @@ import { KbDocumentModel } from '../knowledge-base/kb.model';
 import { BadRequest, NotFound } from '../../middleware/errorHandler';
 import { logger } from '../../utils/logger';
 import { computeTrialState } from './trial.service';
+import { getPremiumVoiceAccess, getPaidPlan, PREMIUM_VOICE_ADDON_PRICE_INR, type PremiumVoiceAccess } from '../agents/voice-pricing';
 
 // ─── Plan Limits (shared with kb.service + team.service + webhook.service) ────
 //
@@ -97,6 +98,103 @@ function getPlanFromPriceId(priceId: string): Plan | null {
   if (priceId === env.STRIPE_GROWTH_PRICE_ID_INR  || priceId === env.STRIPE_GROWTH_PRICE_ID)  return 'growth';
   if (priceId === env.STRIPE_PRO_PRICE_ID_INR     || priceId === env.STRIPE_PRO_PRICE_ID)     return 'enterprise';
   return null;
+}
+
+// ─── Premium-voices add-on (separate Stripe subscription) ─────────────────────
+//
+// Pro includes premium voices. Basic and Standard can buy them as a monthly
+// add-on; each plan has its own add-on price (agents/voice-pricing.ts).
+// The add-on is its own subscription so it can be cancelled independently —
+// and its webhook events must NEVER change `plan` (see isAddonSubscription).
+
+export const PREMIUM_VOICES_ADDON = 'premium_voices';
+
+function getAddonPriceId(plan: Plan): string {
+  const id =
+    plan === 'starter' ? env.STRIPE_PREMIUM_VOICES_BASIC_PRICE_ID_INR
+      : plan === 'growth' ? env.STRIPE_PREMIUM_VOICES_STANDARD_PRICE_ID_INR
+        : undefined;
+  if (!id) throw BadRequest('The Premium Voices add-on is not configured for this plan', 'ADDON_NOT_CONFIGURED');
+  return id;
+}
+
+function isAddonPriceId(priceId: string | undefined): boolean {
+  return !!priceId && (
+    priceId === env.STRIPE_PREMIUM_VOICES_BASIC_PRICE_ID_INR ||
+    priceId === env.STRIPE_PREMIUM_VOICES_STANDARD_PRICE_ID_INR
+  );
+}
+
+/** True for the add-on subscription (by metadata, price, or the stored subscription ID). */
+export function isAddonSubscription(
+  sub: Pick<Stripe.Subscription, 'id' | 'metadata'> & { items?: { data?: Array<{ price?: { id?: string } }> } },
+  storedAddonSubscriptionId?: string,
+): boolean {
+  if (sub.metadata?.addon === PREMIUM_VOICES_ADDON) return true;
+  if (storedAddonSubscriptionId && sub.id === storedAddonSubscriptionId) return true;
+  return (sub.items?.data ?? []).some((item) => isAddonPriceId(item.price?.id));
+}
+
+/** Re-checks the org's agent voice after an entitlement change (lazy import avoids a load-order cycle). */
+async function enforceVoiceAccessSafe(orgId: string): Promise<void> {
+  try {
+    const { enforceVoiceAccess } = await import('../agents/agent.service');
+    await enforceVoiceAccess(orgId);
+  } catch (err) {
+    logger.error('enforceVoiceAccess failed after billing change', {
+      orgId, error: err instanceof Error ? err.message : String(err),
+    });
+  }
+}
+
+/**
+ * Stripe Checkout for the Premium Voices add-on. Owner-only.
+ * Allowed on paid Basic / Standard when the add-on is not already active.
+ */
+export async function createPremiumVoiceAddonCheckout(userId: string): Promise<{ url: string }> {
+  const { org, orgId } = await resolveOwnerOrgForBilling(userId);
+  const access = getPremiumVoiceAccess(org as unknown as Parameters<typeof getPremiumVoiceAccess>[0]);
+
+  if (access.includedInPlan) throw BadRequest('Premium voices are already included in your plan', 'ADDON_INCLUDED');
+  if (access.addonActive)    throw BadRequest('The Premium Voices add-on is already active', 'ADDON_ACTIVE');
+  if (!access.addonEligible) {
+    throw BadRequest('Choose a paid Basic or Standard plan first — the add-on is not sold on the free trial', 'ADDON_NOT_ELIGIBLE');
+  }
+
+  const paidPlan = getPaidPlan(org as unknown as Parameters<typeof getPaidPlan>[0]);
+  const priceId  = getAddonPriceId(paidPlan);
+  const stripe   = getStripe();
+  const metadata = { organizationId: orgId, addon: PREMIUM_VOICES_ADDON };
+
+  const params: Stripe.Checkout.SessionCreateParams = {
+    mode:              'subscription',
+    line_items:        [{ price: priceId, quantity: 1 }],
+    success_url:       `${env.CLIENT_URL}/billing?addon=premium_voices`,
+    cancel_url:        `${env.CLIENT_URL}/billing?cancelled=true`,
+    metadata,
+    subscription_data: { metadata },
+  };
+  const customerId = (org as unknown as { stripeCustomerId?: string }).stripeCustomerId;
+  if (customerId) params.customer = customerId;
+
+  const session = await stripe.checkout.sessions.create(params);
+  if (!session.url) throw new Error('Stripe did not return a checkout URL');
+
+  logger.info('Premium voices add-on checkout created', { orgId, plan: paidPlan, sessionId: session.id });
+  return { url: session.url };
+}
+
+/** Cancels a now-redundant add-on (e.g. after upgrading to Pro), prorated. Never throws. */
+async function cancelRedundantAddon(orgId: string, addonSubscriptionId: string | undefined): Promise<void> {
+  if (!addonSubscriptionId) return;
+  try {
+    await getStripe().subscriptions.cancel(addonSubscriptionId, { prorate: true });
+    logger.info('Cancelled Premium Voices add-on — now included in Pro', { orgId, addonSubscriptionId });
+  } catch (err) {
+    logger.error('Could not cancel redundant Premium Voices add-on — cancel it in Stripe', {
+      orgId, addonSubscriptionId, error: err instanceof Error ? err.message : String(err),
+    });
+  }
 }
 
 // ─── Stripe client ────────────────────────────────────────────────────────────
@@ -210,6 +308,19 @@ export async function handleStripeWebhook(
       const orgId   = session.metadata?.organizationId;
       const plan    = session.metadata?.plan as Plan | undefined;
 
+      // Premium Voices add-on purchase — never touches `plan`
+      if (orgId && session.metadata?.addon === PREMIUM_VOICES_ADDON) {
+        await OrganizationModel.findByIdAndUpdate(orgId, {
+          $set: {
+            premiumVoiceAddon: true,
+            ...(session.subscription ? { premiumVoiceAddonSubscriptionId: String(session.subscription) } : {}),
+            ...(session.customer     ? { stripeCustomerId: String(session.customer) }                  : {}),
+          },
+        });
+        logger.info('Premium Voices add-on activated', { orgId });
+        break;
+      }
+
       if (!orgId || !plan) {
         logger.warn('checkout.session.completed missing metadata', { sessionId: session.id });
         break;
@@ -225,6 +336,13 @@ export async function handleStripeWebhook(
       });
 
       logger.info('Org plan upgraded via checkout', { orgId, plan });
+
+      // Pro includes premium voices — stop charging for the add-on
+      if (plan === 'enterprise') {
+        const updatedOrg = await OrganizationModel.findById(orgId).select('premiumVoiceAddonSubscriptionId').lean();
+        await cancelRedundantAddon(orgId, updatedOrg?.premiumVoiceAddonSubscriptionId);
+      }
+      await enforceVoiceAccessSafe(orgId);
       break;
     }
 
@@ -236,6 +354,17 @@ export async function handleStripeWebhook(
       const org = await OrganizationModel.findOne({ stripeCustomerId: customerId });
       if (!org) {
         logger.warn('No org found for customer on subscription.updated', { customerId });
+        break;
+      }
+
+      // Add-on subscription: only its own flag changes (never `plan`)
+      if (isAddonSubscription(sub, org.premiumVoiceAddonSubscriptionId)) {
+        const active = ['active', 'trialing', 'past_due'].includes(sub.status);
+        await OrganizationModel.findByIdAndUpdate(org._id, {
+          $set: { premiumVoiceAddon: active, premiumVoiceAddonSubscriptionId: sub.id },
+        });
+        if (!active) await enforceVoiceAccessSafe(org._id.toString());
+        logger.info('Premium Voices add-on status updated', { orgId: org._id.toString(), status: sub.status });
         break;
       }
 
@@ -251,6 +380,8 @@ export async function handleStripeWebhook(
         logger.info('Org plan updated via subscription.updated', {
           orgId: org._id.toString(), newPlan,
         });
+        if (newPlan === 'enterprise') await cancelRedundantAddon(org._id.toString(), org.premiumVoiceAddonSubscriptionId);
+        await enforceVoiceAccessSafe(org._id.toString());
       }
       break;
     }
@@ -265,6 +396,18 @@ export async function handleStripeWebhook(
         break;
       }
 
+      // Cancelling the add-on must NOT downgrade the plan (this handler used to
+      // set plan 'free' for any deleted subscription of the customer).
+      if (isAddonSubscription(sub, org.premiumVoiceAddonSubscriptionId)) {
+        await OrganizationModel.findByIdAndUpdate(org._id, {
+          $set:   { premiumVoiceAddon: false },
+          $unset: { premiumVoiceAddonSubscriptionId: '' },
+        });
+        await enforceVoiceAccessSafe(org._id.toString());
+        logger.info('Premium Voices add-on cancelled', { orgId: org._id.toString() });
+        break;
+      }
+
       await OrganizationModel.findByIdAndUpdate(org._id, {
         $set:   { plan: 'free' },
         $unset: { stripeSubscriptionId: '', stripePriceId: '' },
@@ -273,6 +416,7 @@ export async function handleStripeWebhook(
       logger.info('Org downgraded to free on subscription.deleted', {
         orgId: org._id.toString(),
       });
+      await enforceVoiceAccessSafe(org._id.toString());
       break;
     }
 
@@ -342,6 +486,13 @@ export interface BillingStatus {
   isTrialExpired:  boolean;
   trialDaysLeft:   number;
   trialEndsAt:     string | null;  // ISO string for JSON serialisation
+  /** Whether premium voices (ElevenLabs, PlayHT, Azure, Cartesia) can be used right now */
+  premiumVoices:   boolean;
+  /** Premium Voices add-on state + price for the current plan — see agents/voice-pricing.ts */
+  premiumVoiceAddon: PremiumVoiceAccess & {
+    /** Display prices for every plan that sells the add-on (₹/month + GST) */
+    pricesInr: { starter: number; growth: number };
+  };
 }
 
 /**
@@ -381,6 +532,8 @@ export async function getBillingStatus(userId: string): Promise<BillingStatus> {
 
   // ── Compute next reset date: 1st of following month UTC ────────────────────
   const now   = new Date();
+  const voiceAccess = getPremiumVoiceAccess(org as unknown as Parameters<typeof getPremiumVoiceAccess>[0]);
+
   const nextResetAt = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 1));
 
   return {
@@ -404,5 +557,14 @@ export async function getBillingStatus(userId: string): Promise<BillingStatus> {
     isTrialExpired:   trial.isTrialExpired,
     trialDaysLeft:    trial.trialDaysLeft,
     trialEndsAt:      trial.trialEndsAt?.toISOString() ?? null,
+    // Same rule the agent service enforces (planOverride + add-on aware)
+    premiumVoices:     voiceAccess.allowed,
+    premiumVoiceAddon: {
+      ...voiceAccess,
+      pricesInr: {
+        starter: PREMIUM_VOICE_ADDON_PRICE_INR.starter ?? 0,
+        growth:  PREMIUM_VOICE_ADDON_PRICE_INR.growth ?? 0,
+      },
+    },
   };
 }

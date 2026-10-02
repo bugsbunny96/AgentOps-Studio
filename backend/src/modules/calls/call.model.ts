@@ -37,7 +37,22 @@ export interface ICall extends Document {
   status: 'active' | 'completed' | 'failed';
   callerNumber: string;   // E.164
   recordingUrl?: string;
+  /** Vapi's total cost for this call in USD (excludes Vobiz telephony, billed separately) */
   cost: number;
+  /** Where `cost` came from: Vapi's report, or 'none' until backfilled */
+  costSource?: 'vapi' | 'none';
+  /** Vapi's per-component cost (USD) + token/character counts, when reported */
+  costBreakdown?: {
+    transport?: number;
+    stt?: number;
+    llm?: number;
+    tts?: number;
+    vapi?: number;
+    total?: number;
+    llmPromptTokens?: number;
+    llmCompletionTokens?: number;
+    ttsCharacters?: number;
+  };
   endedReason?: string;   // e.g. 'silence-timed-out', 'hangup', 'customer-ended-call'
 
   // ── Structured output from Vapi artifactPlan (electrical-shop-call-summary schema) ──
@@ -104,6 +119,22 @@ const CallSchema = new Schema<ICall>(
     callerNumber: { type: String, required: true },
     recordingUrl: { type: String },
     cost: { type: Number, default: 0 },
+    costSource: { type: String, enum: ['vapi', 'none'], default: 'none' },
+    costBreakdown: {
+      type: {
+        transport:           Number,
+        stt:                 Number,
+        llm:                 Number,
+        tts:                 Number,
+        vapi:                Number,
+        total:               Number,
+        llmPromptTokens:     Number,
+        llmCompletionTokens: Number,
+        ttsCharacters:       Number,
+      },
+      default: undefined,
+      _id: false,
+    },
     endedReason: { type: String },
 
     // ── Structured output fields (from Vapi artifactPlan / structuredDataOutput) ──
@@ -158,6 +189,8 @@ CallSchema.set('toJSON', {
     // it (e.g. vapi-reconciliation.service.ts) read it via raw aggregation
     // queries, which bypass this transform entirely.
     delete ret.cost;
+    delete ret.costSource;
+    delete ret.costBreakdown;
     return ret;
   },
 });

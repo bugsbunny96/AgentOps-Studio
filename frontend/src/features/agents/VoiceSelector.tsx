@@ -17,7 +17,9 @@
  */
 
 import { useState, useRef, useCallback } from 'react';
-import { Play, Pause, Loader2, Volume2 } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
+import { Play, Pause, Loader2, Volume2, Lock } from 'lucide-react';
 import { api } from '@/utils/api';
 import { AxiosError } from 'axios';
 import {
@@ -55,8 +57,25 @@ export default function VoiceSelector({ value, onChange, disabled = false }: Voi
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const blobUrlRef = useRef<string | null>(null);
 
+  // ── Plan gate for premium voices ────────────────────────────────────────────
+  // Shares the ['billing','status'] cache with Dashboard/Team/KB. Members can't
+  // read billing (403) → leave everything unlocked; the backend still enforces.
+  const { data: billing } = useQuery({
+    queryKey: ['billing', 'status'],
+    queryFn: () => api.get('/billing/status').then((r) => (r.data?.data ?? r.data) as {
+      premiumVoices?: boolean;
+      premiumVoiceAddon?: { addonEligible: boolean; addonPriceInr: number | null };
+    }),
+    retry: false,
+    staleTime: 60_000,
+  });
+  const premiumLocked = billing?.premiumVoices === false;
+  const addonPrice    = billing?.premiumVoiceAddon?.addonEligible ? billing.premiumVoiceAddon.addonPriceInr : null;
+  const [lockedNotice, setLockedNotice] = useState<string | null>(null);
+
   // ── Derived ─────────────────────────────────────────────────────────────────
   const provider = VOICE_CATALOG.find((p) => p.id === value.voiceProvider) ?? VOICE_CATALOG[0]!;
+  const isLocked = (tier: string) => premiumLocked && tier === 'premium';
 
   // ── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -125,6 +144,12 @@ export default function VoiceSelector({ value, onChange, disabled = false }: Voi
   // ── Provider tab click ───────────────────────────────────────────────────────
 
   function handleProviderChange(providerId: VoiceProviderId) {
+    const def = VOICE_CATALOG.find((p) => p.id === providerId);
+    if (def && isLocked(def.tier)) {
+      setLockedNotice(def.label);
+      return;
+    }
+    setLockedNotice(null);
     stopCurrentAudio();
     setPreviewError(null);
     onChange({
@@ -172,15 +197,38 @@ export default function VoiceSelector({ value, onChange, disabled = false }: Voi
                   : 'border-white/10 bg-surface text-slate-300 hover:border-white/15 hover:bg-white/[0.03]'
                 }`}
             >
+              {isLocked(p.tier) && <Lock size={11} aria-hidden="true" />}
               {p.label}
               <span className={`rounded px-1 py-0.5 text-[10px] font-semibold uppercase tracking-wide
                 ${value.voiceProvider === p.id ? 'bg-brand-400/15 text-brand-300' : 'bg-white/[0.06] text-slate-400'}`}>
-                {p.badge}
+                {p.tier === 'premium' ? 'Premium' : p.badge}
               </span>
             </button>
           ))}
         </div>
-        <p className="mt-1.5 text-xs text-slate-400">{provider.tagline}</p>
+        <p className="mt-1.5 text-xs text-slate-400">
+          {provider.tagline}
+          {provider.tier === 'standard'
+            ? ' · Standard voice, included on every plan.'
+            : ' · Premium voice: included on Pro, add-on on Basic and Standard.'}
+        </p>
+
+        {/* Premium provider clicked on a plan that doesn't include it */}
+        {lockedNotice && (
+          <div role="status" className="mt-2 flex items-start gap-2 rounded-lg border border-white/10 bg-surface-2 px-3 py-2 text-xs text-slate-300">
+            <Lock size={13} className="mt-0.5 flex-shrink-0 text-brand-300" aria-hidden="true" />
+            <span>
+              <strong>{lockedNotice}</strong> is a premium voice.{' '}
+              {addonPrice !== null
+                ? <>Add premium voices for ₹{addonPrice.toLocaleString('en-IN')}/month, or get them included with Pro.</>
+                : <>Premium voices are included on Pro and available as an add-on on Basic and Standard.</>}
+              {' '}OpenAI and Deepgram voices are included on your plan.{' '}
+              <Link to="/billing#premium-voices" className="font-medium text-brand-300 underline underline-offset-2">
+                {addonPrice !== null ? 'Add premium voices' : 'See plans'}
+              </Link>
+            </span>
+          </div>
+        )}
 
         {/* Language compatibility warning — Deepgram Aura is English-only */}
         {value.voiceProvider === 'deepgram' &&

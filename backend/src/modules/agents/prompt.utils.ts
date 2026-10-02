@@ -33,12 +33,19 @@ export { formatCatalogForPrompt, getOrderSafetyRules };
  * @param includeOrderSafetyRules - When true (default: false), appends the critical
  *                        order safety rules block. Set to true for electrical-shop agents
  *                        that use the submit_order Vapi tool.
+ * @param sections      - Pre-formatted catalog / KB sections from assistant-config.ts
+ *                        (compact inline text or a lookup-tool summary). When given, they
+ *                        replace `catalogItems` / `kbContext`.
+ *
+ * Keep this function deterministic: no dates, times or per-call data. An identical
+ * prompt on every turn is what lets the LLM provider's prompt cache apply.
  */
 export function generateSystemPrompt(
   org: IOrganization,
   kbContext?: string,
   catalogItems?: ICatalogItem[],
   includeOrderSafetyRules?: boolean,
+  sections?: { catalogSection?: string; kbSection?: string },
 ): string {
   const agentName = org.agentName || 'your AI receptionist';
   const bizName   = org.name;
@@ -96,13 +103,16 @@ export function generateSystemPrompt(
 
   // Product Catalog (injected from catalog service when catalogItems are provided)
   // Placed before KB context so catalog prices/stock are the authoritative source
-  if (catalogItems && catalogItems.length > 0) {
+  if (sections?.catalogSection !== undefined) {
+    if (sections.catalogSection.trim()) parts.push(`\n${sections.catalogSection.trim()}`);
+  } else if (catalogItems && catalogItems.length > 0) {
     parts.push(`\n${formatCatalogForPrompt(catalogItems)}`);
   }
 
   // Knowledge Base context (injected from KB service)
-  if (kbContext?.trim()) {
-    parts.push(`\n${kbContext.trim()}`);
+  const kbText = sections?.kbSection !== undefined ? sections.kbSection : kbContext;
+  if (kbText?.trim()) {
+    parts.push(`\n${kbText.trim()}`);
   }
 
   // Fallback / transfer

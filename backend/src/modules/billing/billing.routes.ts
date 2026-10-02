@@ -18,6 +18,7 @@ import {
   stripeWebhookHandler,
   getBillingStatusHandler,
   createPortalSessionHandler,
+  createPremiumVoiceAddonCheckoutHandler,
 } from './billing.controller';
 
 export const billingRouter = Router();
@@ -56,6 +57,17 @@ billingRouter.post(
   express.json(),
   authenticate,
   createPortalSessionHandler,
+);
+
+/**
+ * POST /api/v1/billing/addons/premium-voices/checkout
+ * Stripe Checkout for the Premium Voices add-on. Owner-only; Basic / Standard only.
+ */
+billingRouter.post(
+  '/addons/premium-voices/checkout',
+  express.json(),
+  authenticate,
+  createPremiumVoiceAddonCheckoutHandler,
 );
 
 /**

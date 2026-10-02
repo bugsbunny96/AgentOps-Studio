@@ -24,6 +24,7 @@ import { announcementRouter }  from './modules/announcement/announcement.routes'
 import { changelogRouter }     from './modules/changelog/changelog.routes';
 import { catalogRouter }       from './modules/catalog/catalog.routes';
 import { ordersRouter }        from './modules/orders/order.routes';
+import { toolsRouter }         from './modules/tools/lookup.routes';
 import { telephonyRouter }     from './modules/telephony/telephony.routes';
 import {
   publicEnterpriseLinkHandler,
@@ -67,6 +68,11 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 // ─── Request Logging ─────────────────────────────────────────────────
 app.use(requestLogger);
+
+// ─── Vapi lookup tools (before the rate limiter) ─────────────────────
+// search_catalog / search_knowledge_base calls come from Vapi's shared egress
+// IPs on every live call; the per-IP limiter below would throttle them (CORE-03).
+app.use('/api/v1/tools', toolsRouter);
 
 // ─── Rate Limiting ───────────────────────────────────────────────────
 // Skip all rate limiting in test environment to allow integration tests to run freely.

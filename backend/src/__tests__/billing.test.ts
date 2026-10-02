@@ -408,6 +408,65 @@ describe('POST /api/v1/billing/webhook', () => {
     expect(updated?.stripeSubscriptionId).toBeUndefined();
   });
 
+  it('activates the Premium Voices add-on without changing the plan', async () => {
+    const { org } = await createOwnerWithOrg(`${Date.now()}-addon-on`);
+    await OrganizationModel.findByIdAndUpdate(org._id, { plan: 'starter', stripeCustomerId: 'cus_addon_1' });
+
+    mockWebhooksConstructEvent.mockImplementationOnce(() => ({
+      type: 'checkout.session.completed',
+      id:   'evt_addon_checkout',
+      data: {
+        object: {
+          id:           'cs_addon_1',
+          customer:     'cus_addon_1',
+          subscription: 'sub_addon_1',
+          metadata:     { organizationId: org._id.toString(), addon: 'premium_voices' },
+        },
+      },
+    }));
+
+    const res = await request(app)
+      .post('/api/v1/billing/webhook')
+      .set('Content-Type', 'application/json')
+      .set('stripe-signature', 't=123,v1=abc')
+      .send(Buffer.from('{}'));
+
+    expect(res.status).toBe(200);
+    const updated = await OrganizationModel.findById(org._id).lean();
+    expect(updated?.plan).toBe('starter');
+    expect(updated?.premiumVoiceAddon).toBe(true);
+    expect(updated?.premiumVoiceAddonSubscriptionId).toBe('sub_addon_1');
+  });
+
+  it('cancelling the add-on keeps the plan (does not downgrade to free)', async () => {
+    const { org } = await createOwnerWithOrg(`${Date.now()}-addon-off`);
+    await OrganizationModel.findByIdAndUpdate(org._id, {
+      plan:                            'growth',
+      stripeCustomerId:                'cus_addon_2',
+      stripeSubscriptionId:            'sub_plan_2',
+      premiumVoiceAddon:               true,
+      premiumVoiceAddonSubscriptionId: 'sub_addon_2',
+    });
+
+    mockWebhooksConstructEvent.mockImplementationOnce(() => ({
+      type: 'customer.subscription.deleted',
+      id:   'evt_addon_deleted',
+      data: { object: { id: 'sub_addon_2', customer: 'cus_addon_2', metadata: {}, items: { data: [] } } },
+    }));
+
+    const res = await request(app)
+      .post('/api/v1/billing/webhook')
+      .set('Content-Type', 'application/json')
+      .set('stripe-signature', 't=123,v1=abc')
+      .send(Buffer.from('{}'));
+
+    expect(res.status).toBe(200);
+    const updated = await OrganizationModel.findById(org._id).lean();
+    expect(updated?.plan).toBe('growth');
+    expect(updated?.stripeSubscriptionId).toBe('sub_plan_2');
+    expect(updated?.premiumVoiceAddon).toBe(false);
+  });
+
   it('returns 200 and is a no-op for unknown event types', async () => {
     mockWebhooksConstructEvent.mockImplementationOnce(() => ({
       type: 'payment_intent.created',

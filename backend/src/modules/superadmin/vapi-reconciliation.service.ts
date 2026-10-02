@@ -1,31 +1,22 @@
 /**
- * 19.10 Vapi Bill Reconciliation
+ * 19.10 Vapi Bill Reconciliation — real cost vs plan revenue per org.
  *
- * For each org, compare:
- *   • Actual Vapi cost pulled from call records (`cost` field, USD)
- *   • Expected monthly plan revenue (what we charge the org)
+ * Cost per call (USD):
+ *   • Vapi cost — the `cost` Vapi reports in end-of-call-report (platform fee +
+ *     STT + LLM + TTS). Calls with no reported cost (costSource 'none', e.g. calls
+ *     stored before 2026-10-02) are estimated at VAPI_FALLBACK_COST_PER_MIN_USD
+ *     until scripts/backfill-call-costs.ts fills them from GET /call/:id.
+ *   • Telephony — Vobiz SIP is billed outside Vapi, so it is added separately at
+ *     TELEPHONY_COST_PER_MIN_USD (set it from the Vobiz invoice).
  *
- * This surfaces orgs whose Vapi costs are eating into margins or exceeding revenue.
+ * The old constant assumed $0.012/min all-in. Vapi's platform fee alone is
+ * $0.05/min, so that understated cost ~8–10× and hid at-risk orgs.
  *
- * Plan pricing (monthly, USD — approximate, converted from the real INR
- * subscription prices at ~₹83/$1 for this internal margin-alert tool only;
- * source of truth is the INR pricing doc, not this USD estimate):
- *   free       → $0    / mo  (trial — costs are pure loss)
- *   starter    → $120  / mo  (Basic, ₹9,999/mo)
- *   growth     → $217  / mo  (Standard, ₹17,999/mo)
- *   enterprise → $313  / mo  (Pro, ₹25,999/mo)
- *
- * Vapi minute rates (approximate, USD per minute — update when Vapi reprices):
- *   STT: ~$0.002 / min  (Deepgram)
- *   LLM: ~$0.004 / min  (GPT-4o ~8k output tpm avg)
- *   TTS: ~$0.002 / min  (ElevenLabs)
- *   Telephony: ~$0.004 / min (Vobiz SIP inbound)
- *   ──────────────────────────────────────────────────────
- *   Total: ~$0.012 / min  (stored as VAPI_COST_PER_MIN_USD)
- *
- * We compare recorded `cost` vs plan revenue to compute:
- *   marginUsd = planRevenue - vapiCost
- *   marginPct = marginUsd / planRevenue × 100  (Infinity if free plan)
+ * Plan revenue (monthly, USD — approximate, converted from the INR subscription
+ * prices at ~₹83/$1 for this internal tool only; INR pricing doc is the source of
+ * truth): free $0 · starter (Basic ₹9,999) $120 · growth (Standard ₹17,999) $217 ·
+ * enterprise (Pro ₹25,999) $313. Revenue is prorated to the selected period
+ * (periodDays / 30) so a 7-day view is not compared against a full month.
  *
  * Orgs with marginPct < MARGIN_ALERT_PCT are flagged as 'at-risk'.
  */
@@ -33,9 +24,7 @@
 import mongoose from 'mongoose';
 import { CallModel } from '../calls/call.model';
 import { OrganizationModel } from '../organization/organization.model';
-
-/** Approximate Vapi all-in cost per call-minute in USD. Update quarterly. */
-const VAPI_COST_PER_MIN_USD = 0.012;
+import { env } from '../../config/env';
 
 /** Monthly plan revenue in USD (per plan tier) — approximate, see header comment. */
 const PLAN_MONTHLY_REVENUE_USD: Record<string, number> = {
@@ -55,7 +44,14 @@ export interface OrgReconciliation {
   planRevenueUsd:   number;   // monthly plan fee charged
   totalCallSecs:    number;
   totalCallMinutes: number;
-  vapiCostUsd:      number;   // recorded cost from call records OR estimated from minutes
+  vapiCostUsd:      number;   // reported Vapi cost + estimate for calls without one
+  telephonyCostUsd: number;   // Vobiz minutes × TELEPHONY_COST_PER_MIN_USD
+  totalCostUsd:     number;   // vapiCostUsd + telephonyCostUsd
+  costPerMinUsd:    number;   // totalCostUsd / minutes (0 when no minutes)
+  reportedCalls:    number;   // calls whose cost came from Vapi
+  estimatedCalls:   number;   // calls costed with the fallback rate
+  /** Sums of Vapi's per-component cost for reported calls */
+  breakdownUsd:     { stt: number; llm: number; tts: number; vapi: number; transport: number };
   marginUsd:        number;
   marginPct:        number | null;  // null for free plan (no revenue)
   atRisk:           boolean;
@@ -69,35 +65,63 @@ export interface ReconciliationReport {
     totalOrgs:      number;
     atRiskOrgs:     number;
     totalVapiCostUsd: number;
+    totalTelephonyCostUsd: number;
+    totalCostUsd:     number;
     totalPlanRevenueUsd: number;
     totalMarginUsd: number;
+    totalMinutes:     number;
+    avgCostPerMinUsd: number;
+    reportedCalls:    number;
+    estimatedCalls:   number;
+  };
+  /** Rates used for estimates, so the page can show its assumptions */
+  assumptions: {
+    vapiFallbackPerMinUsd: number;
+    telephonyPerMinUsd:    number;
   };
   orgs: OrgReconciliation[];
 }
+
+const round = (v: number, dp: number) => Math.round(v * 10 ** dp) / 10 ** dp;
 
 export async function buildReconciliationReport(
   periodDays = 30,
   limit = 100,
 ): Promise<ReconciliationReport> {
   const since = new Date(Date.now() - periodDays * 24 * 3600 * 1000);
+  const fallbackPerMin  = env.VAPI_FALLBACK_COST_PER_MIN_USD;
+  const telephonyPerMin = env.TELEPHONY_COST_PER_MIN_USD;
+  const assumptions = { vapiFallbackPerMinUsd: fallbackPerMin, telephonyPerMinUsd: telephonyPerMin };
 
-  // Aggregate call stats per org in the period
+  // Per-org totals, costing each call individually: reported cost when Vapi sent
+  // one, otherwise minutes × fallback rate. (The old version summed per org and
+  // used the fallback only when the whole org's total was 0.)
+  const hasReported = { $or: [{ $eq: ['$costSource', 'vapi'] }, { $gt: ['$cost', 0] }] };
   const callStats = await CallModel.aggregate<{
     _id: mongoose.Types.ObjectId;
-    totalCost:    number;
-    totalSecs:    number;
-    callCount:    number;
+    reportedCost:   number;
+    estimatedSecs:  number;
+    totalSecs:      number;
+    callCount:      number;
+    reportedCalls:  number;
+    stt: number; llm: number; tts: number; vapi: number; transport: number;
   }>([
-    { $match: { createdAt: { $gte: since } } },
+    { $match: { createdAt: { $gte: since }, status: { $ne: 'active' } } },
     {
       $group: {
-        _id:       '$organizationId',
-        totalCost: { $sum: '$cost' },
-        totalSecs: { $sum: '$duration' },
-        callCount: { $sum: 1 },
+        _id:           '$organizationId',
+        reportedCost:  { $sum: { $cond: [hasReported, '$cost', 0] } },
+        estimatedSecs: { $sum: { $cond: [hasReported, 0, '$duration'] } },
+        totalSecs:     { $sum: '$duration' },
+        callCount:     { $sum: 1 },
+        reportedCalls: { $sum: { $cond: [hasReported, 1, 0] } },
+        stt:       { $sum: { $ifNull: ['$costBreakdown.stt', 0] } },
+        llm:       { $sum: { $ifNull: ['$costBreakdown.llm', 0] } },
+        tts:       { $sum: { $ifNull: ['$costBreakdown.tts', 0] } },
+        vapi:      { $sum: { $ifNull: ['$costBreakdown.vapi', 0] } },
+        transport: { $sum: { $ifNull: ['$costBreakdown.transport', 0] } },
       },
     },
-    { $sort: { totalCost: -1 } },
     { $limit: limit },
   ]);
 
@@ -105,79 +129,94 @@ export async function buildReconciliationReport(
     return {
       periodDays,
       generatedAt: new Date(),
-      summary: { totalOrgs: 0, atRiskOrgs: 0, totalVapiCostUsd: 0, totalPlanRevenueUsd: 0, totalMarginUsd: 0 },
+      summary: {
+        totalOrgs: 0, atRiskOrgs: 0, totalVapiCostUsd: 0, totalTelephonyCostUsd: 0, totalCostUsd: 0,
+        totalPlanRevenueUsd: 0, totalMarginUsd: 0, totalMinutes: 0, avgCostPerMinUsd: 0,
+        reportedCalls: 0, estimatedCalls: 0,
+      },
+      assumptions,
       orgs: [],
     };
   }
 
-  // Fetch org details for all orgs in the result set
-  const orgIds = callStats.map(s => s._id);
+  const orgIds = callStats.map((s) => s._id);
   const orgs = await OrganizationModel.find({ _id: { $in: orgIds } })
     .select('_id name plan planOverride')
     .lean();
-  const orgMap = new Map(orgs.map(o => [o._id.toString(), o]));
+  const orgMap = new Map(orgs.map((o) => [o._id.toString(), o]));
 
   const results: OrgReconciliation[] = [];
-  let totalVapiCostUsd     = 0;
-  let totalPlanRevenueUsd  = 0;
-  let atRiskCount          = 0;
+  const t = { vapi: 0, tel: 0, revenue: 0, minutes: 0, reported: 0, estimated: 0, atRisk: 0 };
 
   for (const stat of callStats) {
     const orgDoc = orgMap.get(stat._id.toString());
     if (!orgDoc) continue;
 
-    const effectivePlan = ((orgDoc.planOverride ?? orgDoc.plan) as string) || 'free';
-    const planRevenueUsd = PLAN_MONTHLY_REVENUE_USD[effectivePlan] ?? 0;
+    const effectivePlan  = ((orgDoc.planOverride ?? orgDoc.plan) as string) || 'free';
+    const planRevenueUsd = (PLAN_MONTHLY_REVENUE_USD[effectivePlan] ?? 0) * (periodDays / 30);
 
     const totalCallMinutes = stat.totalSecs / 60;
+    const vapiCostUsd      = stat.reportedCost + (stat.estimatedSecs / 60) * fallbackPerMin;
+    const telephonyCostUsd = totalCallMinutes * telephonyPerMin;
+    const totalCostUsd     = vapiCostUsd + telephonyCostUsd;
 
-    // Prefer recorded cost; fall back to estimate from minutes if cost is 0
-    const vapiCostUsd =
-      stat.totalCost > 0
-        ? stat.totalCost
-        : totalCallMinutes * VAPI_COST_PER_MIN_USD;
+    const marginUsd = planRevenueUsd - totalCostUsd;
+    const marginPct = planRevenueUsd > 0 ? (marginUsd / planRevenueUsd) * 100 : null;
+    const atRisk    = marginPct !== null && marginPct < MARGIN_ALERT_PCT;
+    const estimatedCalls = stat.callCount - stat.reportedCalls;
 
-    const marginUsd = planRevenueUsd - vapiCostUsd;
-    const marginPct =
-      planRevenueUsd > 0 ? (marginUsd / planRevenueUsd) * 100 : null;
-
-    const atRisk = marginPct !== null && marginPct < MARGIN_ALERT_PCT;
-
-    totalVapiCostUsd    += vapiCostUsd;
-    totalPlanRevenueUsd += planRevenueUsd;
-    if (atRisk) atRiskCount++;
+    t.vapi += vapiCostUsd; t.tel += telephonyCostUsd; t.revenue += planRevenueUsd;
+    t.minutes += totalCallMinutes; t.reported += stat.reportedCalls; t.estimated += estimatedCalls;
+    if (atRisk) t.atRisk++;
 
     results.push({
       orgId:            stat._id.toString(),
       orgName:          orgDoc.name,
       plan:             effectivePlan,
-      planRevenueUsd,
+      planRevenueUsd:   round(planRevenueUsd, 2),
       totalCallSecs:    stat.totalSecs,
-      totalCallMinutes: Math.round(totalCallMinutes * 100) / 100,
-      vapiCostUsd:      Math.round(vapiCostUsd * 10000) / 10000,
-      marginUsd:        Math.round(marginUsd * 100) / 100,
-      marginPct:        marginPct !== null ? Math.round(marginPct * 10) / 10 : null,
+      totalCallMinutes: round(totalCallMinutes, 2),
+      vapiCostUsd:      round(vapiCostUsd, 4),
+      telephonyCostUsd: round(telephonyCostUsd, 4),
+      totalCostUsd:     round(totalCostUsd, 4),
+      costPerMinUsd:    totalCallMinutes > 0 ? round(totalCostUsd / totalCallMinutes, 4) : 0,
+      reportedCalls:    stat.reportedCalls,
+      estimatedCalls,
+      breakdownUsd: {
+        stt:       round(stat.stt, 4),
+        llm:       round(stat.llm, 4),
+        tts:       round(stat.tts, 4),
+        vapi:      round(stat.vapi, 4),
+        transport: round(stat.transport, 4),
+      },
+      marginUsd:        round(marginUsd, 2),
+      marginPct:        marginPct !== null ? round(marginPct, 1) : null,
       atRisk,
       callCount:        stat.callCount,
     });
   }
 
-  // Sort: at-risk first, then by vapiCostUsd desc
-  results.sort((a, b) => {
-    if (a.atRisk !== b.atRisk) return a.atRisk ? -1 : 1;
-    return b.vapiCostUsd - a.vapiCostUsd;
-  });
+  // At-risk first, then highest cost
+  results.sort((a, b) => (a.atRisk !== b.atRisk ? (a.atRisk ? -1 : 1) : b.totalCostUsd - a.totalCostUsd));
 
+  const totalCost = t.vapi + t.tel;
   return {
     periodDays,
     generatedAt: new Date(),
     summary: {
-      totalOrgs:           results.length,
-      atRiskOrgs:          atRiskCount,
-      totalVapiCostUsd:    Math.round(totalVapiCostUsd * 100) / 100,
-      totalPlanRevenueUsd: Math.round(totalPlanRevenueUsd * 100) / 100,
-      totalMarginUsd:      Math.round((totalPlanRevenueUsd - totalVapiCostUsd) * 100) / 100,
+      totalOrgs:             results.length,
+      atRiskOrgs:            t.atRisk,
+      totalVapiCostUsd:      round(t.vapi, 2),
+      totalTelephonyCostUsd: round(t.tel, 2),
+      totalCostUsd:          round(totalCost, 2),
+      totalPlanRevenueUsd:   round(t.revenue, 2),
+      totalMarginUsd:        round(t.revenue - totalCost, 2),
+      totalMinutes:          round(t.minutes, 1),
+      avgCostPerMinUsd:      t.minutes > 0 ? round(totalCost / t.minutes, 4) : 0,
+      reportedCalls:         t.reported,
+      estimatedCalls:        t.estimated,
     },
+    assumptions,
     orgs: results,
   };
 }
