@@ -390,8 +390,10 @@ export default function AgentDetailPage() {
       );
       setAgent(res.data.data.agent);
       setEditingVoice(false);
-    } catch {
-      setVoiceSaveError('Failed to save voice settings. Please try again.');
+    } catch (err) {
+      // Surface the server's reason (e.g. premium voice not included in the plan)
+      const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
+      setVoiceSaveError(msg ?? 'Failed to save voice settings. Please try again.');
     } finally {
       setSavingVoice(false);
     }

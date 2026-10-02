@@ -47,10 +47,18 @@ export interface VoiceOption {
   supportsHindi?: boolean;
 }
 
+/**
+ * Cost tier — mirrors backend agents/voice-pricing.ts.
+ * standard: cheap, included on every plan. premium: several× the per-minute
+ * cost: included on Pro, a paid add-on on Basic/Standard (backend enforces it).
+ */
+export type VoiceTier = 'standard' | 'premium';
+
 export interface VoiceProviderDef {
   id: VoiceProviderId;
   label: string;
   badge: string;
+  tier: VoiceTier;
   tagline: string;
   /** true = works inside Vapi without your own provider API key */
   noKeyRequired: boolean;
@@ -65,6 +73,7 @@ export const VOICE_CATALOG: VoiceProviderDef[] = [
   // Voices from OpenAIVoice.voiceId in Vapi SDK: alloy|echo|fable|onyx|nova|shimmer|marin|cedar
   {
     id: 'openai',
+    tier: 'standard',
     label: 'OpenAI',
     badge: 'Neural',
     tagline: 'Natural neural voices, works out-of-the-box through Vapi',
@@ -87,6 +96,7 @@ export const VOICE_CATALOG: VoiceProviderDef[] = [
   // Source: ElevenLabsVoice.voiceId in Vapi SDK.
   {
     id: 'elevenlabs',
+    tier: 'premium',
     label: 'ElevenLabs',
     badge: 'Studio',
     tagline: 'Studio-quality voices — shared via Vapi, no ElevenLabs key needed',
@@ -112,6 +122,7 @@ export const VOICE_CATALOG: VoiceProviderDef[] = [
   // Preview: backend calls Deepgram /v1/speak?model=aura-{voiceId}-en via DEEPGRAM_API_KEY
   {
     id: 'deepgram',
+    tier: 'standard',
     label: 'Deepgram Aura',
     badge: 'Fastest',
     tagline: 'Ultra-low latency (~100ms) — best for real-time voice agents, via Vapi',
@@ -138,6 +149,7 @@ export const VOICE_CATALOG: VoiceProviderDef[] = [
   // Requires PlayHT API key configured in Vapi dashboard
   {
     id: 'playht',
+    tier: 'premium',
     label: 'PlayHT',
     badge: 'Emotive',
     tagline: 'Hyper-realistic with emotion control — requires PlayHT API key in Vapi',
@@ -166,6 +178,7 @@ export const VOICE_CATALOG: VoiceProviderDef[] = [
   // Multilingual voiceIds use the full Azure voice name passed as a string to Vapi.
   {
     id: 'azure',
+    tier: 'premium',
     label: 'Azure',
     badge: 'Multi-lingual',
     tagline: 'Microsoft neural voices — requires Azure key in Vapi dashboard',

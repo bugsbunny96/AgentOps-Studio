@@ -23,6 +23,52 @@ export interface VapiModel {
   maxTokens?: number;
   /** Vapi pre-attached server tool IDs (e.g. end_call, submit_order) */
   toolIds?: string[];
+  /** Inline function tools (e.g. search_catalog) served by our own backend */
+  tools?: VapiInlineTool[];
+}
+
+/** An inline Vapi function tool whose calls are POSTed to our backend. */
+export interface VapiInlineTool {
+  type: 'function';
+  function: {
+    name: string;
+    description: string;
+    parameters: {
+      type: 'object';
+      properties: Record<string, { type: string; description?: string }>;
+      required?: string[];
+    };
+  };
+  server: {
+    url: string;
+    headers?: Record<string, string>;
+    timeoutSeconds?: number;
+  };
+}
+
+/**
+ * Per-call cost breakdown Vapi sends in end-of-call-report (`message.costBreakdown`)
+ * and returns from GET /call/:id. All amounts are USD.
+ */
+export interface VapiCostBreakdown {
+  transport?: number;
+  stt?:       number;
+  llm?:       number;
+  tts?:       number;
+  vapi?:      number;
+  total?:     number;
+  llmPromptTokens?:     number;
+  llmCompletionTokens?: number;
+  ttsCharacters?:       number;
+}
+
+/** Subset of the Vapi call object we read for cost backfill. */
+export interface VapiCallRecord {
+  id:             string;
+  cost?:          number;
+  costBreakdown?: VapiCostBreakdown;
+  startedAt?:     string;
+  endedAt?:       string;
 }
 
 export interface VapiTranscriber {
@@ -181,14 +227,66 @@ export async function vapiCreateAssistant(
   return assistant;
 }
 
+/** Inline tools we add and remove ourselves, depending on catalog / KB size. */
+const MANAGED_INLINE_TOOLS = new Set(['search_catalog', 'search_knowledge_base']);
+
+/**
+ * Tool safety net. Vapi's PATCH replaces the whole `model` object, so a model
+ * update that omits a tool silently detaches it from the live agent. This merges
+ * the tools the assistant has NOW into the outgoing model:
+ *   • toolIds  — union of current and new (submit_order / end-call are never dropped)
+ *   • inline tools — every current tool is kept unless it is one of our managed
+ *     lookup tools (those follow `next`); a tool in `next` replaces one of the same name.
+ */
+export function mergeModelTools(
+  current: Partial<VapiModel> | undefined,
+  next: VapiModel,
+): VapiModel {
+  const toolIds = [...new Set([...(current?.toolIds ?? []), ...(next.toolIds ?? [])])];
+
+  const nextTools = next.tools ?? [];
+  const nextNames = new Set(nextTools.map((t) => t.function?.name));
+  const keptCurrent = (current?.tools ?? []).filter((t) => {
+    const name = t.function?.name;
+    return !MANAGED_INLINE_TOOLS.has(name) && !nextNames.has(name);
+  });
+  const tools = [...keptCurrent, ...nextTools];
+
+  const { toolIds: _ids, tools: _tools, ...rest } = next;
+  return {
+    ...rest,
+    ...(toolIds.length ? { toolIds } : {}),
+    ...(tools.length ? { tools } : {}),
+  };
+}
+
 /**
  * Update an existing Vapi assistant (e.g., after org data changes).
+ *
+ * When the patch includes `model`, the assistant's current tools are read first
+ * and merged in (see mergeModelTools) so no update can remove submit_order or
+ * end_receptionist_call. If that read fails, the update is NOT sent.
  */
 export async function vapiUpdateAssistant(
   assistantId: string,
   payload: Partial<VapiCreateAssistantPayload>,
 ): Promise<VapiAssistant> {
-  return vapiRequest<VapiAssistant>('PATCH', `/assistant/${assistantId}`, payload);
+  let body = payload;
+  if (payload.model) {
+    const current = await vapiRequest<{ model?: Partial<VapiModel> }>('GET', `/assistant/${assistantId}`);
+    body = { ...payload, model: mergeModelTools(current?.model, payload.model) };
+  }
+  return vapiRequest<VapiAssistant>('PATCH', `/assistant/${assistantId}`, body);
+}
+
+/** Fetch an assistant's live config (used by maintenance scripts). */
+export async function vapiGetAssistant(assistantId: string): Promise<Record<string, unknown>> {
+  return vapiRequest<Record<string, unknown>>('GET', `/assistant/${assistantId}`);
+}
+
+/** Fetch one call record — used to backfill the real per-call cost. */
+export async function vapiGetCall(callId: string): Promise<VapiCallRecord> {
+  return vapiRequest<VapiCallRecord>('GET', `/call/${callId}`);
 }
 
 /**

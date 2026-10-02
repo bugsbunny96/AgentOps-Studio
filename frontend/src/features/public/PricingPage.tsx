@@ -50,6 +50,7 @@ const PLANS = [
       '500 minutes / month',
       '1 AI assistant',
       '1 voice (standard Hindi/English)',
+      'Premium voices add-on: ₹2,999/month',
       '50 KB knowledge base',
       'Google Sheets + WhatsApp alerts',
       'Call logging, basic routing',
@@ -80,6 +81,7 @@ const PLANS = [
       '1,000 minutes / month',
       '3 AI assistants',
       '3 voices',
+      'Premium voices add-on: ₹4,999/month',
       '200 KB knowledge base',
       '+ CRM, n8n workflows, Razorpay',
       '+ Order capture, appointment booking',
@@ -106,6 +108,7 @@ const PLANS = [
       '1,500 minutes / month',
       '5 AI assistants',
       'All voices + custom voice cloning',
+      'Premium voices included (ElevenLabs, Azure, PlayHT)',
       '500 KB knowledge base',
       'Unlimited integrations',
       'Full automation suite + custom workflows',
@@ -150,6 +153,7 @@ const TABLE_DATA: TableSection[] = [
     category: 'Voice & Knowledge Base',
     rows: [
       { label: 'Voice options', starter: '1 (standard)', growth: '3 voices', enterprise: 'All + custom cloning' },
+      { label: 'Premium voices (ElevenLabs, Azure, PlayHT)', starter: 'Add-on ₹2,999/mo', growth: 'Add-on ₹4,999/mo', enterprise: 'Included' },
       { label: 'Knowledge base', starter: '50 KB', growth: '200 KB', enterprise: '500 KB' },
     ],
   },
@@ -251,7 +255,7 @@ function HeroSection() {
       <div style={{ position: 'relative', zIndex: 1, maxWidth: 680, margin: '0 auto', padding: '0 20px' }}>
         <Reveal>
           <Pill bg="rgba(16,185,129,.12)" fg={color.emerald} border="rgba(16,185,129,.25)" live>
-            Loved by 200+ Indian businesses
+            7-day free trial · no credit card
           </Pill>
         </Reveal>
 

@@ -17,6 +17,7 @@ import {
 import { useAppSelector } from '@/store';
 import { api } from '@/utils/api';
 import type { VoiceAgent, Call } from '@/types';
+import { unwrapList } from '@/utils/unwrapList';
 
 // ── Design tokens ─────────────────────────────────────────────────────────────
 const T = {
@@ -443,7 +444,7 @@ export function DashboardPage() {
 
   const { data: agents = [] } = useQuery<VoiceAgent[]>({
     queryKey: ['agents'],
-    queryFn: () => api.get('/agents').then((r) => r.data?.agents ?? r.data ?? []),
+    queryFn: () => api.get('/agents').then((r) => unwrapList<VoiceAgent>(r.data, 'agents')),
     refetchInterval: 60_000,
   });
 
@@ -455,7 +456,7 @@ export function DashboardPage() {
 
   const { data: recentCalls = [] } = useQuery<Call[]>({
     queryKey: ['calls', 'recent'],
-    queryFn: () => api.get('/calls?limit=6').then((r) => r.data?.calls ?? r.data ?? []),
+    queryFn: () => api.get('/calls?limit=6').then((r) => unwrapList<Call>(r.data, 'calls')),
     refetchInterval: 30_000,
   });
 

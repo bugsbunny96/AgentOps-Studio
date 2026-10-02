@@ -18,12 +18,13 @@ import {
   type VapiCreateAssistantPayload,
   type VapiVoice,
   type VapiTranscriber,
+  type VapiInlineTool,
 } from './vapi.service';
 import { generateSystemPrompt, buildFirstMessage, buildEndCallMessage } from './prompt.utils';
-import { getKbContext } from '../knowledge-base/kb.service';
-import { findAll as findAllCatalogItems } from '../catalog/catalog.service';
+import { buildAgentPrompt, buildVapiModel, defaultToolIds } from './assistant-config';
+import { DEFAULT_VOICE, getFeaturePlan, getPremiumVoiceAccess, getVoiceTier, isVoiceAllowedForOrg } from './voice-pricing';
 import { env } from '../../config/env';
-import { NotFound } from '../../middleware/errorHandler';
+import { Forbidden, NotFound } from '../../middleware/errorHandler';
 import { logger } from '../../utils/logger';
 import type { UpdateAgentConfigDto } from './agent.validation';
 
@@ -89,15 +90,29 @@ function buildVapiPayload(
     voiceId?: string;
     voiceVersion?: string;
   },
+  /** Inline lookup tools (search_catalog / search_knowledge_base) from buildAgentPrompt */
+  tools: VapiInlineTool[] = [],
 ): VapiCreateAssistantPayload {
   const agentName = org.agentName || org.name;
   const isMultilingual = (org.supportedLanguages?.length ?? 0) > 1;
   const hasNonEnglish  = org.supportedLanguages?.some((l) => l !== 'en-US') ?? false;
 
   // Resolve voice provider from agent config or org onboarding choice
-  const rawProvider  = agentConfig?.voiceProvider ?? org.preferredVoiceProvider ?? 'openai';
-  const voiceId      = agentConfig?.voiceId ?? org.preferredVoiceId ?? 'nova';
+  let rawProvider  = agentConfig?.voiceProvider ?? org.preferredVoiceProvider ?? DEFAULT_VOICE.provider;
+  let voiceId      = agentConfig?.voiceId ?? org.preferredVoiceId ?? DEFAULT_VOICE.voiceId;
   const voiceVersion = agentConfig?.voiceVersion;
+
+  // Premium voices (ElevenLabs, PlayHT, Azure, Cartesia) need Pro or the Premium
+  // Voices add-on — otherwise fall back to the cheap default rather than fail provisioning.
+  if (!isVoiceAllowedForOrg(rawProvider, org)) {
+    logger.warn('Premium voice not included in plan — using default voice', {
+      orgId: org._id.toString(),
+      plan: getFeaturePlan(org),
+      requested: `${rawProvider}/${voiceId}`,
+    });
+    rawProvider = DEFAULT_VOICE.provider;
+    voiceId     = DEFAULT_VOICE.voiceId;
+  }
 
   const voice: VapiVoice = buildVapiVoice(rawProvider, voiceId, voiceVersion, hasNonEnglish);
 
@@ -117,24 +132,15 @@ function buildVapiPayload(
   // Tool IDs — from agent config or env defaults
   const toolIds: string[] = agentConfig?.vapiToolIds?.length
     ? agentConfig.vapiToolIds
-    : [
-        env.VAPI_TOOL_ID_END_CALL,
-        env.VAPI_TOOL_ID_SUBMIT_ORDER,
-      ].filter(Boolean) as string[];
+    : defaultToolIds();
 
   // Structured output schema ID
   const structuredOutputId = agentConfig?.vapiStructuredOutputId ?? env.VAPI_STRUCTURED_OUTPUT_ID;
 
   return {
     name: `${agentName} — AgentOps Studio`,
-    model: {
-      provider: 'openai',
-      model: 'gpt-4o',
-      messages: [{ role: 'system', content: systemPrompt }],
-      temperature: 0.3,
-      maxTokens: 300,
-      ...(toolIds.length ? { toolIds } : {}),
-    },
+    // Model + temperature come from config/llm.ts (LLM_MODEL, default gpt-4o-mini)
+    model: buildVapiModel(systemPrompt, { toolIds, tools }),
     transcriber,
     voice,
     firstMessage: buildFirstMessage(org),
@@ -158,6 +164,18 @@ function buildVapiPayload(
       organizationId: org._id.toString(),
       platform: 'agentops-studio',
     },
+  };
+}
+
+/** The org's onboarding voice choice, or the default voice if its plan excludes it. */
+function allowedPreferredVoice(org: IOrganization): { provider: IVoiceAgent['voiceProvider']; voiceId: string } {
+  const provider = org.preferredVoiceProvider ?? DEFAULT_VOICE.provider;
+  if (!isVoiceAllowedForOrg(provider, org)) {
+    return { provider: DEFAULT_VOICE.provider, voiceId: DEFAULT_VOICE.voiceId };
+  }
+  return {
+    provider: provider as IVoiceAgent['voiceProvider'],
+    voiceId:  org.preferredVoiceId ?? DEFAULT_VOICE.voiceId,
   };
 }
 
@@ -208,21 +226,13 @@ export async function provisionAgent(userId: string) {
       vapiAssistantId: org.vapiAssistantId,
     });
 
-    const [kbCtx, catalogItems] = await Promise.all([
-      getKbContext(orgId),
-      findAllCatalogItems(orgId),
-    ]);
-    const adoptedPrompt = generateSystemPrompt(org, kbCtx, catalogItems);
+    const adopted = await buildAgentPrompt(org);
+    const adoptedPrompt = adopted.systemPrompt;
 
-    // Push the regenerated (catalog-inclusive) system prompt to the existing Vapi assistant
+    // Push the regenerated (catalog-inclusive) system prompt to the existing Vapi assistant.
+    // Tool IDs are re-sent because Vapi PATCH replaces the whole model object.
     await vapiUpdateAssistant(org.vapiAssistantId, {
-      model: {
-        provider:    'openai',
-        model:       'gpt-4o',
-        messages:    [{ role: 'system', content: adoptedPrompt }],
-        temperature: 0.65,
-        maxTokens:   300,
-      },
+      model: buildVapiModel(adoptedPrompt, { toolIds: defaultToolIds(), tools: adopted.tools }),
     });
 
     const adoptedAgent = await VoiceAgentModel.findOneAndUpdate(
@@ -233,8 +243,8 @@ export async function provisionAgent(userId: string) {
           name:               org.agentName || org.name,
           systemPrompt:       adoptedPrompt,
           vapiAssistantId:    org.vapiAssistantId,
-          voiceProvider:      (org.preferredVoiceProvider as IVoiceAgent['voiceProvider']) ?? 'openai',
-          voiceId:            org.preferredVoiceId ?? 'nova',
+          voiceProvider:      allowedPreferredVoice(org).provider,
+          voiceId:            allowedPreferredVoice(org).voiceId,
           primaryLanguage:    org.supportedLanguages?.[0] ?? 'en-US',
           supportedLanguages: org.supportedLanguages ?? ['en-US'],
           status:             'Active',
@@ -246,7 +256,8 @@ export async function provisionAgent(userId: string) {
     logger.info('Manually-created assistant adopted + system prompt updated with catalog', {
       orgId: orgId.toString(),
       vapiAssistantId: org.vapiAssistantId,
-      catalogItems: catalogItems.length,
+      catalogMode: adopted.catalogMode,
+      kbMode:      adopted.kbMode,
     });
 
     return {
@@ -260,12 +271,8 @@ export async function provisionAgent(userId: string) {
   logger.info('Provisioning new Vapi assistant', { orgId: orgId.toString() });
 
   // Inject current catalog + KB docs so the initial system prompt is fully populated.
-  const [kbContext, catalogItems] = await Promise.all([
-    getKbContext(orgId),
-    findAllCatalogItems(orgId),
-  ]);
-  const systemPrompt  = generateSystemPrompt(org, kbContext, catalogItems);
-  const vapiPayload   = buildVapiPayload(org, systemPrompt);
+  const { systemPrompt, tools } = await buildAgentPrompt(org);
+  const vapiPayload   = buildVapiPayload(org, systemPrompt, undefined, tools);
   const vapiAssistant = await vapiCreateAssistant(vapiPayload);
 
   // Persist vapiAssistantId on the org document
@@ -283,8 +290,8 @@ export async function provisionAgent(userId: string) {
         name: org.agentName || org.name,
         systemPrompt,
         vapiAssistantId: vapiAssistant.id,
-        voiceProvider: (org.preferredVoiceProvider as IVoiceAgent['voiceProvider']) ?? 'openai',
-        voiceId: org.preferredVoiceId ?? 'nova',
+        voiceProvider: allowedPreferredVoice(org).provider,
+        voiceId: allowedPreferredVoice(org).voiceId,
         primaryLanguage: org.supportedLanguages?.[0] ?? 'en-US',
         supportedLanguages: org.supportedLanguages ?? ['en-US'],
         status: 'Active',
@@ -444,6 +451,19 @@ export async function updateAgentVoice(
   const agent = await VoiceAgentModel.findOne({ _id: agentId, organizationId: org._id });
   if (!agent) throw NotFound('Agent');
 
+  if (!isVoiceAllowedForOrg(dto.voiceProvider, org)) {
+    const access = getPremiumVoiceAccess(org);
+    throw Forbidden(
+      access.addonPriceInr !== null
+        ? `Premium voices (ElevenLabs, PlayHT, Azure, Cartesia) need the Premium Voices add-on ` +
+          `(₹${access.addonPriceInr.toLocaleString('en-IN')}/month on your plan) or the Pro plan, where they are included. ` +
+          'Add it on the Billing page, or choose a Standard voice (OpenAI, Deepgram).'
+        : 'Premium voices (ElevenLabs, PlayHT, Azure, Cartesia) are included on Pro and available as an add-on ' +
+          'on Basic and Standard. Choose a Standard voice (OpenAI, Deepgram) or upgrade on the Billing page.',
+      'PREMIUM_VOICE_NOT_INCLUDED',
+    );
+  }
+
   const vapiProvider   = VAPI_PROVIDER_MAP[dto.voiceProvider] ?? 'openai';
   const hasNonEnglish  = (dto.supportedLanguages ?? org.supportedLanguages ?? []).some((l) => l !== 'en-US');
   const isMultilingual = (dto.supportedLanguages ?? org.supportedLanguages ?? []).length > 1;
@@ -464,16 +484,15 @@ export async function updateAgentVoice(
   // Also re-inject current KB context + catalog so they are not wiped from the Vapi prompt
   // (DRIFT-4 fix: language update previously dropped KB content).
   let newSystemPrompt: string | undefined;
+  let newPromptTools: VapiInlineTool[] = [];
   if (dto.supportedLanguages) {
     const orgWithNewLangs = {
       ...org.toObject(),
       supportedLanguages: dto.supportedLanguages,
     } as IOrganization;
-    const [kbContext, catalogItems] = await Promise.all([
-      getKbContext(org._id),
-      findAllCatalogItems(org._id),
-    ]);
-    newSystemPrompt           = generateSystemPrompt(orgWithNewLangs, kbContext, catalogItems);
+    const built               = await buildAgentPrompt(orgWithNewLangs);
+    newSystemPrompt           = built.systemPrompt;
+    newPromptTools            = built.tools;
     localUpdates.systemPrompt = newSystemPrompt;
   }
 
@@ -485,12 +504,9 @@ export async function updateAgentVoice(
 
   // Sync to Vapi if org has an assistant ID
   if (org.vapiAssistantId) {
-    // ElevenLabs needs eleven_multilingual_v2 to speak Hindi/Punjabi correctly
-    const voice: VapiVoice = {
-      provider: vapiProvider,
-      voiceId: dto.voiceId,
-      ...(vapiProvider === '11labs' && hasNonEnglish ? { model: 'eleven_multilingual_v2' } : {}),
-    };
+    // Same mapping as provisioning: ElevenLabs gets eleven_multilingual_v2 for
+    // Hindi/Punjabi, and Vapi native voices (Naina) keep version + auto language.
+    const voice: VapiVoice = buildVapiVoice(dto.voiceProvider, dto.voiceId, agent.voiceVersion, hasNonEnglish);
 
     const vapiPatch: Partial<VapiCreateAssistantPayload> = { voice };
 
@@ -508,13 +524,10 @@ export async function updateAgentVoice(
         ...org.toObject(),
         supportedLanguages: dto.supportedLanguages,
       } as IOrganization;
-      vapiPatch.model = {
-        provider: 'openai',
-        model: 'gpt-4o',
-        messages: [{ role: 'system', content: newSystemPrompt! }],
-        temperature: 0.65,
-        maxTokens: 300,
-      };
+      vapiPatch.model = buildVapiModel(newSystemPrompt!, {
+        toolIds: agent.vapiToolIds?.length ? agent.vapiToolIds : defaultToolIds(),
+        tools:   newPromptTools,
+      });
       vapiPatch.firstMessage    = buildFirstMessage(orgForGreeting);
       vapiPatch.endCallMessage  = buildEndCallMessage(orgForGreeting);
     }
@@ -524,6 +537,7 @@ export async function updateAgentVoice(
       agentId,
       provider: vapiProvider,
       voiceId: dto.voiceId,
+      voiceTier: getVoiceTier(dto.voiceProvider),
       languages: dto.supportedLanguages ?? 'unchanged',
       multilingual: isMultilingual,
     });
@@ -577,11 +591,7 @@ export async function updateAgentConfig(
   } as IOrganization;
 
   // ── Regenerate system prompt (always includes current catalog + KB) ──────────
-  const [kbContext, catalogItems] = await Promise.all([
-    getKbContext(org._id),
-    findAllCatalogItems(org._id),
-  ]);
-  const newSystemPrompt = generateSystemPrompt(orgForPrompt, kbContext, catalogItems);
+  const { systemPrompt: newSystemPrompt, tools: promptTools } = await buildAgentPrompt(orgForPrompt);
 
   // ── Update VoiceAgent record ───────────────────────────────────────────────
   const agentUpdates: Partial<{ name: string; systemPrompt: string }> = {
@@ -613,7 +623,7 @@ export async function updateAgentConfig(
       voiceProvider:         agent.voiceProvider,
       voiceId:               agent.voiceId,
       voiceVersion:          agent.voiceVersion,
-    });
+    }, promptTools);
 
     const vapiPatch: Partial<VapiCreateAssistantPayload> = {
       model:         fullPayload.model,
@@ -669,3 +679,37 @@ export async function getAgentById(userId: string, agentId: string) {
     vapiAssistantId: org.vapiAssistantId ?? null,
   };
 }
+
+// ─── enforceVoiceAccess ───────────────────────────────────────────────────────
+
+/**
+ * Called by the Stripe webhook after a plan or add-on change. If the org's agent
+ * uses a premium voice it is no longer entitled to (add-on cancelled, downgraded
+ * from Pro), switch it to the default voice locally and on Vapi — otherwise the
+ * live agent would keep the expensive voice until its next config push.
+ * Only `voice` is patched, so the prompt, model and tools are untouched.
+ */
+export async function enforceVoiceAccess(orgId: string): Promise<{ downgraded: boolean }> {
+  const org = await OrganizationModel.findById(orgId);
+  if (!org) return { downgraded: false };
+  const agent = await VoiceAgentModel.findOne({ organizationId: org._id });
+  if (!agent || isVoiceAllowedForOrg(agent.voiceProvider, org)) return { downgraded: false };
+
+  const previous = `${agent.voiceProvider}/${agent.voiceId}`;
+  agent.voiceProvider = DEFAULT_VOICE.provider;
+  agent.voiceId       = DEFAULT_VOICE.voiceId;
+  await agent.save();
+
+  if (org.vapiAssistantId) {
+    const hasNonEnglish = (org.supportedLanguages ?? []).some((l) => l !== 'en-US');
+    await vapiUpdateAssistant(org.vapiAssistantId, {
+      voice: buildVapiVoice(DEFAULT_VOICE.provider, DEFAULT_VOICE.voiceId, undefined, hasNonEnglish),
+    });
+  }
+
+  logger.info('Premium voice no longer included — switched agent to default voice', {
+    orgId, previous, now: `${DEFAULT_VOICE.provider}/${DEFAULT_VOICE.voiceId}`,
+  });
+  return { downgraded: true };
+}
+

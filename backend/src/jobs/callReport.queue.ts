@@ -11,6 +11,8 @@
 
 import { Queue, type ConnectionOptions } from 'bullmq';
 import { getSharedQueueClient } from '../config/bullmq-connection';
+// Type-only imports are erased at build time, so they add no runtime cycle.
+import type { VapiEndOfCallReportEvent } from '../modules/calls/webhook.service';
 
 // Mirrors the relevant fields of VapiEndOfCallReportEvent without
 // creating a cross-package import (avoids circular dep through webhook.service).
@@ -31,6 +33,12 @@ export interface CallReportJobData {
   }>;
   summary?: string;
   cost?:    number;
+  /** Cost Vapi reported on the call object (older payloads) — CORE-01 */
+  callCost?:      number;
+  /** Per-component cost breakdown — CORE-01 (was dropped before the worker) */
+  costBreakdown?: VapiEndOfCallReportEvent['costBreakdown'];
+  /** Recording URL + structured output (intent, order, follow-up) — CORE-01 */
+  artifact?:      VapiEndOfCallReportEvent['artifact'];
 }
 
 export type CallReportJobName = 'process-end-of-call';

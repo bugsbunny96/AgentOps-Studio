@@ -24,11 +24,13 @@ import { announcementRouter }  from './modules/announcement/announcement.routes'
 import { changelogRouter }     from './modules/changelog/changelog.routes';
 import { catalogRouter }       from './modules/catalog/catalog.routes';
 import { ordersRouter }        from './modules/orders/order.routes';
+import { toolsRouter }         from './modules/tools/lookup.routes';
 import { telephonyRouter }     from './modules/telephony/telephony.routes';
 import {
   publicEnterpriseLinkHandler,
   publicOrgBrandingHandler,
 } from './modules/superadmin/superadmin.controller';
+import { isRateLimitExempt } from './middleware/rateLimitExempt';
 
 const app = express();
 
@@ -68,6 +70,11 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 // ─── Request Logging ─────────────────────────────────────────────────
 app.use(requestLogger);
 
+// ─── Vapi lookup tools (before the rate limiter) ─────────────────────
+// search_catalog / search_knowledge_base calls come from Vapi's shared egress
+// IPs on every live call; the per-IP limiter below would throttle them (CORE-03).
+app.use('/api/v1/tools', toolsRouter);
+
 // ─── Rate Limiting ───────────────────────────────────────────────────
 // Skip all rate limiting in test environment to allow integration tests to run freely.
 const skipInTest = () => process.env.NODE_ENV === 'test';
@@ -76,7 +83,9 @@ const skipInTest = () => process.env.NODE_ENV === 'test';
 app.use('/api/v1', rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 100,
-  skip: skipInTest,
+  // CORE-03: Vapi webhook + tool routes are secret-authenticated and come from
+  // Vapi's shared IPs — never throttle them per IP.
+  skip: (req) => skipInTest() || isRateLimitExempt(req.originalUrl),
   standardHeaders: true,
   legacyHeaders: false,
   message: { success: false, code: 'RATE_LIMITED', message: 'Too many requests. Try again shortly.' },

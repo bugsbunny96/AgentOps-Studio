@@ -14,6 +14,10 @@
  * Routes:
  *   GET  /api/v1/billing/status   → current plan + usage
  *   POST /api/v1/billing/checkout → Stripe Checkout URL
+ *   POST /api/v1/billing/addons/premium-voices/checkout → Premium Voices add-on checkout
+ *
+ * Premium voices (ElevenLabs, Azure, PlayHT): included on Pro; add-on on
+ * Basic (₹2,999/mo) and Standard (₹4,999/mo). Backend: agents/voice-pricing.ts.
  */
 
 import { useEffect, useState } from 'react';
@@ -21,7 +25,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import {
   CheckCircle2, Zap, Building2, Loader2, AlertCircle, ChevronRight,
-  X, CreditCard, BarChart3, Users, FileText, Clock, Rocket, Phone,
+  X, CreditCard, BarChart3, Users, FileText, Clock, Rocket, Phone, Mic,
 } from 'lucide-react';
 import api from '@/utils/api';
 
@@ -59,6 +63,15 @@ interface BillingStatus {
   isTrialExpired:   boolean;
   trialDaysLeft:    number;
   trialEndsAt:      string | null;
+  premiumVoices?:   boolean;
+  premiumVoiceAddon?: {
+    allowed:        boolean;
+    includedInPlan: boolean;
+    addonActive:    boolean;
+    addonEligible:  boolean;
+    addonPriceInr:  number | null;
+    pricesInr:      { starter: number; growth: number };
+  };
 }
 
 // ─── Plan definitions — source of truth: AgentOps Studio SaaS Pricing &
@@ -88,6 +101,7 @@ const PLANS: Array<{
       '500 minutes / month',
       '1 AI assistant',
       '1 voice (standard Hindi/English)',
+      'Premium voices add-on: ₹2,999/month',
       '50 KB knowledge base',
       'Google Sheets + WhatsApp alerts',
       'Call logging, basic routing',
@@ -114,6 +128,7 @@ const PLANS: Array<{
       '1,000 minutes / month',
       '3 AI assistants',
       '3 voices',
+      'Premium voices add-on: ₹4,999/month',
       '200 KB knowledge base',
       '+ CRM, n8n workflows, Razorpay',
       '+ Order capture, appointment booking',
@@ -140,6 +155,7 @@ const PLANS: Array<{
       '1,500 minutes / month',
       '5 AI assistants',
       'All voices + custom voice cloning',
+      'Premium voices included (ElevenLabs, Azure, PlayHT)',
       '500 KB knowledge base',
       'Unlimited integrations',
       'Full automation suite + custom workflows',
@@ -453,6 +469,87 @@ function PlanCard({
 }
 
 // ─── BillingPage ──────────────────────────────────────────────────────────────
+// ─── Premium Voices add-on card ───────────────────────────────────────────────
+function PremiumVoicesCard({ addon, onBuy, buying, onManage, managing, hasStripeCustomer }: {
+  addon:             NonNullable<BillingStatus['premiumVoiceAddon']>;
+  onBuy:             () => void;
+  buying:            boolean;
+  onManage:          () => void;
+  managing:          boolean;
+  hasStripeCustomer: boolean;
+}) {
+  const inr = (n: number) => `₹${n.toLocaleString('en-IN')}`;
+  const { includedInPlan, addonActive, addonEligible, addonPriceInr, pricesInr } = addon;
+
+  let status: string;
+  let detail: string;
+  if (includedInPlan) {
+    status = 'Included in Pro';
+    detail = addonActive
+      ? 'Premium voices are part of your plan, so the separate add-on is cancelled automatically (prorated).'
+      : 'ElevenLabs, Azure and PlayHT voices are part of your plan at no extra cost.';
+  } else if (addonActive) {
+    status = 'Active';
+    detail = 'Premium voices are unlocked for your agent. Cancel any time from Manage subscription.';
+  } else if (addonEligible && addonPriceInr !== null) {
+    status = `${inr(addonPriceInr)} / month + GST`;
+    detail = 'Unlock ElevenLabs, Azure and PlayHT voices for your agent. Billed monthly, cancel any time. Included free on Pro.';
+  } else {
+    status = 'Basic, Standard or Pro';
+    detail = `Available as an add-on on Basic (${inr(pricesInr.starter)}/mo) and Standard (${inr(pricesInr.growth)}/mo), and included on Pro. Choose a paid plan below first.`;
+  }
+
+  return (
+    <div id="premium-voices" style={{
+      borderRadius: 16, padding: 20, background: T.bgC, border: `1px solid ${T.bdr}`,
+      display: 'flex', alignItems: 'center', gap: 14, flexWrap: 'wrap',
+    }}>
+      <div style={{
+        width: 40, height: 40, borderRadius: 11, flexShrink: 0,
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        background: 'rgba(33,241,168,0.1)', border: '1px solid rgba(33,241,168,0.2)',
+      }}>
+        <Mic size={18} style={{ color: T.blueL }} />
+      </div>
+      <div style={{ flex: '1 1 260px', minWidth: 0 }}>
+        <p style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.1em', color: T.t3, margin: '0 0 3px' }}>
+          Add-on · Premium voices
+        </p>
+        <p style={{ fontSize: 15, fontWeight: 700, color: T.t1, margin: '0 0 4px' }}>{status}</p>
+        <p style={{ fontSize: 12, color: T.t2, margin: 0, lineHeight: 1.5 }}>{detail}</p>
+      </div>
+      {!includedInPlan && addonEligible && (
+        <button
+          onClick={onBuy}
+          disabled={buying}
+          style={{
+            display: 'flex', alignItems: 'center', gap: 6, padding: '9px 16px', borderRadius: 9,
+            background: T.blue, border: 'none', color: '#171717', fontSize: 13, fontWeight: 700,
+            cursor: buying ? 'not-allowed' : 'pointer', opacity: buying ? 0.7 : 1,
+          }}
+        >
+          {buying
+            ? <><Loader2 size={13} style={{ animation: 'bilSpin 1s linear infinite' }} /> Redirecting…</>
+            : <>Add premium voices <ChevronRight size={13} /></>}
+        </button>
+      )}
+      {addonActive && hasStripeCustomer && !includedInPlan && (
+        <button
+          onClick={onManage}
+          disabled={managing}
+          style={{
+            display: 'flex', alignItems: 'center', gap: 5, padding: '7px 12px', borderRadius: 8,
+            background: 'rgba(33,241,168,0.08)', border: '1px solid rgba(33,241,168,0.2)',
+            color: T.blueL, fontSize: 12, fontWeight: 600, cursor: managing ? 'not-allowed' : 'pointer',
+          }}
+        >
+          Manage subscription <ChevronRight size={11} />
+        </button>
+      )}
+    </div>
+  );
+}
+
 export default function BillingPage() {
   const [searchParams] = useSearchParams();
   const navigate       = useNavigate();
@@ -475,7 +572,11 @@ export default function BillingPage() {
   useEffect(() => {
     const upgraded  = searchParams.get('upgraded');
     const cancelled = searchParams.get('cancelled');
-    if (upgraded === 'true') {
+    const addon     = searchParams.get('addon');
+    if (addon === 'premium_voices') {
+      setToast({ type: 'success', msg: 'Premium voices added. You can now pick ElevenLabs, Azure and PlayHT voices for your agent.' });
+      navigate('/billing', { replace: true });
+    } else if (upgraded === 'true') {
       setToast({ type: 'success', msg: 'Plan upgraded successfully! Welcome to your new plan.' });
       navigate('/billing', { replace: true });
     } else if (cancelled === 'true') {
@@ -527,6 +628,21 @@ export default function BillingPage() {
         err && typeof err === 'object' && 'response' in err
           ? ((err as { response?: { data?: { message?: string } } }).response?.data?.message ?? 'Failed to open billing portal')
           : 'Failed to open billing portal';
+      setToast({ type: 'error', msg });
+    },
+  });
+
+  const addonMutation = useMutation({
+    mutationFn: async () => {
+      const res = await api.post<{ success: boolean; data: { url: string } }>('/billing/addons/premium-voices/checkout');
+      return res.data.data.url;
+    },
+    onSuccess: (url) => { window.location.href = url; },
+    onError: (err: unknown) => {
+      const msg =
+        err && typeof err === 'object' && 'response' in err
+          ? ((err as { response?: { data?: { message?: string } } }).response?.data?.message ?? 'Could not start add-on checkout')
+          : 'Could not start add-on checkout';
       setToast({ type: 'error', msg });
     },
   });
@@ -741,6 +857,18 @@ export default function BillingPage() {
           )}
         </div>
       ) : null}
+
+      {/* Premium Voices add-on */}
+      {data?.premiumVoiceAddon && (
+        <PremiumVoicesCard
+          addon={data.premiumVoiceAddon}
+          onBuy={() => addonMutation.mutate()}
+          buying={addonMutation.isPending}
+          onManage={() => portalMutation.mutate()}
+          managing={portalMutation.isPending}
+          hasStripeCustomer={!!data.stripeCustomerId}
+        />
+      )}
 
       {/* Section header — plan grid */}
       <div>

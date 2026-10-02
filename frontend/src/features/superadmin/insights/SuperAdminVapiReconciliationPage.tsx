@@ -1,6 +1,8 @@
 /**
  * 19.10 — Vapi Bill Reconciliation
- * Shows actual Vapi cost vs plan revenue per org.
+ * Shows real cost (Vapi-reported per call + Vobiz telephony) vs plan revenue per org.
+ * Calls without a reported cost are estimated at the fallback rate and counted
+ * separately so the page says how much of the number is real.
  * At-risk orgs (margin < 40%) are highlighted in red.
  */
 import { useState } from 'react';
@@ -22,20 +24,30 @@ const T = {
 interface OrgRecon {
   orgId: string; orgName: string; plan: string;
   planRevenueUsd: number; totalCallSecs: number; totalCallMinutes: number;
-  vapiCostUsd: number; marginUsd: number; marginPct: number | null;
+  vapiCostUsd: number; telephonyCostUsd: number; totalCostUsd: number; costPerMinUsd: number;
+  reportedCalls: number; estimatedCalls: number;
+  marginUsd: number; marginPct: number | null;
   atRisk: boolean; callCount: number;
 }
 interface Summary {
   totalOrgs: number; atRiskOrgs: number;
-  totalVapiCostUsd: number; totalPlanRevenueUsd: number; totalMarginUsd: number;
+  totalVapiCostUsd: number; totalTelephonyCostUsd: number; totalCostUsd: number;
+  totalPlanRevenueUsd: number; totalMarginUsd: number;
+  totalMinutes: number; avgCostPerMinUsd: number;
+  reportedCalls: number; estimatedCalls: number;
 }
 interface ReconReport {
   periodDays: number; generatedAt: string;
   summary: Summary; orgs: OrgRecon[];
+  assumptions: { vapiFallbackPerMinUsd: number; telephonyPerMinUsd: number };
 }
 
 function formatUsd(v: number) {
   return `$${v.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+}
+
+function formatRate(v: number) {
+  return `$${v.toFixed(3)}/min`;
 }
 
 export default function SuperAdminVapiReconciliationPage() {
@@ -64,7 +76,7 @@ export default function SuperAdminVapiReconciliationPage() {
           <div>
             <h1 style={{ margin: 0, fontSize: 20, fontWeight: 700 }}>Vapi Bill Reconciliation</h1>
             <p style={{ margin: 0, fontSize: 13, color: T.t2, marginTop: 2 }}>
-              Actual Vapi cost vs plan revenue — margin analysis per org
+              Real cost (Vapi per call + Vobiz telephony) vs plan revenue, prorated to the period
             </p>
           </div>
         </div>
@@ -92,11 +104,12 @@ export default function SuperAdminVapiReconciliationPage() {
       </div>
 
       {/* Summary strip */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 16, marginBottom: 28 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: 16, marginBottom: 12 }}>
         {[
           { label: 'Orgs analysed',  value: summary?.totalOrgs ?? '–',         color: T.t1 },
           { label: 'At-risk orgs',   value: summary?.atRiskOrgs ?? '–',         color: T.red },
-          { label: 'Total Vapi cost', value: summary ? formatUsd(summary.totalVapiCostUsd) : '–', color: T.red },
+          { label: 'Total cost',     value: summary ? formatUsd(summary.totalCostUsd) : '–', color: T.red },
+          { label: 'Avg cost / min', value: summary ? formatRate(summary.avgCostPerMinUsd) : '–', color: T.amber },
           { label: 'Total revenue',  value: summary ? formatUsd(summary.totalPlanRevenueUsd) : '–', color: T.green },
           { label: 'Total margin',   value: summary ? formatUsd(summary.totalMarginUsd) : '–',
             color: (summary?.totalMarginUsd ?? 0) >= 0 ? T.green : T.red },
@@ -111,12 +124,28 @@ export default function SuperAdminVapiReconciliationPage() {
         ))}
       </div>
 
+      {/* How much of the cost is real vs estimated */}
+      {summary && data && (
+        <p style={{ fontSize: 12, color: T.t3, margin: '0 0 24px' }}>
+          Vapi {formatUsd(summary.totalVapiCostUsd)} + telephony {formatUsd(summary.totalTelephonyCostUsd)}
+          {' '}over {summary.totalMinutes.toLocaleString()} min.
+          {' '}{summary.reportedCalls} call{summary.reportedCalls === 1 ? '' : 's'} costed from Vapi's report
+          {summary.estimatedCalls > 0 && (
+            <span style={{ color: T.amber }}>
+              {', '}{summary.estimatedCalls} estimated at {formatRate(data.assumptions.vapiFallbackPerMinUsd)}
+              {' '}(run backend/scripts/backfill-call-costs.ts to replace estimates)
+            </span>
+          )}
+          . Telephony at {formatRate(data.assumptions.telephonyPerMinUsd)} (TELEPHONY_COST_PER_MIN_USD).
+        </p>
+      )}
+
       {/* Table */}
       <div style={{ background: T.bgS, border: `1px solid ${T.bdr}`, borderRadius: 12, overflow: 'hidden' }}>
         <table style={{ width: '100%', borderCollapse: 'collapse' }}>
           <thead>
             <tr style={{ borderBottom: `1px solid ${T.bdr}` }}>
-              {['Organisation', 'Plan', 'Calls', 'Minutes', 'Vapi Cost', 'Revenue', 'Margin', 'Margin %', 'Status', ''].map(h => (
+              {['Organisation', 'Plan', 'Calls', 'Minutes', 'Cost', 'Cost/min', 'Revenue', 'Margin', 'Margin %', 'Status', ''].map(h => (
                 <th key={h} style={{ padding: '12px 14px', textAlign: 'left',
                   fontSize: 11, fontWeight: 600, color: T.t3, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{h}</th>
               ))}
@@ -124,10 +153,10 @@ export default function SuperAdminVapiReconciliationPage() {
           </thead>
           <tbody>
             {isLoading && (
-              <tr><td colSpan={10} style={{ padding: 40, textAlign: 'center', color: T.t2 }}>Loading…</td></tr>
+              <tr><td colSpan={11} style={{ padding: 40, textAlign: 'center', color: T.t2 }}>Loading…</td></tr>
             )}
             {!isLoading && orgs.length === 0 && (
-              <tr><td colSpan={10} style={{ padding: 40, textAlign: 'center', color: T.t2 }}>No call data for this period</td></tr>
+              <tr><td colSpan={11} style={{ padding: 40, textAlign: 'center', color: T.t2 }}>No call data for this period</td></tr>
             )}
             {orgs.map((org, i) => (
               <tr key={org.orgId}
@@ -147,7 +176,14 @@ export default function SuperAdminVapiReconciliationPage() {
                 </td>
                 <td style={{ padding: '12px 14px', fontSize: 13, color: T.t2 }}>{org.callCount.toLocaleString()}</td>
                 <td style={{ padding: '12px 14px', fontSize: 13, color: T.t2 }}>{org.totalCallMinutes.toFixed(1)}</td>
-                <td style={{ padding: '12px 14px', fontSize: 13, color: T.red }}>{formatUsd(org.vapiCostUsd)}</td>
+                <td style={{ padding: '12px 14px', fontSize: 13, color: T.red }}
+                  title={`Vapi ${formatUsd(org.vapiCostUsd)} + telephony ${formatUsd(org.telephonyCostUsd)}`}>
+                  {formatUsd(org.totalCostUsd)}
+                  {org.estimatedCalls > 0 && (
+                    <div style={{ fontSize: 11, color: T.amber }}>{org.estimatedCalls} estimated</div>
+                  )}
+                </td>
+                <td style={{ padding: '12px 14px', fontSize: 13, color: T.t2 }}>{formatRate(org.costPerMinUsd)}</td>
                 <td style={{ padding: '12px 14px', fontSize: 13, color: T.green }}>{formatUsd(org.planRevenueUsd)}</td>
                 <td style={{ padding: '12px 14px', fontSize: 13, fontWeight: 600,
                   color: org.marginUsd >= 0 ? T.green : T.red }}>

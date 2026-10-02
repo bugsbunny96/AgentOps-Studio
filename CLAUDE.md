@@ -1,6 +1,7 @@
 # AgentOps Studio — AI Company Operating System
 
 > **Version history**
+> - [2026-10-02 09:50] v2.3 — CEO Agent — Cost reduction: Voice row now says the LLM comes from `LLM_MODEL` (default GPT-4o-mini on branch `feat/cost-reduction`); Current Project State adds the cost work (`gaps.md` § 14). Operating framework unchanged.
 > - [2026-10-01 10:15] v2.2 — CEO Agent — Current Project State: added the launch-readiness checklist result (S-HARDEN Wave 5, `gaps.md` § 12) and PROPOSED decision D6 on the agent setup (`gaps.md` § 13). Operating framework unchanged until D6 is decided.
 > - [2026-09-30 10:40] v2.1 — CEO Agent — Current Project State: added go-to-market direction (AI implementation offer, PROPOSED), post-S-HARDEN sprint sequence, brand palette; Execution System table lists `AI-Implementation-Offer-Plan.md`. Operating framework unchanged.
 > - [2026-09-29 22:57] v2.0 — CEO Agent — Facts refreshed after full codebase audit: tech stack, infra (Render + Vercel, not AWS ECS), voice pipeline (no ElevenLabs by default), active task (S-HARDEN H1.1), new Current Project State section, gaps register added to Execution System. Operating framework unchanged (founder decision).
@@ -365,7 +366,7 @@ Promote sub-role to its own agent when:
 |---|---|
 | Frontend | React 19 · Vite 6 · TailwindCSS 4 (+ inline-style dark theme) · Radix UI primitives (no shadcn/ui components) · Redux Toolkit · TanStack Query · React Router 7 · RHF + Zod · axios · `@vapi-ai/web` (browser test calls) · Sentry |
 | Backend | Express 4 · Node.js 20+ · TypeScript (strict) · Mongoose 8 / MongoDB Atlas · ioredis / Redis Cloud · BullMQ 5 · Zod · Stripe · Resend (email) · Winston · Vitest + mongodb-memory-server |
-| Voice | Vobiz SIP trunk (shared number pool) → Vapi assistant → Deepgram STT (nova-2 / nova-3 multi) → GPT-4o → TTS: OpenAI `nova` by default; Vapi, Deepgram Aura, ElevenLabs, PlayHT and Azure voices selectable. Live reference agent (Ritu Electricals) uses Vapi voice Naina. Tools: `submit_order`, `end_receptionist_call`; structured output schema per call |
+| Voice | Vobiz SIP trunk (shared number pool) → Vapi assistant → Deepgram STT (nova-2 / nova-3 multi) → LLM from `LLM_MODEL` / `config/llm.ts` (default GPT-4o-mini on `feat/cost-reduction`; live Ritu assistant still GPT-4o until COST-06) → TTS: OpenAI `nova` by default; Vapi, Deepgram Aura, ElevenLabs, PlayHT and Azure voices selectable. Live reference agent (Ritu Electricals) uses Vapi voice Naina. Tools: `submit_order`, `end_receptionist_call`; structured output schema per call |
 | Languages | English · Hindi (auto-detect) · Punjabi (auto-detect) |
 | Infra (actual) | Backend: Render web service (free plan, Singapore, keep-alive self-ping) · Frontend: Vercel · MongoDB Atlas · Redis Cloud free tier (30-connection cap → only the callReport worker runs) · GitHub Actions CI. `deploy-backend.yml` still targets AWS ECS and is not the live path |
 | Docs | `main-project-docs/` — gaps.md (current gaps register), PRD, TAD, Feature Tickets, Timeline, Roadmap (PRD/TAD/Timeline/Roadmap describe the original plan, not the as-built system — see gaps.md DOC-01) |
@@ -380,6 +381,7 @@ Promote sub-role to its own agent when:
 - **Launch-readiness checklist (2026-10-01)**: of 20 standard pre-launch items, 9 are covered, 9 partial, 2 missing (no web analytics; a 211 KB-gzip entry bundle, mostly Sentry). Also: no Terms consent at signup, public source maps. Tracked as SEC-13 + FE-09…18 (`gaps.md` § 12) and S-HARDEN **Wave 5** (H5.1–H5.8, frontend, parallel to Waves 1–2).
 - **Agent setup (PROPOSED, founder decision D6)**: the `agents/*.md` personas are not installed as Claude Code subagents (`.claude/agents/` is empty). Proposal: convert them, add 3–4 specialists (AppSec, code reviewer), chain per task type instead of dispatching all 11 every turn (`gaps.md` § 13). Until D6, follow the framework below as written.
 - **Go-to-market (PROPOSED, awaiting founder D1/D2)**: sell AgentOps Studio as a managed "AI implementation" offer (setup fee + monthly plan) to **one beachhead niche**; clients pay for missed calls, follow-up and booking handled, with their CRM/Sheets/calendar connected through n8n. Plan and specs: `main-project-docs/AI-Implementation-Offer-Plan.md`; new gaps: `gaps.md` § 11 (GTM, INT, ROI, OFR).
+- **Cost reduction (2026-10-02, branch `feat/cost-reduction`)**: model registry (GPT-4o-mini default), compact prompt + lookup tools for large catalogs/KBs, premium voices Pro-only, real per-call cost on the margin page. Staying on Vapi; own voice platform revisits at ~20–30k min/month. `gaps.md` § 14 (COST-01…07).
 - **Sprint order**: S-HARDEN (active, 0 P0s) → S-NICHE (beachhead template) → S-IMPLEMENT (outgoing webhooks, n8n templates, booking, follow-up) → S-PROOF (ROI report, billable setup fee, delivery SOP, demo, first 3 clients). Do not start integrations or a second niche before S-HARDEN closes.
 - **Brand**: "Tiffany × Dark Gray" — `brand-400` #21F1A8 on `slate-900` #171717, dark-first UI; `surface` #1f1f1f / `surface-2` #262626 for cards; tokens in `frontend/src/styles/index.css`. Red/amber/green are reserved for status; filled mint buttons use dark text.
 - **Roles**: Owner / Member (+ per-section permissions). There is no Admin role in the data model.
@@ -421,7 +423,7 @@ Promote sub-role to its own agent when:
 ### Atomic Task Execution
 Every session executes the next Atomic Task in the WBS (see EXECUTION-FRAMEWORK.md).
 Atomic Task ID format: `L[layer].F[feature].M[module].AT[n]`
-Current active: **S-HARDEN H1.2** — SEC-02: rotate the super-admin password and move script credentials to env (H1.1 + H1.7 code done on branch `harden/h1.1-h1.7`, awaiting Vapi tool secret before merge; see `TASK-BOARD.md` → Active Sprint). The L-series WBS in EXECUTION-FRAMEWORK.md is historical; new tasks use `H<wave>.<n>` IDs mapped to gap IDs.
+Current active: **S-HARDEN H1.2** — SEC-02: rotate the super-admin password and move script credentials to env (H1.1 + H1.7 merged to `dev` via PR #6; set the Vapi tool secret before it reaches production; see `TASK-BOARD.md` → Active Sprint). The L-series WBS in EXECUTION-FRAMEWORK.md is historical; new tasks use `H<wave>.<n>` IDs mapped to gap IDs.
 
 ### Documentation Update Rule
 After every session, append (never overwrite) to the relevant doc:

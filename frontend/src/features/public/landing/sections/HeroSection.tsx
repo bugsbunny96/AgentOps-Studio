@@ -67,7 +67,7 @@ export function HeroSection() {
             <p style={{ fontSize: 16, color: color.text2, lineHeight: 1.65, marginBottom: 28, maxWidth: 440 }}>
               AgentOps Studio deploys AI receptionists that speak{' '}
               <strong style={{ color: color.text1 }}>Hindi, English &amp; Punjabi</strong> — answering calls,
-              qualifying leads, and booking appointments 24/7. Live in 30 minutes.
+              answering questions, qualifying leads and taking orders — 24/7. Live in 30 minutes.
             </p>
           </Reveal>
 
@@ -80,7 +80,7 @@ export function HeroSection() {
                 Start Free Trial
               </PrimaryButton>
               <a
-                href="#how-it-works"
+                href="#voices"
                 style={{
                   display: 'inline-flex', alignItems: 'center', gap: 6,
                   padding: '12px 18px', borderRadius: 8, fontSize: 14, fontWeight: 600,
@@ -93,7 +93,7 @@ export function HeroSection() {
                   <circle cx="8" cy="8" r="6" stroke="currentColor" strokeWidth="1.5" />
                   <path d="M6.5 5.5l4 2.5-4 2.5V5.5z" fill="currentColor" />
                 </svg>
-                Watch Demo
+                Hear the voices
               </a>
             </div>
           </Reveal>

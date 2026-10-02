@@ -8,12 +8,13 @@ import { Pill, Reveal } from '../primitives';
  * never "Partnered with" — no such relationship is confirmed.
  */
 const PROVIDERS = [
+  { name: 'Vapi', sub: 'Voice orchestration' },
   { name: 'GPT-4o', sub: 'OpenAI' },
-  { name: 'ElevenLabs', sub: 'Studio TTS' },
   { name: 'Deepgram', sub: 'Speech-to-text' },
-  { name: 'Cartesia', sub: 'Low-latency TTS' },
-  { name: 'PlayHT', sub: 'Voice cloning' },
-  { name: 'Azure Speech', sub: 'Enterprise TTS' },
+  { name: 'OpenAI', sub: 'Voices' },
+  { name: 'ElevenLabs', sub: 'Voices' },
+  { name: 'PlayHT', sub: 'Voices' },
+  { name: 'Azure Speech', sub: 'Voices' },
 ];
 
 export function PoweredBySection() {
