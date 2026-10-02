@@ -34,6 +34,7 @@ import {
 } from '../organization/organization.model';
 import { vapiCreatePhoneNumber, vapiDeletePhoneNumber } from '../agents/vapi.service';
 import { isVobizApiConfigured, listAccountNumbers, type VobizPhoneNumber } from './vobiz.client';
+import { membershipFilter } from '../../utils/requestContext';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -86,7 +87,7 @@ function notConfigured(): AppError {
 }
 
 async function getMembership(userId: string) {
-  const membership = await MembershipModel.findOne({ userId }).populate<{
+  const membership = await MembershipModel.findOne(membershipFilter(userId)).populate<{
     organizationId: IOrganization;
   }>('organizationId');
   if (!membership || !membership.organizationId) throw NotFound('Organization');

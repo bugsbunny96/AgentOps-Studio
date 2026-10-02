@@ -9,11 +9,12 @@ import {
   getCallsByDayHandler,
   searchTranscriptsHandler,
 } from './call.controller';
+import { orgContext, requirePermission } from '../../middleware/orgContext';
 
 export const callsRouter = Router();
 
 // All call routes require authentication
-callsRouter.use(authenticate);
+callsRouter.use(authenticate, orgContext);   // SEC-05
 
 /**
  * GET /api/v1/calls
@@ -35,7 +36,7 @@ callsRouter.get('/export', exportCallsHandler);
  * Body: { phoneNumber: string (E.164), agentId: string }
  * MUST be registered before /:id.
  */
-callsRouter.post('/initiate', initiateCallHandler);
+callsRouter.post('/initiate', requirePermission('calls'), initiateCallHandler);
 
 /**
  * GET /api/v1/calls/stats

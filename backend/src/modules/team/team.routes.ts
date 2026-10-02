@@ -11,6 +11,7 @@ import {
   inviteInfoHandler,
 } from './team.controller';
 import { orgAdminAccessLogHandler } from '../superadmin/superadmin.controller';
+import { orgContext } from '../../middleware/orgContext';
 
 const router = Router();
 
@@ -26,20 +27,20 @@ router.get('/invite-info/:token', inviteInfoHandler);
 router.use(authenticate);
 
 // ── Members ──────────────────────────────────────────────────────────────────
-router.get('/',                                 listTeamHandler);
-router.patch('/members/:id/permissions',        updateMemberPermissionsHandler);
-router.delete('/members/:id',                   removeMemberHandler);
+router.get('/',                                 orgContext, listTeamHandler);
+router.patch('/members/:id/permissions',        orgContext, updateMemberPermissionsHandler);
+router.delete('/members/:id',                   orgContext, removeMemberHandler);
 
 // ── Invitations ───────────────────────────────────────────────────────────────
-router.post('/invite',                inviteMemberHandler);
-router.post('/invitations/:id/resend', resendInvitationHandler);
-router.delete('/invitations/:id',     revokeInvitationHandler);
+router.post('/invite',                orgContext, inviteMemberHandler);
+router.post('/invitations/:id/resend', orgContext, resendInvitationHandler);
+router.delete('/invitations/:id',     orgContext, revokeInvitationHandler);
 
 // ── Accept (user must be logged in to bind the invite to their account) ───────
 router.post('/accept/:token',         acceptInvitationHandler);
 
 // ── SA Access Log — recent super-admin sessions for this org (transparency) ──
 // Returns timestamps + action labels only; SA email is intentionally omitted.
-router.get('/admin-access-log',       orgAdminAccessLogHandler);
+router.get('/admin-access-log',       orgContext, orgAdminAccessLogHandler);
 
 export default router;

@@ -16,11 +16,12 @@ import {
   callsPerDayHandler,
   topCallersHandler,
 } from './analytics.controller';
+import { orgContext } from '../../middleware/orgContext';
 
 const router = Router();
 
-router.get('/overview',       authenticate, overviewHandler);
-router.get('/calls-per-day',  authenticate, callsPerDayHandler);
-router.get('/top-callers',    authenticate, topCallersHandler);
+router.get('/overview',       authenticate, orgContext, overviewHandler);
+router.get('/calls-per-day',  authenticate, orgContext, callsPerDayHandler);
+router.get('/top-callers',    authenticate, orgContext, topCallersHandler);
 
 export { router as analyticsRouter };

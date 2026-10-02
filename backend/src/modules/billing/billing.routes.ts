@@ -20,6 +20,7 @@ import {
   createPortalSessionHandler,
   createPremiumVoiceAddonCheckoutHandler,
 } from './billing.controller';
+import { orgContext } from '../../middleware/orgContext';
 
 export const billingRouter = Router();
 
@@ -43,6 +44,7 @@ billingRouter.post(
   '/checkout',
   express.json(),
   authenticate,
+  orgContext,   // SEC-05: honour X-Organization-ID (service stays Owner-only)
   createCheckoutSessionHandler,
 );
 
@@ -56,6 +58,7 @@ billingRouter.post(
   '/portal',
   express.json(),
   authenticate,
+  orgContext,   // SEC-05: honour X-Organization-ID (service stays Owner-only)
   createPortalSessionHandler,
 );
 
@@ -67,6 +70,7 @@ billingRouter.post(
   '/addons/premium-voices/checkout',
   express.json(),
   authenticate,
+  orgContext,   // SEC-05: honour X-Organization-ID (service stays Owner-only)
   createPremiumVoiceAddonCheckoutHandler,
 );
 
@@ -74,4 +78,4 @@ billingRouter.post(
  * GET /api/v1/billing/status
  * Return current plan + usage. Owner-only.
  */
-billingRouter.get('/status', authenticate, getBillingStatusHandler);
+billingRouter.get('/status', authenticate, orgContext, getBillingStatusHandler);

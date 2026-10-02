@@ -38,13 +38,14 @@ import { NotFound, BadRequest, Forbidden, Conflict } from '../../middleware/erro
 import { logger } from '../../utils/logger';
 import { PLAN_LIMITS } from '../billing/billing.service';
 import { computeTrialState } from '../billing/trial.service';
+import { membershipFilter } from '../../utils/requestContext';
 
 // ─── Internal helpers ─────────────────────────────────────────────────────────
 
 /** Resolve org + caller's membership in one round-trip. */
 async function resolveCallerMembership(userId: string) {
   const membership = await MembershipModel
-    .findOne({ userId })
+    .findOne(membershipFilter(userId))
     .populate<{ organizationId: { _id: mongoose.Types.ObjectId; name: string } }>('organizationId')
     .lean();
 
