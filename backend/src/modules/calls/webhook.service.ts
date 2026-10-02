@@ -26,11 +26,11 @@ import { env }    from '../../config/env';
 import { logger } from '../../utils/logger';
 import { enqueueFollowUpAlert } from '../../jobs/followUpAlert.queue';
 import type { VapiCostBreakdown } from '../agents/vapi.service';
+import { currentMonthMinutesUsed, startOfMonthUTC } from '../../utils/callMinutes';
 
 // ─── Helper: start of current UTC month ──────────────────────────────────────
 function startOfCurrentMonthUTC(): Date {
-  const now = new Date();
-  return new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1));
+  return startOfMonthUTC();
 }
 
 // ─── Shared-secret verification ───────────────────────────────────────────────
@@ -297,7 +297,8 @@ export async function handleAssistantRequest(
     );
     const effectivePlan = trialState.isInTrial ? 'starter' : basePlan;
     const minutesLimit  = getEffectiveCallMinutesLimit(basePlan, trialState.isInTrial);
-    const minutesUsed   = org.callMinutesUsed ?? 0;
+    // BIZ-01: a counter from a previous month counts as 0 (reset worker may be off)
+    const minutesUsed   = currentMonthMinutesUsed(org);
 
     if (minutesLimit !== Infinity && minutesUsed >= minutesLimit) {
       logger.warn('assistant-request: call minutes limit exceeded — blocking call', {

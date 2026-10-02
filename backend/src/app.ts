@@ -30,6 +30,7 @@ import {
   publicEnterpriseLinkHandler,
   publicOrgBrandingHandler,
 } from './modules/superadmin/superadmin.controller';
+import { isRateLimitExempt } from './middleware/rateLimitExempt';
 
 const app = express();
 
@@ -82,7 +83,9 @@ const skipInTest = () => process.env.NODE_ENV === 'test';
 app.use('/api/v1', rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 100,
-  skip: skipInTest,
+  // CORE-03: Vapi webhook + tool routes are secret-authenticated and come from
+  // Vapi's shared IPs — never throttle them per IP.
+  skip: (req) => skipInTest() || isRateLimitExempt(req.originalUrl),
   standardHeaders: true,
   legacyHeaders: false,
   message: { success: false, code: 'RATE_LIMITED', message: 'Too many requests. Try again shortly.' },

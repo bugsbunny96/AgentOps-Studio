@@ -21,6 +21,7 @@ import { BadRequest, NotFound } from '../../middleware/errorHandler';
 import { logger } from '../../utils/logger';
 import { computeTrialState } from './trial.service';
 import { getPremiumVoiceAccess, getPaidPlan, PREMIUM_VOICE_ADDON_PRICE_INR, type PremiumVoiceAccess } from '../agents/voice-pricing';
+import { currentMonthMinutesUsed } from '../../utils/callMinutes';
 
 // ─── Plan Limits (shared with kb.service + team.service + webhook.service) ────
 //
@@ -548,7 +549,7 @@ export async function getBillingStatus(userId: string): Promise<BillingStatus> {
       limit: limits.teamMembers === Infinity ? null : limits.teamMembers,
     },
     callMinutes: {
-      used:    orgData.callMinutesUsed ?? 0,
+      used:    currentMonthMinutesUsed(orgData, now), // BIZ-01
       limit:   callMinutesLimit === Infinity ? null : callMinutesLimit,
       resetAt: nextResetAt.toISOString(),
     },

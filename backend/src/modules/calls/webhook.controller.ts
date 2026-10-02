@@ -8,6 +8,7 @@ import {
   type VapiEndOfCallReportEvent,
 } from './webhook.service';
 import { callReportQueue } from '../../jobs/callReport.queue';
+import { toCallReportJobData } from '../../jobs/callReport.mapper';
 import { logger } from '../../utils/logger';
 
 /**
@@ -88,19 +89,7 @@ export async function vapiWebhookHandler(
     if (msgType === 'end-of-call-report') {
       res.status(200).json({ success: true });
       const ev = body.message as VapiEndOfCallReportEvent;
-      callReportQueue.add('process-end-of-call', {
-        vapiCallId:     ev.call.id,
-        assistantId:    ev.call.assistantId,
-        callType:       ev.call.type,
-        callerNumber:   ev.call.customer?.number,
-        endedReason:    ev.call.endedReason,
-        durationSeconds: ev.durationSeconds,
-        recordingUrl:   ev.recordingUrl,
-        transcript:     ev.transcript,
-        messages:       ev.messages,
-        summary:        ev.summary,
-        cost:           ev.cost,
-      }).catch((err: unknown) => {
+      callReportQueue.add('process-end-of-call', toCallReportJobData(ev)).catch((err: unknown) => {
         logger.error('Failed to enqueue call report job', {
           vapiCallId: ev.call.id,
           error: err instanceof Error ? err.message : String(err),
