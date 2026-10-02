@@ -1,77 +1,51 @@
 /**
  * 🟣 Test Engineer — AuthGuard tests
- * Verifies: loading state, unauthenticated redirect, authenticated render
+ * Verifies: loading state, unauthenticated redirect, authenticated render.
+ * useAuth is mocked with per-test state (the guard only reads these three fields).
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { screen } from '@testing-library/react';
 import { renderWithProviders } from '@/test-utils/renderWithProviders';
 import { AuthGuard } from '@/routes/guards/AuthGuard';
-import type { RootState } from '@/store';
 
-// Mock the hook — we control the session behavior per test
+const { authState, verifySession } = vi.hoisted(() => ({
+  authState: { isAuthenticated: false, isLoading: false },
+  verifySession: vi.fn(),
+}));
+
 vi.mock('@/hooks/useAuth', () => ({
-  useAuth: () => ({
-    isAuthenticated: false,
-    isLoading: false,
-    verifySession: vi.fn(),
-    login: vi.fn(),
-    logout: vi.fn(),
-    user: null,
-    currentOrg: null,
-    currentRole: null,
-  }),
+  useAuth: () => ({ ...authState, verifySession }),
 }));
 
 const ProtectedContent = () => <div>Protected Content</div>;
+const renderGuard = () => renderWithProviders(<AuthGuard><ProtectedContent /></AuthGuard>);
 
 describe('AuthGuard', () => {
-  describe('when loading', () => {
-    it('shows a spinner', () => {
-      const preloadedState: Partial<RootState> = {
-        auth: { user: null, isAuthenticated: false, isLoading: true },
-      };
-
-      renderWithProviders(
-        <AuthGuard><ProtectedContent /></AuthGuard>,
-        { preloadedState }
-      );
-
-      // Spinner is an animated div — check it renders (no content)
-      expect(screen.queryByText('Protected Content')).not.toBeInTheDocument();
-    });
+  beforeEach(() => {
+    verifySession.mockClear();
   });
 
-  describe('when not authenticated', () => {
-    it('does not render protected content', () => {
-      const preloadedState: Partial<RootState> = {
-        auth: { user: null, isAuthenticated: false, isLoading: false },
-      };
-
-      renderWithProviders(
-        <AuthGuard><ProtectedContent /></AuthGuard>,
-        { preloadedState }
-      );
-
-      expect(screen.queryByText('Protected Content')).not.toBeInTheDocument();
-    });
+  it('verifies the session on mount', () => {
+    Object.assign(authState, { isAuthenticated: false, isLoading: true });
+    renderGuard();
+    expect(verifySession).toHaveBeenCalledTimes(1);
   });
 
-  describe('when authenticated', () => {
-    it('renders children', () => {
-      const preloadedState: Partial<RootState> = {
-        auth: {
-          user: { id: '1', name: 'Test', email: 'test@test.com', isVerified: true, status: 'Active', createdAt: '' },
-          isAuthenticated: true,
-          isLoading: false,
-        },
-      };
+  it('shows a spinner (no content) while loading', () => {
+    Object.assign(authState, { isAuthenticated: false, isLoading: true });
+    renderGuard();
+    expect(screen.queryByText('Protected Content')).not.toBeInTheDocument();
+  });
 
-      renderWithProviders(
-        <AuthGuard><ProtectedContent /></AuthGuard>,
-        { preloadedState }
-      );
+  it('does not render protected content when not authenticated', () => {
+    Object.assign(authState, { isAuthenticated: false, isLoading: false });
+    renderGuard();
+    expect(screen.queryByText('Protected Content')).not.toBeInTheDocument();
+  });
 
-      expect(screen.getByText('Protected Content')).toBeInTheDocument();
-    });
+  it('renders children when authenticated', () => {
+    Object.assign(authState, { isAuthenticated: true, isLoading: false });
+    renderGuard();
+    expect(screen.getByText('Protected Content')).toBeInTheDocument();
   });
 });

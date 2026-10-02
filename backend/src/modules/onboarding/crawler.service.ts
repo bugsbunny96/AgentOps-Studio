@@ -412,7 +412,7 @@ function compressPageText(rawText: string, category: string): string {
     /^\+?\d[\d\s\-().]{5,}$/,                         // phone numbers as standalone lines
     /^[\w.+-]+@[\w.-]+\.\w{2,6}$/,                    // email addresses as standalone lines
     /\{"@/,                                            // JSON-LD remnants
-    /^\s*[\|•·–—]\s*$/,                               // decoration-only lines
+    /^\s*[|•·–—]\s*$/,                               // decoration-only lines
   ];
 
   // 3. Score and filter lines

@@ -16,7 +16,6 @@ import { SubmitOrderSchema, type SubmitOrderDto } from './order.validation';
 import { OrganizationModel } from '../organization/organization.model';
 import { VoiceAgentModel } from '../agents/agent.model';
 import { logger } from '../../utils/logger';
-import { env } from '../../config/env';
 
 // ── Order ID Generator ─────────────────────────────────────────────────────────
 

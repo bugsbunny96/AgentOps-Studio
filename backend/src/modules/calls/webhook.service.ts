@@ -269,7 +269,7 @@ export async function handleAssistantRequest(
     event.call.phoneNumberId ?? event.call.phoneNumber?.id;
 
   // ── Look up org by Vapi phone number ID ───────────────────────────────────
-  let org = phoneNumberId
+  const org = phoneNumberId
     ? await OrganizationModel.findOne({ vapiPhoneNumberId: phoneNumberId })
     : null;
 
