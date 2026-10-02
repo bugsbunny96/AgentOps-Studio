@@ -1,7 +1,11 @@
 import axios, { AxiosError, InternalAxiosRequestConfig } from 'axios';
 
-// Always include /api/v1 suffix so callers use short paths like /auth/me
-const BASE_URL = `${import.meta.env.VITE_API_URL ?? ''}/api/v1`;
+// Always include /api/v1 suffix so callers use short paths like /auth/me.
+// CORE-05: production builds always call the API on their OWN origin
+// (/api/* is rewritten to Render by vercel.json), so the auth cookies are
+// first-party and SameSite=Strict works. Dev uses VITE_API_URL or the Vite proxy.
+const API_ORIGIN = import.meta.env.PROD ? '' : (import.meta.env.VITE_API_URL ?? '');
+const BASE_URL = `${API_ORIGIN}/api/v1`;
 
 export const api = axios.create({
   baseURL: BASE_URL,
