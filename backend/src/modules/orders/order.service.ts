@@ -169,12 +169,7 @@ export async function updateOrderStatus(
  * Lookup order:
  *   1. OrganizationModel.vapiAssistantId  ← set by provisionAgent()
  *   2. VoiceAgentModel.vapiAssistantId    ← also set by provisionAgent()
- *   3. Single-org POC fallback            ← if only one org exists in the DB,
- *                                            use it (handles manually-created
- *                                            Vapi assistants not provisioned
- *                                            through the app). Logs a warning.
- *                                            REMOVE this fallback in production
- *                                            when multi-tenancy is required.
+ *   Unknown assistant → null (SEC-12). Never writes to the org.
  */
 export async function resolveOrgByAssistantId(
   vapiAssistantId: string,
@@ -187,30 +182,10 @@ export async function resolveOrgByAssistantId(
   const agent = await VoiceAgentModel.findOne({ vapiAssistantId }).select('organizationId');
   if (agent) return agent.organizationId as mongoose.Types.ObjectId;
 
-  // 3. POC fallback: if there is exactly one org in the system, use it.
-  //    This handles the case where a Vapi assistant was created manually in the
-  //    Vapi dashboard and its ID was never stored in MongoDB via provisionAgent.
-  //    Safe only in single-tenant deployments — remove when going multi-tenant.
-  const orgCount = await OrganizationModel.countDocuments();
-  if (orgCount === 1) {
-    const singleOrg = await OrganizationModel.findOne();
-    if (singleOrg) {
-      logger.warn(
-        'resolveOrgByAssistantId: vapiAssistantId not found in DB — using single-org POC fallback. ' +
-        'Run provisionAgent() or update org.vapiAssistantId in MongoDB to make this permanent.',
-        { vapiAssistantId, orgId: singleOrg._id.toString() },
-      );
-      // Persist the mapping so future lookups hit the fast path (no more fallback)
-      await OrganizationModel.findByIdAndUpdate(singleOrg._id, {
-        $set: { vapiAssistantId },
-      });
-      logger.info('resolveOrgByAssistantId: auto-saved vapiAssistantId to org', {
-        vapiAssistantId,
-        orgId: singleOrg._id.toString(),
-      });
-      return singleOrg._id as mongoose.Types.ObjectId;
-    }
-  }
-
+  // SEC-12: no "single-org" fallback. It wrote whatever assistantId it was
+  // given onto the only org, which (2026-10-02) replaced the live assistant ID
+  // and broke inbound routing. Unknown assistants are rejected; register the
+  // assistant via provisionAgent / scripts/restore-org-assistant-id.ts instead.
+  logger.warn('resolveOrgByAssistantId: unknown vapiAssistantId — rejecting', { vapiAssistantId });
   return null;
 }
