@@ -7,6 +7,7 @@ import {
   completeOnboardingHandler,
   getCrawlStatusHandler,
 } from './onboarding.controller';
+import { orgContext, requireOwner } from '../../middleware/orgContext';
 
 export const onboardingRouter = Router();
 
@@ -20,7 +21,7 @@ onboardingRouter.get('/crawl-status', authenticate, getCrawlStatusHandler);
 onboardingRouter.post('/org', authenticate, createOrgHandler);
 
 // PATCH /api/v1/onboarding/org — Steps 2-4: learn / configure / customize
-onboardingRouter.patch('/org', authenticate, updateOrgHandler);
+onboardingRouter.patch('/org', authenticate, orgContext, requireOwner, updateOrgHandler);   // SEC-05
 
 // POST /api/v1/onboarding/complete — Step 5: mark onboarding as COMPLETED
-onboardingRouter.post('/complete', authenticate, completeOnboardingHandler);
+onboardingRouter.post('/complete', authenticate, orgContext, requireOwner, completeOnboardingHandler);

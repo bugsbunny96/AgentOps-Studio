@@ -22,6 +22,7 @@ import { logger } from '../../utils/logger';
 import { computeTrialState } from './trial.service';
 import { getPremiumVoiceAccess, getPaidPlan, PREMIUM_VOICE_ADDON_PRICE_INR, type PremiumVoiceAccess } from '../agents/voice-pricing';
 import { currentMonthMinutesUsed } from '../../utils/callMinutes';
+import { membershipFilter } from '../../utils/requestContext';
 
 // ─── Plan Limits (shared with kb.service + team.service + webhook.service) ────
 //
@@ -213,7 +214,7 @@ function getStripe(): Stripe {
 
 async function resolveOwnerOrgForBilling(userId: string) {
   const membership = await MembershipModel
-    .findOne({ userId, role: 'Owner' })
+    .findOne(membershipFilter(userId, { role: 'Owner' as const }))
     .populate<{ organizationId: InstanceType<typeof OrganizationModel> }>('organizationId')
     .lean();
 

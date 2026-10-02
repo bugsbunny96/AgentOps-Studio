@@ -19,6 +19,8 @@ import { MembershipModel } from '../organization/organization.model';
 import { env } from '../../config/env';
 import { logger } from '../../utils/logger';
 import * as orderService from './order.service';
+import { membershipFilter } from '../../utils/requestContext';
+import { orgContext, requirePermission } from '../../middleware/orgContext';
 
 const router = Router();
 
@@ -224,7 +226,7 @@ router.post('/submit', async (req: Request, res: Response, next: NextFunction) =
 // ── Helper: resolve authenticated user's orgId ────────────────────────────────
 
 async function resolveOrgId(userId: string): Promise<mongoose.Types.ObjectId> {
-  const membership = await MembershipModel.findOne({ userId });
+  const membership = await MembershipModel.findOne(membershipFilter(userId));
   if (!membership) throw new Error('Organization not found');
   return membership.organizationId as mongoose.Types.ObjectId;
 }
@@ -234,7 +236,7 @@ async function resolveOrgId(userId: string): Promise<mongoose.Types.ObjectId> {
 
 // ── GET /api/v1/orders ────────────────────────────────────────────────────────
 
-router.get('/', authenticate, async (req: Request, res: Response, next: NextFunction) => {
+router.get('/', authenticate, orgContext, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const orgId = await resolveOrgId(req.userId!);
     const page  = parseInt(typeof req.query.page === 'string' ? req.query.page : '1', 10) || 1;
@@ -253,7 +255,7 @@ router.get('/', authenticate, async (req: Request, res: Response, next: NextFunc
 
 // ── GET /api/v1/orders/:orderId ───────────────────────────────────────────────
 
-router.get('/:orderId', authenticate, async (req: Request, res: Response, next: NextFunction) => {
+router.get('/:orderId', authenticate, orgContext, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const orgId = await resolveOrgId(req.userId!);
     const order = await orderService.getOrderById(orgId, req.params.orderId as string);
@@ -270,7 +272,7 @@ router.get('/:orderId', authenticate, async (req: Request, res: Response, next: 
 
 // ── PATCH /api/v1/orders/:orderId/status ──────────────────────────────────────
 
-router.patch('/:orderId/status', authenticate, async (req: Request, res: Response, next: NextFunction) => {
+router.patch('/:orderId/status', authenticate, orgContext, requirePermission('calls'), async (req: Request, res: Response, next: NextFunction) => {
   try {
     const orgId = await resolveOrgId(req.userId!);
     const { status } = req.body;

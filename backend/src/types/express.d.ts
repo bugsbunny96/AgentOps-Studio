@@ -8,9 +8,9 @@ declare namespace Express {
     userId?: string;
     /** Authenticated user's email — set by verifyAuth middleware */
     userEmail?: string;
-    /** Active organization's MongoDB ObjectId (string form) — set by validateOrganization middleware */
+    /** Active organization's MongoDB ObjectId (string form) — set by orgContext middleware */
     orgId?: string;
-    /** Active user's role within the current organization — set by validateOrganization middleware */
+    /** Active user's role within the current organization — set by orgContext middleware */
     userRole?: 'Owner' | 'Admin' | 'Member';
     /**
      * The plan that governs feature access for the current request.
@@ -18,5 +18,7 @@ declare namespace Express {
      * Set by the trialGate middleware.
      */
     effectivePlan?: 'free' | 'starter' | 'growth' | 'enterprise';
+    /** Member's per-section access (Owners have full access) — set by orgContext */
+    memberPermissions?: { agents: boolean; calls: boolean; knowledgeBase: boolean; team: boolean };
   }
 }

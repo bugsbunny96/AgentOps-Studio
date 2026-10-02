@@ -5,10 +5,11 @@ import {
   getAssignedNumberHandler,
   listAvailableNumbersHandler,
 } from './telephony.controller';
+import { orgContext, requireOwner } from '../../middleware/orgContext';
 
 export const telephonyRouter = Router();
 
-telephonyRouter.use(authenticate);
+telephonyRouter.use(authenticate, orgContext);   // SEC-05
 
 // GET  /api/v1/telephony/numbers/available — pick list for onboarding Step 5 / Settings
 telephonyRouter.get('/numbers/available', listAvailableNumbersHandler);
@@ -17,4 +18,4 @@ telephonyRouter.get('/numbers/available', listAvailableNumbersHandler);
 telephonyRouter.get('/number', getAssignedNumberHandler);
 
 // POST /api/v1/telephony/number — { e164 } — assign + import into Vapi
-telephonyRouter.post('/number', claimNumberHandler);
+telephonyRouter.post('/number', requireOwner, claimNumberHandler);

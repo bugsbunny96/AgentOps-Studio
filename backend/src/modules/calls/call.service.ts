@@ -12,6 +12,7 @@ import { VoiceAgentModel } from '../agents/agent.model';
 import { vapiInitiateOutboundCall } from '../agents/vapi.service';
 import { CallModel, TranscriptModel, SummaryModel } from './call.model';
 import { BadRequest, NotFound, UnprocessableEntity } from '../../middleware/errorHandler';
+import { membershipFilter } from '../../utils/requestContext';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -52,7 +53,7 @@ export interface SearchTranscriptsQuery {
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 async function getOrgId(userId: string): Promise<string> {
-  const membership = await MembershipModel.findOne({ userId }).populate<{
+  const membership = await MembershipModel.findOne(membershipFilter(userId)).populate<{
     organizationId: IOrganization;
   }>('organizationId');
   if (!membership) throw NotFound('Organization');
@@ -195,7 +196,7 @@ export async function initiateCall(userId: string, payload: InitiateCallPayload)
   }
 
   // 2. Resolve org
-  const membership = await MembershipModel.findOne({ userId }).populate<{
+  const membership = await MembershipModel.findOne(membershipFilter(userId)).populate<{
     organizationId: IOrganization;
   }>('organizationId');
   if (!membership) throw NotFound('Organization');

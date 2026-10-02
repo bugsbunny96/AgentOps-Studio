@@ -11,11 +11,12 @@ import {
   linkPhoneNumberHandler,
   getPhoneNumberHandler,
 } from './agent.controller';
+import { orgContext, requireOwner, requirePermission } from '../../middleware/orgContext';
 
 export const agentsRouter = Router();
 
 // All routes require a valid session
-agentsRouter.use(authenticate);
+agentsRouter.use(authenticate, orgContext);   // SEC-05: org + role on every route
 
 /**
  * GET /api/v1/agents
@@ -35,7 +36,7 @@ agentsRouter.get('/config', getAgentConfigHandler);
  * Idempotent — creates Vapi assistant + local record on first call,
  * returns cached data thereafter.
  */
-agentsRouter.post('/provision', provisionAgentHandler);
+agentsRouter.post('/provision', requireOwner, provisionAgentHandler);
 
 /**
  * GET /api/v1/agents/voice-preview?provider=openai&voiceId=nova
@@ -56,7 +57,7 @@ agentsRouter.get('/voice-preview', voicePreviewHandler);
  * Used by the assistant-request webhook to route inbound calls.
  */
 agentsRouter.get('/phone-number',  getPhoneNumberHandler);
-agentsRouter.post('/phone-number', linkPhoneNumberHandler);
+agentsRouter.post('/phone-number', requireOwner, linkPhoneNumberHandler);
 
 /**
  * GET   /api/v1/agents/:id         — single voice agent by MongoDB _id
@@ -67,5 +68,5 @@ agentsRouter.post('/phone-number', linkPhoneNumberHandler);
  * MUST remain after all literal-segment routes.
  */
 agentsRouter.get('/:id',          getAgentByIdHandler);
-agentsRouter.patch('/:id',        updateAgentVoiceHandler);
-agentsRouter.patch('/:id/config', updateAgentConfigHandler);
+agentsRouter.patch('/:id',        requirePermission('agents'), updateAgentVoiceHandler);
+agentsRouter.patch('/:id/config', requirePermission('agents'), updateAgentConfigHandler);

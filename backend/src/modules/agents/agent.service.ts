@@ -24,9 +24,10 @@ import { generateSystemPrompt, buildFirstMessage, buildEndCallMessage } from './
 import { buildAgentPrompt, buildVapiModel, defaultToolIds } from './assistant-config';
 import { DEFAULT_VOICE, getFeaturePlan, getPremiumVoiceAccess, getVoiceTier, isVoiceAllowedForOrg } from './voice-pricing';
 import { env } from '../../config/env';
-import { Forbidden, NotFound } from '../../middleware/errorHandler';
+import { BadRequest, Conflict, Forbidden, NotFound } from '../../middleware/errorHandler';
 import { logger } from '../../utils/logger';
 import type { UpdateAgentConfigDto } from './agent.validation';
+import { membershipFilter } from '../../utils/requestContext';
 
 // Re-export generateSystemPrompt so existing importers (kb.service.ts → prompt.utils.ts) are unaffected.
 // kb.service.ts already imports directly from prompt.utils now — this export is for any other callers.
@@ -192,7 +193,7 @@ function allowedPreferredVoice(org: IOrganization): { provider: IVoiceAgent['voi
  * Safe to call on every ActivatePage mount.
  */
 export async function provisionAgent(userId: string) {
-  const membership = await MembershipModel.findOne({ userId }).populate<{
+  const membership = await MembershipModel.findOne(membershipFilter(userId)).populate<{
     organizationId: IOrganization;
   }>('organizationId');
 
@@ -320,7 +321,7 @@ export async function provisionAgent(userId: string) {
  * Used by ActivatePage on mount to skip the provision step if already done.
  */
 export async function getAgentConfig(userId: string) {
-  const membership = await MembershipModel.findOne({ userId }).populate<{
+  const membership = await MembershipModel.findOne(membershipFilter(userId)).populate<{
     organizationId: IOrganization;
   }>('organizationId');
 
@@ -343,7 +344,7 @@ export async function getAgentConfig(userId: string) {
  * Currently 1-per-org during onboarding, but the list pattern is future-proof.
  */
 export async function listAgents(userId: string) {
-  const membership = await MembershipModel.findOne({ userId }).populate<{
+  const membership = await MembershipModel.findOne(membershipFilter(userId)).populate<{
     organizationId: IOrganization;
   }>('organizationId');
 
@@ -369,7 +370,7 @@ export async function listAgents(userId: string) {
  * Called from Settings → Phone Number Setup (founder manual step).
  */
 export async function linkPhoneNumber(userId: string, vapiPhoneNumberId: string) {
-  const membership = await MembershipModel.findOne({ userId }).populate<{
+  const membership = await MembershipModel.findOne(membershipFilter(userId)).populate<{
     organizationId: IOrganization;
   }>('organizationId');
 
@@ -377,14 +378,37 @@ export async function linkPhoneNumber(userId: string, vapiPhoneNumberId: string)
 
   const org = membership.organizationId as IOrganization;
 
+  // SEC-06: a Vapi phone-number ID routes inbound calls, so it must belong to
+  // exactly one org. Owner-only at the route; here we refuse IDs held elsewhere.
+  const id = vapiPhoneNumberId.trim();
+  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)) {
+    throw BadRequest('vapiPhoneNumberId must be a Vapi phone-number UUID', 'INVALID_PHONE_NUMBER_ID');
+  }
+
+  const holder = await OrganizationModel.findOne({ vapiPhoneNumberId: id, _id: { $ne: org._id } }).select('_id').lean();
+  if (holder) {
+    logger.warn('linkPhoneNumber: refused — number already linked to another org', {
+      orgId: org._id.toString(), vapiPhoneNumberId: id,
+    });
+    throw Conflict('This phone number is already linked to another organization', 'PHONE_NUMBER_TAKEN');
+  }
+
   const updated = await OrganizationModel.findByIdAndUpdate(
     org._id,
-    { $set: { vapiPhoneNumberId } },
+    { $set: { vapiPhoneNumberId: id } },
     { new: true },
   );
 
   if (!updated) throw NotFound('Organization');
 
+  // Re-check after the write so two orgs racing for the same ID can't both keep it
+  const holders = await OrganizationModel.countDocuments({ vapiPhoneNumberId: id });
+  if (holders > 1) {
+    await OrganizationModel.updateOne({ _id: org._id }, { $unset: { vapiPhoneNumberId: 1 } });
+    throw Conflict('This phone number is already linked to another organization', 'PHONE_NUMBER_TAKEN');
+  }
+
+  vapiPhoneNumberId = id;
   logger.info('Phone number linked to org', {
     orgId: org._id.toString(),
     vapiPhoneNumberId,
@@ -400,7 +424,7 @@ export async function linkPhoneNumber(userId: string, vapiPhoneNumberId: string)
  * Returns the currently linked phone number for the org.
  */
 export async function getPhoneNumber(userId: string) {
-  const membership = await MembershipModel.findOne({ userId }).populate<{
+  const membership = await MembershipModel.findOne(membershipFilter(userId)).populate<{
     organizationId: IOrganization;
   }>('organizationId');
 
@@ -441,7 +465,7 @@ export async function updateAgentVoice(
     supportedLanguages?: string[];
   },
 ) {
-  const membership = await MembershipModel.findOne({ userId }).populate<{
+  const membership = await MembershipModel.findOne(membershipFilter(userId)).populate<{
     organizationId: IOrganization;
   }>('organizationId');
 
@@ -566,7 +590,7 @@ export async function updateAgentConfig(
   agentId: string,
   dto: UpdateAgentConfigDto,
 ) {
-  const membership = await MembershipModel.findOne({ userId }).populate<{
+  const membership = await MembershipModel.findOne(membershipFilter(userId)).populate<{
     organizationId: IOrganization;
   }>('organizationId');
   if (!membership) throw NotFound('Organization');
@@ -662,7 +686,7 @@ export async function updateAgentConfig(
  * Validates that it belongs to the authenticated owner's org.
  */
 export async function getAgentById(userId: string, agentId: string) {
-  const membership = await MembershipModel.findOne({ userId }).populate<{
+  const membership = await MembershipModel.findOne(membershipFilter(userId)).populate<{
     organizationId: IOrganization;
   }>('organizationId');
 
