@@ -15,7 +15,7 @@
  */
 
 import { Worker } from 'bullmq';
-import { bullmqConnection } from '../config/bullmq-connection';
+import { getSharedWorkerClient } from '../config/bullmq-connection';
 import { KbDocumentModel } from '../modules/knowledge-base/kb.model';
 import { syncKbToVapi } from '../modules/knowledge-base/kb.service';
 import { logger } from '../utils/logger';
@@ -65,7 +65,7 @@ export function startKbWorker() {
       });
     },
     {
-      connection:  bullmqConnection,
+      connection:  getSharedWorkerClient(),   // CORE-02: 1 Redis connection per worker
       concurrency: 5,
     },
   );

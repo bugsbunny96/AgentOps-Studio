@@ -11,7 +11,7 @@
 
 import { Worker } from 'bullmq';
 import mongoose from 'mongoose';
-import { bullmqConnection }   from '../config/bullmq-connection';
+import { getSharedWorkerClient } from '../config/bullmq-connection';
 import { OrganizationModel }  from '../modules/organization/organization.model';
 import { UserModel }          from '../modules/auth/auth.model';
 import { MembershipModel }    from '../modules/organization/organization.model';
@@ -164,7 +164,7 @@ export function startFollowUpAlertWorker() {
       });
     },
     {
-      connection:  bullmqConnection,
+      connection:  getSharedWorkerClient(),   // CORE-02: 1 Redis connection per worker
       concurrency: 3, // 3 alert emails can be sent in parallel
     },
   );

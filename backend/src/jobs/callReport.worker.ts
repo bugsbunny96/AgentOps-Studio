@@ -17,7 +17,7 @@
  */
 
 import { Worker } from 'bullmq';
-import { bullmqConnection } from '../config/bullmq-connection';
+import { getSharedWorkerClient } from '../config/bullmq-connection';
 import { handleEndOfCallReport } from '../modules/calls/webhook.service';
 import { logger } from '../utils/logger';
 import type { CallReportJobData, CallReportJobName } from './callReport.queue';
@@ -40,7 +40,7 @@ export function startCallReportWorker() {
       await handleEndOfCallReport(event);
     },
     {
-      connection:  bullmqConnection,
+      connection:  getSharedWorkerClient(),   // CORE-02: 1 Redis connection per worker
       concurrency: 5,   // process up to 5 call reports in parallel
     },
   );

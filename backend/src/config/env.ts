@@ -24,6 +24,11 @@ const envSchema = z.object({
   // Dev default only — rejected in production by productionEnvProblems() (SEC-04)
   SA_JWT_SECRET: z.string().min(32, 'SA_JWT_SECRET must be at least 32 characters').default(DEV_SA_JWT_SECRET),
 
+  // ── Background workers (CORE-02) ─────────────────────────────────────
+  // Comma-separated worker names to NOT start, e.g. "churnRisk,trialScan".
+  // Names: callReport, crawl, kb, followUpAlert, callMinutesReset, trialEmail, trialScan, churnRisk
+  WORKERS_DISABLED: z.string().default(''),
+
   // ── CORS ──────────────────────────────────────────────────────────────
   CLIENT_URL: z.string().default('http://localhost:5173'),
 
