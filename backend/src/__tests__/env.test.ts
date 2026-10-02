@@ -3,7 +3,7 @@
  * Tests: Zod env schema shape and required fields
  */
 import { describe, it, expect } from 'vitest';
-import { env } from '@/config/env';
+import { env, productionEnvProblems, DEV_SA_JWT_SECRET } from '@/config/env';
 
 describe('env config', () => {
   it('exports an env object', () => {
@@ -41,5 +41,29 @@ describe('env config', () => {
   it('has CLIENT_URL set', () => {
     expect(typeof env.CLIENT_URL).toBe('string');
     expect(env.CLIENT_URL.length).toBeGreaterThan(0);
+  });
+
+  describe('SEC-04 — production secrets', () => {
+    const strong = 'x'.repeat(48);
+    const access = 'a'.repeat(48);
+
+    it('rejects the dev SA_JWT_SECRET default in production', () => {
+      expect(productionEnvProblems({ NODE_ENV: 'production', SA_JWT_SECRET: DEV_SA_JWT_SECRET, JWT_ACCESS_SECRET: access }))
+        .toEqual([expect.stringContaining('SA_JWT_SECRET')]);
+    });
+
+    it('rejects reusing JWT_ACCESS_SECRET as SA_JWT_SECRET in production', () => {
+      expect(productionEnvProblems({ NODE_ENV: 'production', SA_JWT_SECRET: access, JWT_ACCESS_SECRET: access }))
+        .toHaveLength(1);
+    });
+
+    it('accepts a real secret in production', () => {
+      expect(productionEnvProblems({ NODE_ENV: 'production', SA_JWT_SECRET: strong, JWT_ACCESS_SECRET: access })).toEqual([]);
+    });
+
+    it('allows the dev default outside production', () => {
+      expect(productionEnvProblems({ NODE_ENV: 'development', SA_JWT_SECRET: DEV_SA_JWT_SECRET, JWT_ACCESS_SECRET: access })).toEqual([]);
+      expect(productionEnvProblems({ NODE_ENV: 'test', SA_JWT_SECRET: DEV_SA_JWT_SECRET, JWT_ACCESS_SECRET: access })).toEqual([]);
+    });
   });
 });

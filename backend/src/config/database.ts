@@ -72,7 +72,7 @@ export async function connectDatabase(retries = MAX_RETRIES): Promise<void> {
     mongoose.connection.on('error', (err: Error) => {
       logger.error('MongoDB connection error:', { message: err.message });
     });
-  } catch (err) {
+  } catch {
     if (retries > 0) {
       logger.warn(
         `MongoDB connection failed — retrying in ${RETRY_DELAY_MS / 1000}s ` +

@@ -240,7 +240,6 @@ const OrganizationSchema = new Schema<IOrganization>(
   { timestamps: true }
 );
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 OrganizationSchema.set('toJSON', {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   transform: (_doc: any, ret: any) => {

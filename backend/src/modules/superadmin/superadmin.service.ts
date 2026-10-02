@@ -617,7 +617,7 @@ export async function broadcastEmail(
 export async function transferOrgOwnership(
   orgId:      string,
   newOwnerId: string,
-  saEmail:    string,
+  _saEmail:   string,
 ): Promise<{ orgName: string; previousOwner: string; newOwner: string }> {
   const org = await OrganizationModel.findById(orgId);
   if (!org) throw NotFound('Organization');
