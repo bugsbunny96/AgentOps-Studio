@@ -67,6 +67,9 @@ export interface IOrganization extends Document {
   stripeCustomerId?: string;
   stripeSubscriptionId?: string;
   stripePriceId?: string;
+  /** Premium-voices add-on (Basic/Standard only; Pro includes premium voices). Separate Stripe subscription. */
+  premiumVoiceAddon?: boolean;
+  premiumVoiceAddonSubscriptionId?: string;
   // ── Super-admin plan override ─────────────────────────────────────────
   /** When set, the SA has directly overridden the plan outside of Stripe. */
   planOverride?: Plan;
@@ -198,6 +201,8 @@ const OrganizationSchema = new Schema<IOrganization>(
     },
     stripeCustomerId:     { type: String, index: true, sparse: true },
     stripeSubscriptionId: { type: String, index: true, sparse: true },
+    premiumVoiceAddon:               { type: Boolean, default: false },
+    premiumVoiceAddonSubscriptionId: { type: String, index: true, sparse: true },
     stripePriceId:        { type: String },
     // ── Plan override ──────────────────────────────────────────────────
     planOverride:         { type: String, enum: ['free', 'starter', 'growth', 'enterprise'], default: undefined },

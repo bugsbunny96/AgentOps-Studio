@@ -21,7 +21,7 @@ import { bullmqConnection } from '../config/bullmq-connection';
 import { handleEndOfCallReport } from '../modules/calls/webhook.service';
 import { logger } from '../utils/logger';
 import type { CallReportJobData, CallReportJobName } from './callReport.queue';
-import type { VapiEndOfCallReportEvent } from '../modules/calls/webhook.service';
+import { toEndOfCallEvent } from './callReport.mapper';
 
 export function startCallReportWorker() {
   const worker = new Worker<CallReportJobData, void, CallReportJobName>(
@@ -34,23 +34,8 @@ export function startCallReportWorker() {
         assistantId: data.assistantId,
       });
 
-      // Reconstruct the VapiEndOfCallReportEvent shape from flat job data
-      const event: VapiEndOfCallReportEvent = {
-        type: 'end-of-call-report',
-        call: {
-          id:           data.vapiCallId,
-          assistantId:  data.assistantId,
-          type:         data.callType as VapiEndOfCallReportEvent['call']['type'],
-          customer:     data.callerNumber ? { number: data.callerNumber } : undefined,
-          endedReason:  data.endedReason,
-        },
-        durationSeconds: data.durationSeconds,
-        recordingUrl:    data.recordingUrl,
-        transcript:      data.transcript,
-        messages:        data.messages as VapiEndOfCallReportEvent['messages'],
-        summary:         data.summary,
-        cost:            data.cost,
-      };
+      // Rebuild the event (all fields, incl. artifact + costBreakdown — CORE-01)
+      const event = toEndOfCallEvent(data);
 
       await handleEndOfCallReport(event);
     },

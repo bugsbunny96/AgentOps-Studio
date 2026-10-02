@@ -1240,3 +1240,35 @@ Founder decision needed: No (logged)
 | BL-023 | Dev-only FreeLLMAPI eval harness + Paperclip internal pilot | Low | Tooling |
 
 Sequencing note: all items queue behind gaps.md Week-1 launch blockers (Vobiz provisioning, Activate test call).
+
+---
+
+## v1.9.0 — 2026-10-02 — Cost reduction (founder request)
+
+[2026-10-02 09:50] v1.9 — AI R&D Worker
+Type: Research Note
+Trigger: on-demand (founder: "decrease the cost of the project")
+Finding: Per call-minute through Vapi (list prices): Vapi platform ~$0.05 · Deepgram STT ~$0.006–0.01 · GPT-4o ~$0.02–0.05 (system prompt ~3–4k tokens resent every turn) · OpenAI TTS ~$0.01. Token prices per 1M (in/out): gpt-4o $2.50/$10 · gpt-4o-mini $0.15/$0.60 · gpt-4.1-mini $0.40/$1.60 · gemini-2.5-flash $0.30/$2.50. Switching to gpt-4o-mini cuts the LLM line ~90%; OpenAI automatically caches identical prompt prefixes ≥1,024 tokens (cached input ~50% off), which applies from turn 2 because our prompt is fixed per assistant.
+Opportunity: LLM_MODEL registry (default gpt-4o-mini), compact catalog, lookup tools for large catalogs/KBs. Expected all-in ~$0.07–0.09/min vs ~$0.10–0.14 before.
+Proposed artifact: COST-01, COST-02 (gaps.md § 14)
+Affects: TAD (AI sections), agent.service, kb.service
+Founder decision needed: Yes — confirm after evals (COST-06)
+
+[2026-10-02 09:50] v1.9 — AI R&D Worker
+Type: Research Note
+Trigger: on-demand (founder: price-test Sarvam for Hindi/Punjabi)
+Finding: Sarvam list prices (docs.sarvam.ai/api-reference-docs/pricing): Bulbul v3 TTS ₹30 per 10K characters; speech-to-text ₹30 per hour (billed per second); ₹100 free credit. At ~450 agent characters per call-minute, TTS ≈ ₹1.35/min (~$0.015) — about twice OpenAI tts-1 (~$0.007) and similar to Deepgram Aura; STT ≈ ₹0.50/min (~$0.006), on par with Deepgram nova-2/3. Sarvam is NOT a native Vapi provider: it plugs in as custom-transcriber (WebSocket bridge) + custom-voice (HTTP) on a server we host (docs.sarvam.ai/api/integration/build-voice-agent-with-vapi). Our previous Sarvam bridge was removed on 2026-09-29; on Render free (sleeps, Singapore) it would add latency and an outage risk.
+Opportunity: Sarvam is a quality play for Hindi/Punjabi, not a cost cut. Revisit when we have an always-on host or build our own voice pipeline.
+Proposed artifact: COST-07 (parked)
+Affects: voice-pricing.ts, VoiceSelector
+Founder decision needed: No (logged)
+
+[2026-10-02 09:50] v1.9 — Engineering R&D Worker
+Type: Research Note
+Trigger: on-demand (founder: build our own Vapi replacement?)
+Finding: Open-source frameworks (Pipecat, LiveKit Agents) can replace Vapi's orchestration with Vobiz SIP → own server → Deepgram → LLM → TTS. Saving is Vapi's ~$0.05/min only; costs are an always-on server, 6–10 weeks of build, and ongoing turn-taking/latency/recording work. Break-even ≈ 20–30k min/month.
+Opportunity: Keep a provider seam (all Vapi calls are in vapi.service.ts + webhook handler) and revisit after S-PROOF / ~15–20 paying clients.
+Proposed artifact: BL-024 (VoiceProvider interface + Pipecat/LiveKit pilot)
+Affects: TAD (voice pipeline)
+Founder decision needed: Yes — promote to sprint (T1), later
+

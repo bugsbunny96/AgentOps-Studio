@@ -339,3 +339,29 @@ Use Stripe’s test mode (test API keys). Create test customers, subscribe them 
 **Stripe setup:** 5 products, 11 prices total, GST at 18% tax-exclusive. Start with manual overage invoicing, move to metered billing at 50+ clients. All configurations detailed in Sections 8 and 9.
 
 **Ready to execute.** The pricing structure is validated, the Stripe product catalog is specified, and the implementation steps are documented. Next step: create these products in Stripe test mode and run a full billing cycle simulation before going live.
+
+## 11. Premium Voices Add-on (added 2026-10-02)
+
+Founder decision (2026-10-02): premium voices (ElevenLabs, Azure, PlayHT, Cartesia) are **free on Pro** and a **paid monthly add-on on Basic and Standard**. Standard voices (OpenAI, Deepgram Aura, Vapi native e.g. Naina) stay included on every plan.
+
+| Plan | Premium voices | Price |
+|---|---|---|
+| Basic (₹9,999) | Add-on | **₹2,999 / month + GST** |
+| Standard (₹17,999) | Add-on | **₹4,999 / month + GST** |
+| Pro (₹25,999) | Included | — |
+| Free trial | Not available | Upgrade to a paid plan first |
+
+**Why these prices.** ElevenLabs through Vapi costs roughly $0.02–0.04 more per call-minute than OpenAI TTS. At the full allowance that is about ₹900–1,800 a month on Basic (500 min) and ₹1,800–3,500 on Standard (1,000 min), so the add-on keeps a margin even at full usage. Standard + add-on (₹22,998) stays below Pro (₹25,999), which includes it, so Pro remains the better deal for heavy premium-voice users.
+
+**Stripe setup (founder):**
+1. Products → create **"Premium Voices Add-on"**.
+2. Add two recurring monthly INR prices, tax-exclusive like the plans: ₹2,999 (Basic) and ₹4,999 (Standard).
+3. Put the price IDs in Render as `STRIPE_PREMIUM_VOICES_BASIC_PRICE_ID_INR` and `STRIPE_PREMIUM_VOICES_STANDARD_PRICE_ID_INR`.
+4. In the Customer Portal settings, allow cancelling subscriptions (so customers can cancel the add-on themselves).
+
+**How it behaves in the app (branch `feat/cost-reduction`):**
+- The add-on is a separate Stripe subscription. Its webhook events only switch the add-on on/off; they never change the plan. (Before this change, *any* cancelled subscription of a customer downgraded the org to free.)
+- Upgrading to Pro cancels the add-on automatically, prorated.
+- Losing access (add-on cancelled, downgrade from Pro, plan cancelled) switches the agent to the default OpenAI "nova" voice on Vapi straight away, so we don't keep paying for a premium voice the customer no longer pays for.
+- Display prices live in `backend/src/modules/agents/voice-pricing.ts` (`PREMIUM_VOICE_ADDON_PRICE_INR`); the Stripe price is what is actually charged — change both together.
+

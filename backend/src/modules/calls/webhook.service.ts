@@ -25,11 +25,12 @@ import { computeTrialState }  from '../billing/trial.service';
 import { env }    from '../../config/env';
 import { logger } from '../../utils/logger';
 import { enqueueFollowUpAlert } from '../../jobs/followUpAlert.queue';
+import type { VapiCostBreakdown } from '../agents/vapi.service';
+import { currentMonthMinutesUsed, startOfMonthUTC } from '../../utils/callMinutes';
 
 // ─── Helper: start of current UTC month ──────────────────────────────────────
 function startOfCurrentMonthUTC(): Date {
-  const now = new Date();
-  return new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1));
+  return startOfMonthUTC();
 }
 
 // ─── Shared-secret verification ───────────────────────────────────────────────
@@ -129,13 +130,18 @@ export interface VapiEndOfCallReportEvent {
     type: 'inboundPhoneCall' | 'outboundPhoneCall' | 'webCall';
     customer?: { number?: string };
     endedReason?: string;
+    /** Some Vapi payload versions carry the cost on the call object instead */
+    cost?: number;
   };
   durationSeconds?: number;
   recordingUrl?: string;
   transcript?: string;
   messages?: VapiMessage[];
   summary?: string;
+  /** Vapi's total call cost in USD */
   cost?: number;
+  /** Per-component cost (stt, llm, tts, vapi platform, transport) + token counts */
+  costBreakdown?: VapiCostBreakdown;
   /** Vapi artifact: recording URL + structured output from artifactPlan schema */
   artifact?: {
     recordingUrl?:        string;
@@ -291,7 +297,8 @@ export async function handleAssistantRequest(
     );
     const effectivePlan = trialState.isInTrial ? 'starter' : basePlan;
     const minutesLimit  = getEffectiveCallMinutesLimit(basePlan, trialState.isInTrial);
-    const minutesUsed   = org.callMinutesUsed ?? 0;
+    // BIZ-01: a counter from a previous month counts as 0 (reset worker may be off)
+    const minutesUsed   = currentMonthMinutesUsed(org);
 
     if (minutesLimit !== Infinity && minutesUsed >= minutesLimit) {
       logger.warn('assistant-request: call minutes limit exceeded — blocking call', {
@@ -354,6 +361,26 @@ export async function handleAssistantRequest(
 
 // ─── Helpers (shared with call-started / end-of-call-report) ─────────────────
 
+/** First finite cost Vapi reported: message.cost → call.cost → costBreakdown.total. */
+export function resolveReportedCost(event: Pick<VapiEndOfCallReportEvent, 'cost' | 'call' | 'costBreakdown'>): number | undefined {
+  const candidates = [event.cost, event.call?.cost, event.costBreakdown?.total];
+  return candidates.find((c): c is number => typeof c === 'number' && Number.isFinite(c) && c >= 0);
+}
+
+/** Keeps only the numeric fields we store (Vapi adds analysis/voicemail fields we don't need). */
+export function pickCostBreakdown(b: VapiCostBreakdown): VapiCostBreakdown {
+  const keys: Array<keyof VapiCostBreakdown> = [
+    'transport', 'stt', 'llm', 'tts', 'vapi', 'total',
+    'llmPromptTokens', 'llmCompletionTokens', 'ttsCharacters',
+  ];
+  const out: VapiCostBreakdown = {};
+  for (const k of keys) {
+    const v = b[k];
+    if (typeof v === 'number' && Number.isFinite(v)) out[k] = v;
+  }
+  return out;
+}
+
 async function lookupByAssistantId(vapiAssistantId: string) {
   const agent = await VoiceAgentModel.findOne({ vapiAssistantId });
   if (!agent) return null;
@@ -413,6 +440,10 @@ export async function handleEndOfCallReport(event: VapiEndOfCallReportEvent): Pr
     return;
   }
 
+  // Real per-call cost from Vapi (USD). Undefined → not reported; the call is
+  // stored with costSource 'none' and can be filled by scripts/backfill-call-costs.ts.
+  const reportedCost = resolveReportedCost(event);
+
   // Vapi puts recordingUrl in both the top-level field and artifact.recordingUrl.
   // artifact.recordingUrl is the authoritative source in newer Vapi payloads.
   const resolvedRecordingUrl =
@@ -453,7 +484,9 @@ export async function handleEndOfCallReport(event: VapiEndOfCallReportEvent): Pr
         status:         'completed',
         duration:       Math.round(event.durationSeconds ?? 0),
         recordingUrl:   resolvedRecordingUrl,
-        cost:           event.cost ?? 0,
+        cost:           reportedCost ?? 0,
+        costSource:     reportedCost !== undefined ? 'vapi' : 'none',
+        ...(event.costBreakdown ? { costBreakdown: pickCostBreakdown(event.costBreakdown) } : {}),
         endedReason:    event.call.endedReason,
         // Spread structured output fields (empty object if not present)
         ...structuredFields,

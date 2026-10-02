@@ -32,6 +32,11 @@ const envSchema = z.object({
   OPENAI_API_KEY: z.string().optional(),
   DEEPGRAM_API_KEY: z.string().optional(),
   ELEVENLABS_API_KEY: z.string().optional(),
+  /**
+   * LLM used by every live voice agent (see config/llm.ts for prices).
+   * gpt-4o-mini (default) | gpt-4.1-mini | gemini-2.5-flash | gpt-4o (legacy, ~16× cost).
+   */
+  LLM_MODEL: z.enum(['gpt-4o-mini', 'gpt-4.1-mini', 'gemini-2.5-flash', 'gpt-4o']).default('gpt-4o-mini'),
 
   // ── Vapi ─────────────────────────────────────────────────────────────
   VAPI_API_KEY: z.string().optional(),
@@ -86,6 +91,33 @@ const envSchema = z.object({
    */
   VOBIZ_VAPI_INBOUND_CREDENTIAL_ID: z.string().optional(),
 
+  // ── Prompt size / lookup tools (cost reduction) ───────────────────────
+  /**
+   * Public base URL of this API, used as the server URL for the
+   * search_catalog / search_knowledge_base tools. Falls back to RENDER_EXTERNAL_URL.
+   * When neither is set, catalog + KB stay inline in the prompt (previous behaviour).
+   */
+  PUBLIC_API_URL: z.string().optional(),
+  /** Catalogs with more active items than this are served by search_catalog instead of inline. */
+  PROMPT_CATALOG_INLINE_MAX_ITEMS: z.string().default('60').transform(Number),
+  /** KB context longer than this (chars) is served by search_knowledge_base instead of inline. */
+  PROMPT_KB_INLINE_MAX_CHARS: z.string().default('3000').transform(Number),
+  /** Set to 'false' to always inline catalog + KB (disables the lookup tools). */
+  PROMPT_LOOKUP_TOOLS_ENABLED: z.string().default('true').transform((v) => v !== 'false'),
+
+  // ── Cost tracking ─────────────────────────────────────────────────────
+  /**
+   * Telephony cost per minute in USD (Vobiz SIP — billed outside Vapi, so it is
+   * NOT in Vapi's per-call cost). Replace with the rate on your Vobiz invoice.
+   */
+  TELEPHONY_COST_PER_MIN_USD: z.string().default('0.006').transform(Number),
+  /**
+   * Fallback all-in Vapi cost per minute (USD) for calls with no recorded cost.
+   * Platform $0.05 + Deepgram STT ~$0.01 + LLM $0.004–0.045 + TTS ~$0.01–0.02.
+   * Deliberately on the high side: an over-estimate only makes margin alerts stricter.
+   */
+  VAPI_FALLBACK_COST_PER_MIN_USD: z.string().default('0.10').transform(Number),
+
   // ── Keep-alive (Render free tier) ────────────────────────────────────
   /** Injected automatically by Render — the service's public URL. */
   RENDER_EXTERNAL_URL: z.string().optional(),
@@ -110,6 +142,10 @@ const envSchema = z.object({
   STRIPE_STARTER_PRICE_ID_INR: z.string().optional(), // price_... Basic plan (INR)
   STRIPE_GROWTH_PRICE_ID_INR:  z.string().optional(), // price_... Standard plan (INR)
   STRIPE_PRO_PRICE_ID_INR:     z.string().optional(), // price_... Pro plan (INR)
+  // Premium-voices add-on (recurring monthly, INR). Pro includes premium voices, so
+  // there is one add-on price per eligible plan. See agents/voice-pricing.ts.
+  STRIPE_PREMIUM_VOICES_BASIC_PRICE_ID_INR:    z.string().optional(), // price_... ₹2,999/mo on Basic
+  STRIPE_PREMIUM_VOICES_STANDARD_PRICE_ID_INR: z.string().optional(), // price_... ₹4,999/mo on Standard
 });
 
 const parsed = envSchema.safeParse(process.env);

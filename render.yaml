@@ -73,6 +73,10 @@ services:
         sync: false
       - key: ELEVENLABS_API_KEY
         sync: false
+      - key: LLM_MODEL
+        value: "gpt-4o-mini"        # gpt-4.1-mini | gemini-2.5-flash | gpt-4o (legacy)
+      - key: TELEPHONY_COST_PER_MIN_USD
+        value: "0.006"              # set from the Vobiz invoice
 
       # ── Vapi (set in Render dashboard) ────────────────────────────────────
       - key: VAPI_API_KEY
@@ -142,4 +146,8 @@ services:
       - key: STRIPE_PRO_PRICE_ID
         sync: false
       - key: STRIPE_PRO_PRICE_ID_INR
+        sync: false
+      - key: STRIPE_PREMIUM_VOICES_BASIC_PRICE_ID_INR
+        sync: false
+      - key: STRIPE_PREMIUM_VOICES_STANDARD_PRICE_ID_INR
         sync: false

@@ -22,12 +22,11 @@ import { KbDocumentModel, KbCategoryModel, type IKbDocument, type IKbCategory, t
 import { VoiceAgentModel }                     from '../agents/agent.model';
 import { kbQueue }                             from '../../jobs/kb.queue';
 import { crawlQueue }                          from '../../jobs/crawl.queue';
-// Import from prompt.utils — NOT from agent.service — to avoid a circular dependency:
-//   agent.service → kb.service (getKbContext)
-//   kb.service    → agent.service (generateSystemPrompt)  ← cycle broken by moving to prompt.utils
-import { generateSystemPrompt }                from '../agents/prompt.utils';
+// Prompt building lives in agents/assistant-config.ts (which does NOT import this
+// file), so there is no circular dependency. getKbContext moved there too and is
+// re-exported below for existing callers and tests.
+import { buildAgentPrompt, buildVapiModel, defaultToolIds, getKbContext } from '../agents/assistant-config';
 import { vapiUpdateAssistant }                 from '../agents/vapi.service';
-import { findAll as findAllCatalogItems }      from '../catalog/catalog.service';
 import { NotFound, BadRequest, Forbidden }      from '../../middleware/errorHandler';
 import { PLAN_LIMITS }                         from '../billing/billing.service';
 import { computeTrialState }                   from '../billing/trial.service';
@@ -60,37 +59,8 @@ async function resolveOwnerOrg(userId: string): Promise<{
  *
  * Returns empty string if no ready documents exist (caller must handle).
  */
-const MAX_DOCS          = 20;
-const MAX_CHARS_PER_DOC = 1_200;   // matches compressPageText() output cap — no further truncation needed
-const MAX_TOTAL_CHARS   = 10_000;  // ~2,500 tokens — generous enough for 8-10 compressed pages
 
-export async function getKbContext(orgId: mongoose.Types.ObjectId | string): Promise<string> {
-  const docs = await KbDocumentModel.find(
-    { organizationId: orgId, status: 'ready' },
-    { title: 1, content: 1, sourceType: 1 },
-  )
-    .sort({ updatedAt: -1 })
-    .limit(MAX_DOCS)
-    .lean();
-
-  if (!docs.length) return '';
-
-  const sections: string[] = [];
-  let totalChars = 0;
-
-  for (const doc of docs) {
-    const snippet = doc.content.slice(0, MAX_CHARS_PER_DOC).trim();
-    const entry   = `### ${doc.title}\n${snippet}`;
-
-    if (totalChars + entry.length > MAX_TOTAL_CHARS) break;
-    sections.push(entry);
-    totalChars += entry.length + 2; // +2 for newlines between entries
-  }
-
-  if (!sections.length) return '';
-
-  return `## Knowledge Base\n\n${sections.join('\n\n')}`;
-}
+export { getKbContext };
 
 // ─── listDocs ─────────────────────────────────────────────────────────────────
 
@@ -343,20 +313,16 @@ export async function syncKbToVapi(orgId: string): Promise<void> {
   }
 
   try {
-    const [kbContext, catalogItems] = await Promise.all([
-      getKbContext(org._id),
-      findAllCatalogItems(org._id),
-    ]);
-    const systemPrompt = generateSystemPrompt(org, kbContext, catalogItems);
+    const { systemPrompt, tools, catalogMode, kbMode } = await buildAgentPrompt(org);
+    const agentDoc = await VoiceAgentModel.findOne({ organizationId: org._id }).select('vapiToolIds').lean();
 
+    // Vapi PATCH replaces the whole `model` object, so tool IDs must be re-sent —
+    // the old patch omitted them and silently detached submit_order / end_call.
     await vapiUpdateAssistant(org.vapiAssistantId, {
-      model: {
-        provider: 'openai',
-        model:    'gpt-4o',
-        messages: [{ role: 'system', content: systemPrompt }],
-        temperature: 0.65,
-        maxTokens:   300,
-      },
+      model: buildVapiModel(systemPrompt, {
+        toolIds: agentDoc?.vapiToolIds?.length ? agentDoc.vapiToolIds : defaultToolIds(),
+        tools,
+      }),
     });
 
     // DRIFT-3 fix: write the new prompt back to the VoiceAgent record so the DB
@@ -370,7 +336,9 @@ export async function syncKbToVapi(orgId: string): Promise<void> {
     logger.info('Vapi assistant system prompt updated with KB', {
       orgId,
       vapiAssistantId: org.vapiAssistantId,
-      kbChars: kbContext.length,
+      promptChars: systemPrompt.length,
+      catalogMode,
+      kbMode,
     });
   } catch (err) {
     // Non-fatal: KB is still stored; just log and continue

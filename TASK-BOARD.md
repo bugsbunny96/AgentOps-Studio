@@ -9,6 +9,9 @@
 > **Execution Framework**: `agents/EXECUTION-FRAMEWORK.md` · **SOP**: `agents/SOP.md` · **R&D Log**: `main-project-docs/RD-LOG.md`
 
 **Version history**
+- [2026-10-02 16:20] v2.7 — CEO Agent — Wave 2: H2.1–H2.4 code done on `harden/wave2` (branched from `feat/cost-reduction`); both branches committed locally, not pushed. Pre-existing failures: frontend AuthGuard + GuestGuard tests.
+- [2026-10-02 16:10] v2.6 — CEO Agent — Premium Voices add-on (founder decision: Pro free; ₹2,999 Basic / ₹4,999 Standard) built as C7; tool safety net C8; founder action to create the Stripe add-on prices.
+- [2026-10-02 09:50] v2.5 — CEO Agent — Cost reduction (founder request, steps 1–4): new S-HARDEN Wave 6 (C1–C6, `gaps.md` § 14) — code done on branch `feat/cost-reduction`; founder actions added for evals + live model switch; decision log updated (GPT-4o → GPT-4o-mini default, PROPOSED).
 - [2026-10-01 11:05] v2.4 — CEO Agent — Design review (FE-19…FE-24, `gaps.md` § 12.1) → Wave 5 tasks H5.9–H5.14. H5.9 (remove false claims) landing part done on `dev`.
 - [2026-10-01 10:40] v2.3 — CEO Agent — H1.1 (SEC-01) and H1.7 (SEC-13) code done on branch `harden/h1.1-h1.7`; active task → H1.2; founder action added to configure the Vapi tool secret before merge.
 - [2026-10-01 10:15] v2.2 — CEO Agent — Launch-readiness audit (20-item checklist; `gaps.md` § 12). Added H1.7 (SEC-13 public source maps), Wave 5 (launch readiness: spam, analytics, cookies, speed, SEO, contrast, mobile, polish), FE-09 consent checkbox into H4.9, founder actions for Turnstile/analytics, and PROPOSED decision D6 (agent operating system, `gaps.md` § 13). No code changed.
@@ -105,10 +108,10 @@ Every sprint task has a lead agent. Every other agent runs a supporting or backg
 
 | Task | Gap | Description | Lead | Status |
 |---|---|---|---|---|
-| H2.1 | CORE-01 | Pass `artifact` into the call-report job; webhook test | 🟢 + 🟠 | ⏳ |
-| H2.2 | BIZ-01 | Minutes gate + billing status respect the month boundary | 🟢 | ⏳ |
-| H2.3 | CORE-03 | Exclude Vapi webhook and tool routes from the global rate limiter | 🟢 | ⏳ |
-| H2.4 | CORE-04 | Fix Dashboard response unwrapping (`/agents`, `/calls`) | 🟢 | ⏳ |
+| H2.1 | CORE-01 | Pass `artifact` into the call-report job; webhook test | 🟢 + 🟠 | 🟡 code on `harden/wave2`: shared mapper also carries `costBreakdown` + `call.cost` (were dropped too); tests in `hardening-wave2.test.ts` |
+| H2.2 | BIZ-01 | Minutes gate + billing status respect the month boundary | 🟢 | 🟡 code on `harden/wave2` (`utils/callMinutes.ts`) + gate tests |
+| H2.3 | CORE-03 | Exclude Vapi webhook and tool routes from the global rate limiter | 🟢 | 🟡 code on `harden/wave2` (`middleware/rateLimitExempt.ts`: webhooks/vapi, orders/submit, tools) + tests |
+| H2.4 | CORE-04 | Fix Dashboard response unwrapping (`/agents`, `/calls`) | 🟢 | 🟡 code on `harden/wave2` (`utils/unwrapList.ts`) + frontend test |
 | H2.5 | CORE-05 | Verify production login; add a custom domain or a Vercel `/api` rewrite | 🟢 + Founder | ⏳ |
 | H2.6 | CORE-02 | Consolidate worker Redis connections, or upgrade Redis; re-enable crawl → kb → callMinutesReset → followUpAlert → trial jobs | 🟢 | ⏳ |
 
@@ -158,6 +161,21 @@ Mostly frontend; can run in parallel with Waves 1–2. Checklist status: `gaps.m
 | H5.12 | FE-22 | Remove the AI look: blobs, grid bg, "New" pill, extra gradients/pills/CTAs; merge or drop low-value sections | 🟢 | ⏳ |
 | H5.13 | FE-23, FE-24 | Colour + motion rules: rename tokens, one accent, neutral step numbers; one hero entrance, drop repeated `Reveal`, progress bar, decorative loops | 🟢 | ⏳ |
 | H5.14 | — (process) | Designer pass each release: screenshot public pages at 375 px and 1366 px, list the top 10 issues, fix, re-check; later Playwright visual snapshots in CI | 🟢 + 🔵 | ⏳ recurring |
+
+### Wave 6 — Cost reduction (founder request 2026-10-02) — `gaps.md` § 14
+
+Branch `feat/cost-reduction` (not merged). Backend + frontend `tsc` clean; 23 new unit/route tests pass; DB-backed suites not run locally (no MongoDB binary in the sandbox) — run `npm test` in CI.
+
+| Task | Gap | Description | Lead | Status |
+|---|---|---|---|---|
+| C1 | COST-01 | LLM registry `config/llm.ts` + `LLM_MODEL` (default gpt-4o-mini); one temperature (0.3); `scripts/set-assistant-model.ts` | 🟠 + 🟢 | ✅ code |
+| C2 | COST-02 | Compact catalog; lookup tools (`search_catalog`, `search_knowledge_base`, `POST /api/v1/tools/lookup`) above 60 items / 3,000 KB chars; FAQ de-dup | 🟠 + 🟢 | ✅ code |
+| C3 | COST-03 | Every prompt push re-sends tool IDs (KB sync / language change no longer detach `submit_order`) | 🟢 | ✅ code — verify on live assistant |
+| C4 | COST-04 | Voice tiers: premium voices Pro-only (API 403 + locked picker); Naina settings kept on voice change | 🟢 + 🔵 | ✅ code |
+| C5 | COST-05 | Real per-call cost + breakdown stored; margin page = Vapi + telephony, prorated revenue, cost/min, estimate share; `scripts/backfill-call-costs.ts` | 🟢 + 🟣 | ✅ code |
+| C6 | COST-06 | Evals on gpt-4o-mini vs gpt-4o, then switch the live Ritu assistant | 🟠 → Founder | ⏳ |
+| C7 | COST-07, BIZ-07 | Premium Voices add-on: Stripe checkout + webhook (never touches `plan`), Billing card, plan cards + pricing table, auto-cancel on Pro, voice downgrade when access is lost | 🟢 + 🟡 | ✅ code — needs Stripe prices |
+| C8 | COST-08 | Tool safety net: every model update merges the live assistant's tools (submit_order / end call can't be dropped) | 🟢 | ✅ code |
 
 ### Supporting lanes this sprint (zero-idle)
 
@@ -228,6 +246,9 @@ Source and full specs: `main-project-docs/AI-Implementation-Offer-Plan.md`. Gap 
 | 🟢 P2 | Update `CLIENT_URL` in `render.yaml` / Render to the real Vercel URL | OPS-05 |
 | 🟡 P1 | Create a Cloudflare Turnstile site (site key + secret) for Register and Contact | FE-10 |
 | 🟡 P1 | Pick the analytics tool: Plausible (paid, cookieless) or Vercel Web Analytics; decide whether Sentry Replay stays on public pages | FE-11, FE-12 |
+| 🟡 P1 | **Cost (C6)**: run evals on GPT-4o-mini vs GPT-4o (`node scripts/vapi-evals/local-evals.mjs --provider openai --model gpt-4o-mini --judge-model gpt-4o --repeat 3`, then the same with `--model gpt-4o`); if mini is as good, `cd backend && npx tsx scripts/set-assistant-model.ts --assistant 100b3bd9-5038-4f11-b487-7ced98d8a3dd --apply` | COST-06 |
+| 🟡 P1 | **Cost**: after deploying `feat/cost-reduction`, run `npx tsx scripts/backfill-call-costs.ts --apply` once; set `TELEPHONY_COST_PER_MIN_USD` from the Vobiz invoice; set `PUBLIC_API_URL` if not on Render | COST-05, COST-02 |
+| 🟡 P1 | **Cost (C7)**: Stripe → product "Premium Voices Add-on" with two recurring monthly INR prices, ₹2,999 and ₹4,999 (tax-exclusive); set `STRIPE_PREMIUM_VOICES_BASIC_PRICE_ID_INR` and `STRIPE_PREMIUM_VOICES_STANDARD_PRICE_ID_INR` on Render; allow subscription cancellation in the Customer Portal | COST-07 · pricing doc § 11 |
 | 🟢 P2 | **D6**: approve converting the 5 agents to Claude Code subagents + adding 3–4 specialists (AppSec, code reviewer) with chained handoffs instead of all-agents-every-turn | `gaps.md` § 13 |
 
 ---
@@ -285,6 +306,8 @@ Source and full specs: `main-project-docs/AI-Implementation-Offer-Plan.md`. Gap 
 
 | Date | Decision | Owner | Rationale |
 |---|---|---|---|
+| 2026-10-02 | Premium voices: **included on Pro; add-on ₹2,999/mo on Basic, ₹4,999/mo on Standard** (+ GST); not sold on the trial | Founder (T0) | Covers the extra ElevenLabs cost at full usage; Standard + add-on stays below Pro (pricing doc § 11) |
+| 2026-10-02 | **PROPOSED**: default LLM GPT-4o → GPT-4o-mini (env `LLM_MODEL`, revert anytime); stay on Vapi (own platform revisit at ~20–30k min/month) | CEO Agent → Founder (T0 for pricing part) | GPT-4o was the largest controllable cost per minute; Vapi fee ($0.05/min) only pays back at volume (`gaps.md` § 14). Supersedes 2026-06-26 "GPT-4o default" once evals pass |
 | 2026-10-01 | Launch-readiness checklist audit: 9/20 covered, 9 partial, 2 missing (page speed, analytics). Added S-HARDEN Wave 5 + H1.7 | CEO Agent | Gaps SEC-13, FE-09…18 (`gaps.md` § 12) |
 | 2026-10-01 | **PROPOSED (D6)**: real Claude Code subagents + 3–4 Agency specialists, chained per task type; retire the zero-idle rule | CEO Agent → Founder (T0) | Agent files are not loadable as subagents; 11-agent dispatch costs more than it returns (`gaps.md` § 13) |
 | 2026-09-30 | **PROPOSED (awaiting D1/D2)**: go to market as platform + managed "AI implementation" offer for one beachhead niche; sprints S-NICHE → S-IMPLEMENT → S-PROOF after S-HARDEN | CEO Agent → Founder (T0) | Product already solves missed calls; clients pay for the problem handled; follow-up, booking, CRM/calendar via n8n and ROI proof are missing (`gaps.md` § 11) |
