@@ -1,23 +1,20 @@
 /**
- * BillingPage — plan overview, usage meters, upgrade flow.
- * Redesigned to match the dark futuristic theme of DashboardLayout.
+ * BillingPage — plan overview, usage meters, upgrade flow, top-up packs.
  *
- * Prices match AgentOps Studio SaaS Pricing & Stripe Setup doc (2026-09-17).
- * Internal plan enum values are unchanged; customer-facing names are:
- *   starter    → Basic     ₹9,999 / month  (500 min, 1 assistant)
- *   growth     → Standard  ₹17,999 / month (1,000 min, 3 assistants)
- *   enterprise → Pro       ₹25,999 / month (1,500 min, 5 assistants)
- *
- * All prices are + 18% GST (tax_exclusive in Stripe). No annual billing
- * option exists in the current pricing model — monthly only.
+ * Pricing v2 (2026-10-08) — plan data from src/lib/pricing.ts (mirrors the
+ * backend billing/plan-catalog.ts). Customer-facing names / internal IDs:
+ *   lite       → Starter   ₹4,999 / month  (200 min, 1 simultaneous call)
+ *   starter    → Basic     ₹9,999 / month  (500 min, 2)
+ *   growth     → Standard  ₹17,999 / month (1,000 min, 3)
+ *   enterprise → Pro       ₹29,999 / month (1,500 min, 5, premium voices included)
+ * All prices are + 18% GST. Annual = 10 months' price for 12, setup fee waived.
+ * Extra minutes: prepaid top-up packs (100 min ₹2,000 · 500 min ₹9,000, 90 days).
  *
  * Routes:
- *   GET  /api/v1/billing/status   → current plan + usage
- *   POST /api/v1/billing/checkout → Stripe Checkout URL
+ *   GET  /api/v1/billing/status   → current plan + usage + top-up balance
+ *   POST /api/v1/billing/checkout → Stripe Checkout URL ({ plan, interval })
+ *   POST /api/v1/billing/topups/checkout → top-up pack checkout ({ pack })
  *   POST /api/v1/billing/addons/premium-voices/checkout → Premium Voices add-on checkout
- *
- * Premium voices (ElevenLabs, Azure, PlayHT): included on Pro; add-on on
- * Basic (₹2,999/mo) and Standard (₹4,999/mo). Backend: agents/voice-pricing.ts.
  */
 
 import { useEffect, useState } from 'react';
@@ -25,9 +22,14 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import {
   CheckCircle2, Zap, Building2, Loader2, AlertCircle, ChevronRight,
-  X, CreditCard, BarChart3, Users, FileText, Clock, Rocket, Phone, Mic,
+  X, CreditCard, BarChart3, Users, FileText, Clock, Rocket, Phone, Mic, RefreshCw,
 } from 'lucide-react';
 import api from '@/utils/api';
+import {
+  PLANS as PLAN_CATALOG, PLAN_NAMES, PLAN_ORDER, TOPUP_PACKS, TOPUP_VALIDITY_DAYS,
+  inr, monthlyEquivalent,
+  type BillingInterval, type PaidPlanId, type PlanId, type TopupPackId,
+} from '@/lib/pricing';
 
 // ─── Design tokens (mirrors DashboardLayout + DashboardPage) ─────────────────
 const T = {
@@ -49,7 +51,7 @@ const T = {
 };
 
 // ─── Types ────────────────────────────────────────────────────────────────────
-type Plan = 'free' | 'starter' | 'growth' | 'enterprise';
+type Plan = PlanId;
 
 interface BillingStatus {
   plan:             Plan;
@@ -58,6 +60,11 @@ interface BillingStatus {
   teamMembers:      { used: number; limit: number | null };
   /** Monthly call-minute quota. limit=null = unlimited. resetAt = ISO date of next reset. */
   callMinutes:      { used: number; limit: number | null; resetAt: string };
+  /** Prepaid top-up minutes left (used after the plan allowance) */
+  topupMinutes?:    { balance: number; nextExpiry: string | null; canBuy: boolean };
+  concurrentCalls?: number;
+  billingInterval?: BillingInterval | null;
+  setupFeePaid?:    boolean;
   stripeCustomerId: string | null;
   isInTrial:        boolean;
   isTrialExpired:   boolean;
@@ -70,112 +77,38 @@ interface BillingStatus {
     addonActive:    boolean;
     addonEligible:  boolean;
     addonPriceInr:  number | null;
-    pricesInr:      { starter: number; growth: number };
+    pricesInr:      { lite?: number; starter: number; growth: number };
   };
 }
 
-// ─── Plan definitions — source of truth: AgentOps Studio SaaS Pricing &
-// Stripe Setup doc (2026-09-17). Customer-facing names: Basic/Standard/Pro.
-const PLANS: Array<{
-  id:          Plan;
-  name:        string;
-  price:       string;
-  period:      string;
-  description: string;
-  features:    string[];
-  notIncluded: string[];
-  highlight:   boolean;
-  targetPlan?: 'starter' | 'growth' | 'enterprise';
-  accentRgb:   string;
-  accentColor: string;
-  badgeBg:     string;
-  badgeBdr:    string;
-}> = [
-  {
-    id:          'starter',
-    name:        'Basic',
-    price:       '₹9,999',
-    period:      '/ month + GST',
-    description: 'Solo shops, <10 calls/day',
-    features:    [
-      '500 minutes / month',
-      '1 AI assistant',
-      '1 voice (standard Hindi/English)',
-      'Premium voices add-on: ₹2,999/month',
-      '50 KB knowledge base',
-      'Google Sheets + WhatsApp alerts',
-      'Call logging, basic routing',
-      'Call logs analytics',
-      '1 concurrent call',
-      '₹25/min additional minutes',
-      'Email support (business hours)',
-    ],
-    notIncluded: ['Order capture & appointment booking', 'CRM / n8n / Razorpay integrations', 'Sentiment analysis'],
-    highlight:   false,
-    targetPlan:  'starter',
-    accentRgb:   '100,116,139',
-    accentColor: T.t2,
-    badgeBg:     'rgba(115,115,115,0.2)',
-    badgeBdr:    T.bdr,
-  },
-  {
-    id:          'growth',
-    name:        'Standard',
-    price:       '₹17,999',
-    period:      '/ month + GST',
-    description: 'Active businesses, 10–30 calls/day',
-    features:    [
-      '1,000 minutes / month',
-      '3 AI assistants',
-      '3 voices',
-      'Premium voices add-on: ₹4,999/month',
-      '200 KB knowledge base',
-      '+ CRM, n8n workflows, Razorpay',
-      '+ Order capture, appointment booking',
-      'Call trends, sentiment analysis',
-      '2 concurrent calls',
-      '₹20/min additional minutes',
-      'Priority email + WhatsApp support',
-    ],
-    notIncluded: [],
-    highlight:   true,
-    targetPlan:  'growth',
-    accentRgb:   '59,130,246',
-    accentColor: T.blueL,
-    badgeBg:     'rgba(33,241,168,0.15)',
-    badgeBdr:    'rgba(33,241,168,0.3)',
-  },
-  {
-    id:          'enterprise',
-    name:        'Pro',
-    price:       '₹25,999',
-    period:      '/ month + GST',
-    description: 'Multi-branch, high volume',
-    features:    [
-      '1,500 minutes / month',
-      '5 AI assistants',
-      'All voices + custom voice cloning',
-      'Premium voices included (ElevenLabs, Azure, PlayHT)',
-      '500 KB knowledge base',
-      'Unlimited integrations',
-      'Full automation suite + custom workflows',
-      'Full analytics + monthly reports',
-      '3 concurrent calls',
-      '₹18/min additional minutes',
-      'Dedicated account manager',
-      'Fair-use cap: 3,000 min',
-    ],
-    notIncluded: [],
-    highlight:   false,
-    targetPlan:  'enterprise',
-    accentRgb:   '139,92,246',
-    accentColor: '#5CF4BF',
-    badgeBg:     'rgba(15,201,138,0.15)',
-    badgeBdr:    'rgba(15,201,138,0.3)',
-  },
-];
+// ─── Plan cards — data from src/lib/pricing.ts; only built features (BIZ-07) ──
+const PLAN_STYLE: Record<PaidPlanId, { accentRgb: string; accentColor: string; badgeBg: string; badgeBdr: string }> = {
+  lite:       { accentRgb: '100,116,139', accentColor: T.t2,      badgeBg: 'rgba(115,115,115,0.2)', badgeBdr: T.bdr },
+  starter:    { accentRgb: '100,116,139', accentColor: T.t2,      badgeBg: 'rgba(115,115,115,0.2)', badgeBdr: T.bdr },
+  growth:     { accentRgb: '33,241,168',  accentColor: T.blueL,   badgeBg: 'rgba(33,241,168,0.15)', badgeBdr: 'rgba(33,241,168,0.3)' },
+  enterprise: { accentRgb: '15,201,138',  accentColor: '#5CF4BF', badgeBg: 'rgba(15,201,138,0.15)', badgeBdr: 'rgba(15,201,138,0.3)' },
+};
 
-const PLAN_ORDER: Plan[] = ['starter', 'growth', 'enterprise'];
+const PLANS = PLAN_CATALOG.map((p) => ({
+  id:          p.id as Plan,
+  name:        p.name,
+  def:         p,
+  description: p.tagline,
+  features: [
+    `${p.includedMinutes.toLocaleString('en-IN')} minutes / month (≈ ${p.approxCalls} calls)`,
+    `${p.concurrentCalls} simultaneous call${p.concurrentCalls > 1 ? 's' : ''}`,
+    p.premiumVoiceAddonInr === null ? 'Premium voices included' : `Premium voices add-on ${inr(p.premiumVoiceAddonInr)}/mo`,
+    `${p.kbDocs} knowledge-base documents`,
+    p.teamMembers === null ? 'Unlimited team members'
+      : p.teamMembers === 0 ? 'Owner account only'
+      : `${p.teamMembers} team member${p.teamMembers > 1 ? 's' : ''}`,
+    'Extra minutes: top-up packs',
+    p.support,
+  ],
+  highlight:   p.featured,
+  targetPlan:  p.id,
+  ...PLAN_STYLE[p.id],
+}));
 
 // ─── UsageMeter ───────────────────────────────────────────────────────────────
 function UsageMeter({ label, used, limit, icon: Icon, subtitle }: {
@@ -307,12 +240,14 @@ function TrialBanner({
 
 // ─── PlanCard ─────────────────────────────────────────────────────────────────
 function PlanCard({
-  plan, currentPlan, onUpgrade, upgrading,
+  plan, currentPlan, onUpgrade, upgrading, interval, setupFeePaid,
 }: {
-  plan:        typeof PLANS[number];
-  currentPlan: Plan;
-  onUpgrade:   (targetPlan: 'starter' | 'growth' | 'enterprise') => void;
-  upgrading:   string | null;
+  plan:         typeof PLANS[number];
+  currentPlan:  Plan;
+  onUpgrade:    (targetPlan: PaidPlanId) => void;
+  upgrading:    string | null;
+  interval:     BillingInterval;
+  setupFeePaid: boolean;
 }) {
   const isCurrent   = plan.id === currentPlan;
   const isDowngrade = PLAN_ORDER.indexOf(plan.id) < PLAN_ORDER.indexOf(currentPlan);
@@ -392,12 +327,19 @@ function PlanCard({
           fontWeight: 800, letterSpacing: '-0.04em', lineHeight: 1,
           color: plan.highlight ? T.blueL : T.t1,
         }}>
-          {plan.price}
+          {inr(monthlyEquivalent(plan.def, interval))}
         </span>
-        {plan.period && (
-          <span style={{ fontSize: 12, color: T.t3, marginLeft: 4 }}>{plan.period}</span>
-        )}
+        <span style={{ fontSize: 12, color: T.t3, marginLeft: 4 }}>/ month + GST</span>
       </div>
+      <p style={{ fontSize: 11, color: T.t3, margin: '2px 0 0' }}>
+        {interval === 'year' ? `Billed ${inr(plan.def.annualInr)} / year` : 'Billed monthly'}
+        {' · '}
+        {plan.def.setupFeeInr === 0
+          ? 'no setup fee'
+          : interval === 'year' || setupFeePaid
+            ? 'setup fee waived'
+            : `+ ${inr(plan.def.setupFeeInr)} one-time setup`}
+      </p>
 
       <p style={{ fontSize: 12, color: T.t2, margin: '10px 0 16px', lineHeight: 1.5 }}>
         {plan.description}
@@ -410,12 +352,6 @@ function PlanCard({
         {plan.features.map((f) => (
           <li key={f} style={{ display: 'flex', alignItems: 'flex-start', gap: 8, fontSize: 12, color: T.t2 }}>
             <CheckCircle2 size={13} style={{ color: T.em, flexShrink: 0, marginTop: 1 }} />
-            {f}
-          </li>
-        ))}
-        {plan.notIncluded.map((f) => (
-          <li key={f} style={{ display: 'flex', alignItems: 'flex-start', gap: 8, fontSize: 12, color: T.t3 }}>
-            <span style={{ fontSize: 11, flexShrink: 0, marginTop: 1, fontWeight: 700 }}>–</span>
             {f}
           </li>
         ))}
@@ -436,7 +372,7 @@ function PlanCard({
 
       {showUpgrade && (
         <button
-          onClick={() => onUpgrade(plan.targetPlan!)}
+          onClick={() => onUpgrade(plan.targetPlan)}
           disabled={!!upgrading}
           style={{
             display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
@@ -444,7 +380,7 @@ function PlanCard({
             background: plan.highlight
               ? 'linear-gradient(135deg, #21F1A8, #0FC98A)'
               : `rgba(${plan.accentRgb},0.15)`,
-            color: plan.highlight ? '#fff' : plan.accentColor,
+            color: plan.highlight ? '#171717' : plan.accentColor,
             fontSize: 12, fontWeight: 700, cursor: upgrading ? 'not-allowed' : 'pointer',
             opacity: upgrading ? 0.6 : 1,
             transition: 'opacity 0.2s',
@@ -478,7 +414,6 @@ function PremiumVoicesCard({ addon, onBuy, buying, onManage, managing, hasStripe
   managing:          boolean;
   hasStripeCustomer: boolean;
 }) {
-  const inr = (n: number) => `₹${n.toLocaleString('en-IN')}`;
   const { includedInPlan, addonActive, addonEligible, addonPriceInr, pricesInr } = addon;
 
   let status: string;
@@ -495,8 +430,8 @@ function PremiumVoicesCard({ addon, onBuy, buying, onManage, managing, hasStripe
     status = `${inr(addonPriceInr)} / month + GST`;
     detail = 'Unlock ElevenLabs, Azure and PlayHT voices for your agent. Billed monthly, cancel any time. Included free on Pro.';
   } else {
-    status = 'Basic, Standard or Pro';
-    detail = `Available as an add-on on Basic (${inr(pricesInr.starter)}/mo) and Standard (${inr(pricesInr.growth)}/mo), and included on Pro. Choose a paid plan below first.`;
+    status = 'Paid plans only';
+    detail = `Available as an add-on on Starter (${inr(pricesInr.lite ?? 1_499)}/mo), Basic (${inr(pricesInr.starter)}/mo) and Standard (${inr(pricesInr.growth)}/mo), and included on Pro. Choose a paid plan below first.`;
   }
 
   return (
@@ -550,10 +485,98 @@ function PremiumVoicesCard({ addon, onBuy, buying, onManage, managing, hasStripe
   );
 }
 
+// ─── Top-up packs card ────────────────────────────────────────────────────────
+function TopupCard({ topup, onBuy, buying }: {
+  topup:  NonNullable<BillingStatus['topupMinutes']>;
+  onBuy:  (pack: TopupPackId) => void;
+  buying: TopupPackId | null;
+}) {
+  const expiry = topup.nextExpiry
+    ? new Date(topup.nextExpiry).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })
+    : null;
+  return (
+    <div id="topups" style={{
+      borderRadius: 16, padding: 20, background: T.bgC, border: `1px solid ${T.bdr}`,
+      display: 'flex', alignItems: 'center', gap: 14, flexWrap: 'wrap',
+    }}>
+      <div style={{
+        width: 40, height: 40, borderRadius: 11, flexShrink: 0,
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.2)',
+      }}>
+        <RefreshCw size={18} style={{ color: T.em }} />
+      </div>
+      <div style={{ flex: '1 1 260px', minWidth: 0 }}>
+        <p style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.1em', color: T.t3, margin: '0 0 3px' }}>
+          Top-up minutes
+        </p>
+        <p style={{ fontSize: 15, fontWeight: 700, color: T.t1, margin: '0 0 4px' }}>
+          {topup.balance.toLocaleString('en-IN')} min left{expiry ? ` · first expiry ${expiry}` : ''}
+        </p>
+        <p style={{ fontSize: 12, color: T.t2, margin: 0, lineHeight: 1.5 }}>
+          {topup.canBuy
+            ? `Used after your monthly minutes run out. Valid ${TOPUP_VALIDITY_DAYS} days. No automatic overage charges.`
+            : 'Top-up packs are available once you are on a paid plan.'}
+        </p>
+      </div>
+      {topup.canBuy && (
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+          {TOPUP_PACKS.map((pack) => (
+            <button
+              key={pack.id}
+              onClick={() => onBuy(pack.id)}
+              disabled={!!buying}
+              style={{
+                display: 'flex', alignItems: 'center', gap: 6, padding: '9px 14px', borderRadius: 9,
+                background: pack.id === 'topup_500' ? T.blue : 'rgba(33,241,168,0.08)',
+                border: pack.id === 'topup_500' ? 'none' : '1px solid rgba(33,241,168,0.2)',
+                color: pack.id === 'topup_500' ? '#171717' : T.blueL,
+                fontSize: 12, fontWeight: 700,
+                cursor: buying ? 'not-allowed' : 'pointer', opacity: buying && buying !== pack.id ? 0.6 : 1,
+              }}
+            >
+              {buying === pack.id
+                ? <><Loader2 size={12} style={{ animation: 'bilSpin 1s linear infinite' }} /> Redirecting…</>
+                : <>{pack.minutes} min · {inr(pack.priceInr)}</>}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function IntervalSwitch({ value, onChange }: { value: BillingInterval; onChange: (v: BillingInterval) => void }) {
+  return (
+    <div role="radiogroup" aria-label="Billing period" style={{
+      display: 'inline-flex', padding: 3, gap: 3, borderRadius: 999, border: `1px solid ${T.bdr}`, background: T.bgS,
+    }}>
+      {([['month', 'Monthly'], ['year', 'Annual · 2 months free']] as const).map(([v, label]) => (
+        <button
+          key={v}
+          role="radio"
+          aria-checked={value === v}
+          onClick={() => onChange(v)}
+          style={{
+            padding: '5px 12px', borderRadius: 999, border: 'none', cursor: 'pointer',
+            fontSize: 11.5, fontWeight: 700,
+            background: value === v ? T.blue : 'transparent',
+            color: value === v ? '#171717' : T.t2,
+          }}
+        >
+          {label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
 export default function BillingPage() {
   const [searchParams] = useSearchParams();
   const navigate       = useNavigate();
   const [upgrading, setUpgrading] = useState<string | null>(null);
+  const [interval, setBillingInterval] = useState<BillingInterval>('month');
+  const [buyingPack, setBuyingPack] = useState<TopupPackId | null>(null);
   const [toast, setToast]         = useState<{ type: 'success' | 'error'; msg: string } | null>(null);
 
   // Inject spin keyframe
@@ -573,7 +596,12 @@ export default function BillingPage() {
     const upgraded  = searchParams.get('upgraded');
     const cancelled = searchParams.get('cancelled');
     const addon     = searchParams.get('addon');
-    if (addon === 'premium_voices') {
+    const topup     = searchParams.get('topup');
+    if (topup) {
+      const pack = TOPUP_PACKS.find((p) => p.id === topup);
+      setToast({ type: 'success', msg: `Payment received — ${pack ? pack.minutes : 'your'} top-up minutes will show here within a minute.` });
+      navigate('/billing', { replace: true });
+    } else if (addon === 'premium_voices') {
       setToast({ type: 'success', msg: 'Premium voices added. You can now pick ElevenLabs, Azure and PlayHT voices for your agent.' });
       navigate('/billing', { replace: true });
     } else if (upgraded === 'true') {
@@ -601,8 +629,8 @@ export default function BillingPage() {
   });
 
   const checkoutMutation = useMutation({
-    mutationFn: async (plan: 'starter' | 'growth' | 'enterprise') => {
-      const res = await api.post<{ success: boolean; data: { url: string } }>('/billing/checkout', { plan });
+    mutationFn: async (plan: PaidPlanId) => {
+      const res = await api.post<{ success: boolean; data: { url: string } }>('/billing/checkout', { plan, interval });
       return res.data.data.url;
     },
     onSuccess: (url) => { window.location.href = url; },
@@ -647,7 +675,28 @@ export default function BillingPage() {
     },
   });
 
-  function handleUpgrade(plan: 'starter' | 'growth' | 'enterprise') {
+  const topupMutation = useMutation({
+    mutationFn: async (pack: TopupPackId) => {
+      const res = await api.post<{ success: boolean; data: { url: string } }>('/billing/topups/checkout', { pack });
+      return res.data.data.url;
+    },
+    onSuccess: (url) => { window.location.href = url; },
+    onError: (err: unknown) => {
+      const msg =
+        err && typeof err === 'object' && 'response' in err
+          ? ((err as { response?: { data?: { message?: string } } }).response?.data?.message ?? 'Could not start top-up checkout')
+          : 'Could not start top-up checkout';
+      setToast({ type: 'error', msg });
+      setBuyingPack(null);
+    },
+  });
+
+  function handleBuyPack(pack: TopupPackId) {
+    setBuyingPack(pack);
+    topupMutation.mutate(pack);
+  }
+
+  function handleUpgrade(plan: PaidPlanId) {
     setUpgrading(plan);
     checkoutMutation.mutate(plan);
   }
@@ -757,8 +806,8 @@ export default function BillingPage() {
                 Current Plan
               </p>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                <p style={{ fontSize: 18, fontWeight: 800, color: T.t1, margin: 0, letterSpacing: '-0.02em', textTransform: 'capitalize' }}>
-                  {data?.isInTrial ? 'Free Trial' : currentPlan}
+                <p style={{ fontSize: 18, fontWeight: 800, color: T.t1, margin: 0, letterSpacing: '-0.02em' }}>
+                  {data?.isInTrial ? 'Free Trial' : PLAN_NAMES[currentPlan] ?? currentPlan}
                 </p>
                 {data?.isInTrial && (
                   <span style={{
@@ -776,7 +825,9 @@ export default function BillingPage() {
                     padding: '2px 8px', borderRadius: 999,
                     background: currentPlanDef.badgeBg, border: `1px solid ${currentPlanDef.badgeBdr}`,
                   }}>
-                    {currentPlanDef.price}{currentPlanDef.period && ` ${currentPlanDef.period}`}
+                    {data.billingInterval === 'year'
+                      ? `${inr(currentPlanDef.def.annualInr)} / year + GST`
+                      : `${inr(currentPlanDef.def.monthlyInr)} / month + GST`}
                   </span>
                 )}
               </div>
@@ -823,12 +874,24 @@ export default function BillingPage() {
               used={data.callMinutes.used}
               limit={data.callMinutes.limit}
               icon={Phone}
-              subtitle={`Resets ${new Date(data.callMinutes.resetAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}`}
+              subtitle={`Resets ${new Date(data.callMinutes.resetAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}${data.topupMinutes?.balance ? ` · + ${data.topupMinutes.balance} top-up min` : ''}`}
             />
+            {data.concurrentCalls !== undefined && (
+              <div style={{
+                padding: '16px 18px', borderRadius: 12, background: T.bgC, border: `1px solid ${T.bdr}`,
+                display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8,
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <Phone size={13} style={{ color: T.t3 }} />
+                  <span style={{ fontSize: 12, fontWeight: 600, color: T.t2 }}>Simultaneous calls</span>
+                </div>
+                <span style={{ fontSize: 12, fontWeight: 700, color: T.t1 }}>{data.concurrentCalls}</span>
+              </div>
+            )}
           </div>
 
           {/* Limit warnings */}
-          {data.callMinutes.limit !== null && data.callMinutes.used >= data.callMinutes.limit && (
+          {data.callMinutes.limit !== null && data.callMinutes.used >= data.callMinutes.limit + (data.topupMinutes?.balance ?? 0) && (
             <div style={{
               display: 'flex', alignItems: 'flex-start', gap: 10,
               padding: '11px 14px', borderRadius: 10,
@@ -836,9 +899,10 @@ export default function BillingPage() {
             }}>
               <Phone size={14} style={{ color: T.rose, flexShrink: 0, marginTop: 1 }} />
               <span style={{ fontSize: 12, color: T.rose, lineHeight: 1.5 }}>
-                <strong>Monthly call limit reached.</strong> Inbound calls are currently blocked to
-                prevent unexpected Vapi charges. Upgrade below or wait until{' '}
+                <strong>All minutes used.</strong> New calls go to your fallback number (or hear a short
+                &ldquo;please call back&rdquo; message) until{' '}
                 {new Date(data.callMinutes.resetAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'long' })}.
+                {data.topupMinutes?.canBuy ? ' Buy a top-up pack below to keep your AI receptionist answering.' : ' Choose a plan below to keep your AI receptionist answering.'}
               </span>
             </div>
           )}
@@ -857,6 +921,11 @@ export default function BillingPage() {
           )}
         </div>
       ) : null}
+
+      {/* Top-up packs */}
+      {data?.topupMinutes && (
+        <TopupCard topup={data.topupMinutes} onBuy={handleBuyPack} buying={buyingPack} />
+      )}
 
       {/* Premium Voices add-on */}
       {data?.premiumVoiceAddon && (
@@ -884,9 +953,10 @@ export default function BillingPage() {
             Choose a Plan
           </span>
           <div style={{ flex: 1, height: 1, background: T.bdr }} />
+          <IntervalSwitch value={interval} onChange={setBillingInterval} />
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12, alignItems: 'start' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 12, alignItems: 'start' }}>
           {PLANS.map((plan) => (
             <PlanCard
               key={plan.id}
@@ -894,6 +964,8 @@ export default function BillingPage() {
               currentPlan={currentPlan}
               onUpgrade={handleUpgrade}
               upgrading={upgrading}
+              interval={interval}
+              setupFeePaid={!!data?.setupFeePaid}
             />
           ))}
         </div>
@@ -901,7 +973,7 @@ export default function BillingPage() {
 
       {/* Footer note */}
       <p style={{ fontSize: 11, color: T.t3, textAlign: 'center', margin: 0 }}>
-        All prices in ₹ INR · GST invoices available · Cancel anytime ·{' '}
+        All prices in ₹ + 18% GST · GST invoices · Annual = 2 months free, setup waived · Cancel anytime ·{' '}
         <a href="mailto:support@agentops.studio" style={{ color: T.blueL, textDecoration: 'none', fontWeight: 600 }}>
           Contact support
         </a>

@@ -2,13 +2,15 @@
 
 > **Founder**: Rishabh Sharma  
 > **CEO Agent**: Claude (orchestrator)  
-> **Last updated**: 2026-10-01 10:15 IST (launch-readiness checklist audit → Wave 5)
+> **Last updated**: 2026-10-08 11:45 IST (Pricing v2 built on branch `feat/pricing-v2`, not committed; Waves 1–3 + cost reduction merged and deployed)
 > **Operating model**: All 5 agents work in parallel on every task. No idle agents.  
 > **Gaps register**: `main-project-docs/gaps.md` — every task ID below links to a gap ID there  
 > **Go-to-market plan**: `main-project-docs/AI-Implementation-Offer-Plan.md` — sprints after S-HARDEN  
 > **Execution Framework**: `agents/EXECUTION-FRAMEWORK.md` · **SOP**: `agents/SOP.md` · **R&D Log**: `main-project-docs/RD-LOG.md`
 
 **Version history**
+- [2026-10-08 11:45] v3.1 — CEO Agent — Pricing v2 (founder request): new Wave 7 (P1–P8) built on local branch `feat/pricing-v2` (from `main`, uncommitted): Starter ₹4,999 plan, Pro ₹29,999 / 1,500 min, annual billing, setup fees, prepaid top-up packs, per-plan simultaneous-call limit, fallback-number transfer, 80/100% usage emails; Pricing/Billing/landing/Terms/super-admin updated; H4.2 pricing-page claims done. Backend + frontend `tsc` clean, frontend 36/36 tests + build OK, 11 pure pricing tests + 82 non-DB backend tests pass; 20 DB-backed pricing tests written but not run (no MongoDB binary in the sandbox) → run `npm test` before merge.
+- [2026-10-08 10:30] v3.0 — CEO Agent — Status refresh from git: Waves 1, 1b, 1c, 2, 3 and `feat/cost-reduction` are merged to `dev` and `main` (PRs #6–#15; Render/Vercel auto-deploy). Founder confirmed: Vapi tool secret set, Render secrets set, test phone order placed → SEC-01, SEC-04 closed. Added `scripts/create-premium-voice-prices.ts` (C7). Active task → production verification, then H4.2. Typecheck clean (backend + frontend); frontend tests 36/36 (AuthGuard/GuestGuard fixed in wave 1b).
 - [2026-10-02 18:10] v2.9 — CEO Agent — Wave 3 on `harden/wave3`: CORE-05 (Vercel /api rewrite), CORE-02 (shared worker client, all 8 workers + schedules on), SEC-07 (SSRF-safe crawler). Decisions: stay on Render + free Redis.
 - [2026-10-02 17:30] v2.8 — CEO Agent — Incident: SEC-12 single-org fallback overwrote Ritu's `vapiAssistantId` (restored). Wave 1: SEC-12 (`harden/wave1`), CI/OPS-01…03 + SEC-04 + SEC-02 (`harden/wave1b`), SEC-05 + SEC-06 (`harden/wave1c`).
 - [2026-10-02 16:20] v2.7 — CEO Agent — Wave 2: H2.1–H2.4 code done on `harden/wave2` (branched from `feat/cost-reduction`); both branches committed locally, not pushed. Pre-existing failures: frontend AuthGuard + GuestGuard tests.
@@ -92,30 +94,31 @@ Every sprint task has a lead agent. Every other agent runs a supporting or backg
 ## 🚀 Active Sprint — S-HARDEN: Launch Hardening
 
 **Goal**: close every P0 in `gaps.md`, then the P1s that block the first paying customer (multi-industry).  
-**Active task**: **H1.2 — SEC-02: rotate the super-admin password; move script credentials to env**. (H1.1 + H1.7 merged to `dev` via PR #6; the Vapi tool secret must be set before `dev` reaches production.)
+**P0 status (2026-10-08)**: every P0 is fixed in code and deployed from `main`. Still open: **SEC-03** (founder: rotate Redis password, remove the Redis URL comment in `backend/.env`) and three live checks below.  
+**Active task**: **Production verification** — H2.5 (log in on the Vercel URL), H2.6 (crawl a site, a KB doc reaches `ready`, Redis < 30 connections), H2.1 (structured output on the next live call). **Then H4.2** (pricing claims, refund risk) and the rest of Wave 4.
 
 ### Wave 1 — Security P0 (do first; mostly small changes)
 
 | Task | Gap | Description | Lead | Status |
 |---|---|---|---|---|
-| H1.1 | SEC-01 | Reject missing, mismatched or wrong-length `x-webhook-secret`; configure the header on the Vapi tool; add tests | 🟢 | 🟡 code + 10 tests merged to `dev` (PR #6); fails closed, accepts `x-webhook-secret` or `x-vapi-secret`. **Deploy blocked** until the Vapi tool sends the secret (Founder Actions) |
-| H1.2 | SEC-02 | Rotate the super-admin password; move script credentials to env or a prompt | 🟢 + Founder | ✅ scripts read env/hidden prompt (`harden/wave1b`); password rotated 2026-10-02 |
-| H1.3 | SEC-03 | Rotate the Redis password; strip the `.env` comment; delete `.env.bak` | Founder | ⏳ |
-| H1.4 | SEC-04 | Make `SA_JWT_SECRET` required in production; confirm it is set on Render | 🟢 | 🟡 code on `harden/wave1b` (boot refuses dev default) — confirm Render value |
-| H1.5 | SEC-05 | Mount `validateOrganization` + `attachEffectivePlan` + role/permission checks on all org routes; honour `X-Organization-ID` | 🟢 | 🟡 code on `harden/wave1c`: `orgContext` + `requireOwner`/`requirePermission` on every org router; services use `membershipFilter` (AsyncLocalStorage); `attachEffectivePlan` left for H4.1 |
-| H1.6 | SEC-06 | Phone-number link: uniqueness + ownership check, Owner-only; retire manual UUID entry | 🟢 | 🟡 code on `harden/wave1c` (Owner-only, UUID format, 409 if held by another org); manual entry not yet retired |
+| H1.1 | SEC-01 | Reject missing, mismatched or wrong-length `x-webhook-secret`; configure the header on the Vapi tool; add tests | 🟢 | ✅ deployed (`main`, PR #13); Vapi tool secret set + test phone order placed 2026-10-08 |
+| H1.2 | SEC-02 | Rotate the super-admin password; move script credentials to env or a prompt | 🟢 + Founder | ✅ scripts read env/hidden prompt (PR #11); password rotated 2026-10-02. Optional: purge git history |
+| H1.3 | SEC-03 | Rotate the Redis password; strip the `.env` comment; delete `.env.bak` | Founder | ⏳ `.env.bak` deleted; Redis URL still in a comment in `backend/.env` (lines 68–69); password rotation not confirmed |
+| H1.4 | SEC-04 | Make `SA_JWT_SECRET` required in production; confirm it is set on Render | 🟢 | ✅ deployed (PR #11); `SA_JWT_SECRET` confirmed on Render 2026-10-08 |
+| H1.5 | SEC-05 | Mount `validateOrganization` + `attachEffectivePlan` + role/permission checks on all org routes; honour `X-Organization-ID` | 🟢 | ✅ deployed (PR #12): `orgContext` + `requireOwner`/`requirePermission` on every org router; `attachEffectivePlan` → H4.1 |
+| H1.6 | SEC-06 | Phone-number link: uniqueness + ownership check, Owner-only; retire manual UUID entry | 🟢 | 🟡 deployed (PR #12): Owner-only, UUID format, 409 if held by another org. Manual UUID entry in Settings not yet retired |
 | H1.7 | SEC-13 | Stop publishing source maps: `sourcemap: 'hidden'` + Sentry upload in CI; verify no `.map` is served | 🟢 | ✅ code merged to `dev` (PR #6): build leaves 0 `.map` files; Sentry uploads then deletes when `SENTRY_AUTH_TOKEN` is set |
 
 ### Wave 2 — Core flow P0
 
 | Task | Gap | Description | Lead | Status |
 |---|---|---|---|---|
-| H2.1 | CORE-01 | Pass `artifact` into the call-report job; webhook test | 🟢 + 🟠 | 🟡 code on `harden/wave2`: shared mapper also carries `costBreakdown` + `call.cost` (were dropped too); tests in `hardening-wave2.test.ts` |
-| H2.2 | BIZ-01 | Minutes gate + billing status respect the month boundary | 🟢 | 🟡 code on `harden/wave2` (`utils/callMinutes.ts`) + gate tests |
-| H2.3 | CORE-03 | Exclude Vapi webhook and tool routes from the global rate limiter | 🟢 | 🟡 code on `harden/wave2` (`middleware/rateLimitExempt.ts`: webhooks/vapi, orders/submit, tools) + tests |
-| H2.4 | CORE-04 | Fix Dashboard response unwrapping (`/agents`, `/calls`) | 🟢 | 🟡 code on `harden/wave2` (`utils/unwrapList.ts`) + frontend test |
-| H2.5 | CORE-05 | Verify production login; add a custom domain or a Vercel `/api` rewrite | 🟢 + Founder | 🟡 code on `harden/wave3`: Vercel `/api` rewrite → Render (founder decision: keep Render, no domain yet); trust proxy 2 + per-account auth limit. Verify login after deploy |
-| H2.6 | CORE-02 | Consolidate worker Redis connections, or upgrade Redis; re-enable crawl → kb → callMinutesReset → followUpAlert → trial jobs | 🟢 | 🟡 code on `harden/wave3` (founder decision: stay on free Redis): all 8 workers on one shared client — measured 16 → 9 connections for 8 workers (bullmq 5.79.1); `jobs/registry.ts`, `WORKERS_DISABLED`; schedules on. SEC-07 SSRF fixed first (`utils/safeFetch.ts`) |
+| H2.1 | CORE-01 | Pass `artifact` into the call-report job; webhook test | 🟢 + 🟠 | 🟡 deployed (PR #8): artifact, `costBreakdown`, `call.cost` passed to the job. Verify structured output on the next live call |
+| H2.2 | BIZ-01 | Minutes gate + billing status respect the month boundary | 🟢 | ✅ deployed (PR #8): `utils/callMinutes.ts` + gate tests |
+| H2.3 | CORE-03 | Exclude Vapi webhook and tool routes from the global rate limiter | 🟢 | ✅ deployed (PR #8): `middleware/rateLimitExempt.ts` + tests |
+| H2.4 | CORE-04 | Fix Dashboard response unwrapping (`/agents`, `/calls`) | 🟢 | ✅ deployed (PR #8): `utils/unwrapList.ts` + frontend test |
+| H2.5 | CORE-05 | Verify production login; add a custom domain or a Vercel `/api` rewrite | 🟢 + Founder | 🟡 deployed (PR #14/#15): Vercel `/api` rewrite, trust proxy 2, per-account auth limit. **Verify login on the Vercel URL** |
+| H2.6 | CORE-02 | Consolidate worker Redis connections, or upgrade Redis; re-enable crawl → kb → callMinutesReset → followUpAlert → trial jobs | 🟢 | 🟡 deployed (PR #14/#15): Render log 2026-10-08 shows 8/8 workers started, 11 Redis connections, churn scan ran; SEC-07 SSRF fix. **Verify one crawl + KB doc reaches `ready`** |
 
 ### Wave 3 — Multi-industry foundation (P1)
 
@@ -133,7 +136,7 @@ Every sprint task has a lead agent. Every other agent runs a supporting or backg
 | Task | Gap | Description | Lead | Status |
 |---|---|---|---|---|
 | H4.1 | BIZ-02, BIZ-03 | Single `getEffectivePlan(org)` (trial = Basic; override + expiry) used everywhere | 🟢 | ⏳ |
-| H4.2 | BIZ-04, BIZ-07 | Align plan numbers with the pricing doc; mark unbuilt features "coming soon" (WhatsApp, Sheets, CRM, n8n, booking, reports) | 🔵 + 🟡 | ⏳ ⚡ pull forward — do in S-HARDEN (refund/trust risk) |
+| H4.2 | BIZ-04, BIZ-07 | Align plan numbers with the pricing doc; mark unbuilt features "coming soon" (WhatsApp, Sheets, CRM, n8n, booking, reports) | 🔵 + 🟡 | 🟡 Pricing page, landing pricing, Billing page, Terms done in Wave 7 (P6, only built features listed; plan numbers served from one catalog). Still open: Services + Industries copy (FE-19) |
 | H4.3 | BIZ-05 | Stripe `invoice.payment_failed` handling + event idempotency | 🟢 | ⏳ |
 | H4.4 | BIZ-06 | Gate outbound calls (trial, quota, role) | 🟢 | ⏳ |
 | H4.5 | TEAM-01…04 | Invite permissions, backend permission parity, route guards, per-session refresh tokens | 🟢 | ⏳ |
@@ -141,7 +144,7 @@ Every sprint task has a lead agent. Every other agent runs a supporting or backg
 | H4.7 | SEC-07…12 | Remaining security P1s (SSRF, access-log membership, email escaping, SA rate limit, auth hardening, order fallback) | 🟢 | ⏳ |
 | H4.8 | CORE-06, 08, 09 | `status-update` handling, real transcript timestamps, crawl-poll timeout | 🟢 | ⏳ |
 | H4.9 | FE-01…03, FE-09 | Contact form endpoint, real testimonials, legal placeholders; required Terms/Privacy consent checkbox at signup + `termsAcceptedAt` | 🟡 + 🟢 + Founder | ⏳ |
-| H4.10 | OPS-01…03 | Remove the ECS deploy workflow; fix CI e2e; add webhook, orders and minutes tests | 🟢 | ⏳ |
+| H4.10 | OPS-01…03 | Remove the ECS deploy workflow; fix CI e2e; add webhook, orders and minutes tests | 🟢 | 🟡 OPS-01 done (ECS workflow removed, PR #11); e2e + webhook/orders/minutes tests partly done (OPS-02/03) |
 
 ### Wave 5 — Launch readiness (site, legal, SEO, performance) — from the 2026-10-01 checklist audit
 
@@ -166,18 +169,33 @@ Mostly frontend; can run in parallel with Waves 1–2. Checklist status: `gaps.m
 
 ### Wave 6 — Cost reduction (founder request 2026-10-02) — `gaps.md` § 14
 
-Branch `feat/cost-reduction` (not merged). Backend + frontend `tsc` clean; 23 new unit/route tests pass; DB-backed suites not run locally (no MongoDB binary in the sandbox) — run `npm test` in CI.
+Merged to `dev` and `main` (with Wave 2, PR #8 → #13). Backend + frontend `tsc` clean; 23 new unit/route tests pass; DB-backed suites not run locally (no MongoDB binary in the sandbox) — run `npm test` in CI.
 
 | Task | Gap | Description | Lead | Status |
 |---|---|---|---|---|
-| C1 | COST-01 | LLM registry `config/llm.ts` + `LLM_MODEL` (default gpt-4o-mini); one temperature (0.3); `scripts/set-assistant-model.ts` | 🟠 + 🟢 | ✅ code |
-| C2 | COST-02 | Compact catalog; lookup tools (`search_catalog`, `search_knowledge_base`, `POST /api/v1/tools/lookup`) above 60 items / 3,000 KB chars; FAQ de-dup | 🟠 + 🟢 | ✅ code |
-| C3 | COST-03 | Every prompt push re-sends tool IDs (KB sync / language change no longer detach `submit_order`) | 🟢 | ✅ code — verify on live assistant |
-| C4 | COST-04 | Voice tiers: premium voices Pro-only (API 403 + locked picker); Naina settings kept on voice change | 🟢 + 🔵 | ✅ code |
-| C5 | COST-05 | Real per-call cost + breakdown stored; margin page = Vapi + telephony, prorated revenue, cost/min, estimate share; `scripts/backfill-call-costs.ts` | 🟢 + 🟣 | ✅ code |
+| C1 | COST-01 | LLM registry `config/llm.ts` + `LLM_MODEL` (default gpt-4o-mini); one temperature (0.3); `scripts/set-assistant-model.ts` | 🟠 + 🟢 | ✅ deployed (`main`) |
+| C2 | COST-02 | Compact catalog; lookup tools (`search_catalog`, `search_knowledge_base`, `POST /api/v1/tools/lookup`) above 60 items / 3,000 KB chars; FAQ de-dup | 🟠 + 🟢 | ✅ deployed (`main`) |
+| C3 | COST-03 | Every prompt push re-sends tool IDs (KB sync / language change no longer detach `submit_order`) | 🟢 | ✅ deployed — verify tools stay attached after a KB sync |
+| C4 | COST-04 | Voice tiers: premium voices Pro-only (API 403 + locked picker); Naina settings kept on voice change | 🟢 + 🔵 | ✅ deployed (`main`) |
+| C5 | COST-05 | Real per-call cost + breakdown stored; margin page = Vapi + telephony, prorated revenue, cost/min, estimate share; `scripts/backfill-call-costs.ts` | 🟢 + 🟣 | ✅ deployed; backfill run 2026-10-08 → 0 calls missing a cost (all stored calls already carry Vapi cost). Remaining: set `TELEPHONY_COST_PER_MIN_USD` from the Vobiz invoice |
 | C6 | COST-06 | Evals on gpt-4o-mini vs gpt-4o, then switch the live Ritu assistant | 🟠 → Founder | ⏳ |
-| C7 | COST-07, BIZ-07 | Premium Voices add-on: Stripe checkout + webhook (never touches `plan`), Billing card, plan cards + pricing table, auto-cancel on Pro, voice downgrade when access is lost | 🟢 + 🟡 | ✅ code — needs Stripe prices |
-| C8 | COST-08 | Tool safety net: every model update merges the live assistant's tools (submit_order / end call can't be dropped) | 🟢 | ✅ code |
+| C7 | COST-07, BIZ-07 | Premium Voices add-on: Stripe checkout + webhook (never touches `plan`), Billing card, plan cards + pricing table, auto-cancel on Pro, voice downgrade when access is lost | 🟢 + 🟡 | 🟡 deployed; Stripe **test-mode** product `prod_VOx1okXak7TCWB` + prices created 2026-10-08 (Basic `price_1UO97mCSV37glksW99DenmFQ`, Standard `price_1UO97nCSV37glksW8bK0XP31`); portal cancel ON. Set IDs on Render; repeat with the live key at go-live |
+| C8 | COST-08 | Tool safety net: every model update merges the live assistant's tools (submit_order / end call can't be dropped) | 🟢 | ✅ deployed (`main`) |
+
+### Wave 7 — Pricing v2 (founder request 2026-10-08) — `gaps.md` § 15 · `Pricing-Redesign-2026-10.md`
+
+Branch `feat/pricing-v2` (local, from `main`, **not committed**). Plan catalog: `backend/src/modules/billing/plan-catalog.ts` ⇄ `frontend/src/lib/pricing.ts` (values checked equal).
+
+| Task | Gap | Description | Lead | Status |
+|---|---|---|---|---|
+| P1 | PRC-01, BIZ-04 | Plan catalog + `PLAN_LIMITS`: new `lite` = Starter ₹4,999 / 200 min / 1 call; Basic ₹9,999 / 500 / 2; Standard ₹17,999 / 1,000 / 3; Pro ₹29,999 / 1,500 / 5 (3,000-min hard cap removed); annual = 10× monthly | 🟢 + 🔵 | 🟡 code done, tests written |
+| P2 | PRC-02, BIZ-05, OFR-01 | Checkout `{ plan, interval }`: annual prices; one-time setup fee (₹4,999 Basic/Standard, ₹14,999 Pro) on the first monthly checkout, waived on annual; webhook stores `billingInterval`, `setupFeePaidAt` | 🟢 | 🟡 code done |
+| P3 | PRC-03, BIZ-05 | Prepaid top-up packs (100 min ₹2,000 · 500 min ₹9,000, 90 days): `POST /billing/topups/checkout`, credit on `checkout.session.completed` / `async_payment_succeeded` (idempotent per session), FIFO consumption after the plan allowance | 🟢 | 🟡 code done |
+| P4 | PRC-04 | assistant-request gate: allowance + pack balance; per-plan simultaneous-call limit (active calls < 20 min old); transfer to `fallbackNumber` (Vapi `destination`) instead of a dead line; caller never hears "limit reached" | 🟢 + 🟠 | 🟡 code done — verify the Vapi transfer on a live call |
+| P5 | PRC-05 | 80% / 100% usage emails (once per month, atomic claim) with top-up link | 🟢 + 🟣 | 🟡 code done |
+| P6 | PRC-06, BIZ-07 | UI: Pricing page (4 plans, monthly/annual toggle, "every plan includes", top-ups, comparison), landing pricing, Billing page (plan names, interval switch, top-up card, simultaneous calls), Terms § 6, Why-us, super-admin plan lists/labels/MRR | 🔵 + 🟡 + 🟢 | 🟡 code done, build OK |
+| P7 | PRC-07 | Premium Voices add-on on Starter (₹1,499) | 🟢 | 🟡 code done |
+| P8 | PRC-08 | `scripts/create-pricing-v2-prices.ts` (dry run by default) + `.env.example` + `render.yaml` keys; `scripts/update-stripe-webhook-events.ts` adds `checkout.session.async_payment_succeeded` | 🟢 | ✅ backend `npm test` 388/388 (founder, 2026-10-08); Stripe **test-mode** prices created 2026-10-08 and written to local `.env` — set them on Render |
 
 ### Supporting lanes this sprint (zero-idle)
 
@@ -232,16 +250,16 @@ Source and full specs: `main-project-docs/AI-Implementation-Offer-Plan.md`. Gap 
 
 | Priority | Action | Why |
 |---|---|---|
-| 🔴 P0 | **Before `dev` (with PR #6) is deployed to production**: in the Vapi dashboard, open the `submit_order` tool → Server → set **Secret** to the same value as `VAPI_TOOL_WEBHOOK_SECRET` (Vapi then sends `x-vapi-secret`), and confirm that variable is set on Render. Otherwise every order tool call returns 401 after deploy. Then place one test order by phone | SEC-01 |
-| 🔴 P0 | Rotate the **super-admin password** (it is committed in `backend/scripts/*super-admin*.js`) | SEC-02 |
-| 🔴 P0 | Rotate the **Redis Cloud password**; remove the commented URL from `backend/.env`; delete `backend/.env.bak` | SEC-03 |
-| 🔴 P0 | Confirm `SA_JWT_SECRET`, `VAPI_WEBHOOK_SECRET` and `VAPI_TOOL_WEBHOOK_SECRET` are set on Render | SEC-01, SEC-04 |
-| 🔴 P0 | Log in on the production Vercel URL and confirm the dashboard loads (cross-site cookie check) | CORE-05 |
-| 🟡 P1 | Decide: paid Redis plan, or approve worker consolidation work | CORE-02, OPS-04 |
+| 🔴 P0 | Rotate the **Redis Cloud password** (update `REDIS_URL` on Render + local `.env`); delete the `redis-cli -u …` comment at the end of `backend/.env` | SEC-03 |
+| 🔴 P0 | Log in on `https://agent-ops-studio-eight.vercel.app` and confirm the dashboard loads | CORE-05 (H2.5) |
+| 🔴 P0 | Run one website crawl in onboarding; add one KB document and confirm it reaches `ready` (8/8 workers running, 11 Redis connections — confirmed in Render logs 2026-10-08) | CORE-02 (H2.6) |
+| 🟡 P1 | **Premium Voices**: set `STRIPE_PREMIUM_VOICES_BASIC_PRICE_ID_INR=price_1UO97mCSV37glksW99DenmFQ` and `STRIPE_PREMIUM_VOICES_STANDARD_PRICE_ID_INR=price_1UO97nCSV37glksW8bK0XP31` on Render (test mode; matches Render only if Render uses `sk_test_`). At go-live, re-run `create-premium-voice-prices.ts --apply` with the live key and swap the IDs | COST-07 (C7) |
+| 🟡 P1 | Set `TELEPHONY_COST_PER_MIN_USD` on Render from the Vobiz invoice (default 0.006) — backfill already done (0 calls needed it) | COST-05 (C5) |
 | 🟡 P1 | **D1**: approve the go-to-market model — AgentOps Studio platform + managed "AI implementation" offer (setup fee + monthly plan) | `AI-Implementation-Offer-Plan.md` § 4 |
 | 🟡 P1 | **D2**: pick **one** beachhead niche (replaces "choose 2–3 launch industries"); default = electrical/hardware retail | GTM-01 |
 | 🟡 P1 | Fill in the legal-page placeholders (entity, address, GSTIN, grievance officer); advocate review | FE-03 |
-| 🟡 P1 | Stripe: INR prices for all 3 plans (incl. `STRIPE_PRO_PRICE_ID_INR`), activate the customer portal | BIZ-05 |
+| 🔴 P0 (before charging) | **Pricing v2**: review branch `feat/pricing-v2`, run `npm test` (backend, needs MongoDB binary download) and commit/PR; then `cd backend && npx tsx scripts/create-pricing-v2-prices.ts` (dry run) → `--apply`, and set the printed 10 price IDs + new `STRIPE_PRO_PRICE_ID_INR` (₹29,999) on Render | PRC-01…08 |
+| 🟡 P1 | Ask each customer to set a **fallback number** in Settings (calls transfer there when minutes run out or lines are busy) | PRC-04 |
 | 🟢 P2 | **D3–D5**: managed service in Pro or paid add-on; which plans get webhooks/n8n; first CRM for templates | Plan § 8 |
 | 🟢 P2 | Formspree form ID (or approve a backend contact endpoint); real testimonials | FE-01, FE-02 |
 | 🟢 P2 | Set `VITE_SENTRY_DSN` in production; UptimeRobot on `/api/v1/health` | Monitoring |
@@ -249,16 +267,17 @@ Source and full specs: `main-project-docs/AI-Implementation-Offer-Plan.md`. Gap 
 | 🟡 P1 | Create a Cloudflare Turnstile site (site key + secret) for Register and Contact | FE-10 |
 | 🟡 P1 | Pick the analytics tool: Plausible (paid, cookieless) or Vercel Web Analytics; decide whether Sentry Replay stays on public pages | FE-11, FE-12 |
 | 🟡 P1 | **Cost (C6)**: run evals on GPT-4o-mini vs GPT-4o (`node scripts/vapi-evals/local-evals.mjs --provider openai --model gpt-4o-mini --judge-model gpt-4o --repeat 3`, then the same with `--model gpt-4o`); if mini is as good, `cd backend && npx tsx scripts/set-assistant-model.ts --assistant 100b3bd9-5038-4f11-b487-7ced98d8a3dd --apply` | COST-06 |
-| 🟡 P1 | **Cost**: after deploying `feat/cost-reduction`, run `npx tsx scripts/backfill-call-costs.ts --apply` once; set `TELEPHONY_COST_PER_MIN_USD` from the Vobiz invoice; set `PUBLIC_API_URL` if not on Render | COST-05, COST-02 |
-| 🟡 P1 | **Cost (C7)**: Stripe → product "Premium Voices Add-on" with two recurring monthly INR prices, ₹2,999 and ₹4,999 (tax-exclusive); set `STRIPE_PREMIUM_VOICES_BASIC_PRICE_ID_INR` and `STRIPE_PREMIUM_VOICES_STANDARD_PRICE_ID_INR` on Render; allow subscription cancellation in the Customer Portal | COST-07 · pricing doc § 11 |
 | 🟢 P2 | **D6**: approve converting the 5 agents to Claude Code subagents + adding 3–4 specialists (AppSec, code reviewer) with chained handoffs instead of all-agents-every-turn | `gaps.md` § 13 |
 
 ---
 
 ## ✅ Completed Work (condensed history)
 
+**Founder actions done 2026-10-08**: Vapi `submit_order` tool secret set; `SA_JWT_SECRET`, `VAPI_WEBHOOK_SECRET`, `VAPI_TOOL_WEBHOOK_SECRET` confirmed on Render; test phone order placed. Done 2026-10-02: super-admin password rotated; Redis decision (stay on free tier, shared worker client).
+
 | Date | Milestone | Key deliverables |
 |---|---|---|
+| 2026-10-01 → 10-08 | S-HARDEN Waves 1–3 + cost reduction | All P0 code fixes and C1–C8 merged to `dev`/`main` (PRs #6, #8, #10–#15) and auto-deployed to Render + Vercel |
 | 2026-06-16 → 06-26 | Layer 1 foundation + L2 auth | Express/TS/Mongo/Redis/BullMQ skeleton; React 19/Vite/Tailwind 4 shell; guards; Docker; CI; 8 auth endpoints |
 | 2026-06-26 | L2.F3–F4 onboarding | `POST/PATCH /onboarding/org`, `/complete`; 5-step wizard |
 | 2026-07-04 → 07-09 | Voice routing + calls UI | assistant-request handler, business hours gate, phone-number link, CallDetailPage polish |
@@ -308,6 +327,7 @@ Source and full specs: `main-project-docs/AI-Implementation-Offer-Plan.md`. Gap 
 
 | Date | Decision | Owner | Rationale |
 |---|---|---|---|
+| 2026-10-08 | **Pricing v2**: Starter ₹4,999 (new) · Basic ₹9,999 · Standard ₹17,999 · Pro ₹29,999 (was ₹25,999, 1,500 min, no 3,000 cap); annual = 2 months free; setup ₹0/₹4,999/₹4,999/₹14,999 waived on annual; prepaid top-ups ₹20/₹18 per min; premium add-on ₹1,499 on Starter | Founder (T0) | Pro could lose up to ₹9,303/customer/month; blended margin ≈63%, floor ≈37% (`Pricing-Redesign-2026-10.md`) |
 | 2026-10-02 | Keep the backend on Render (not Vercel); API reached through a Vercel `/api` rewrite; stay on the Redis Cloud free tier | Founder (T0) | Backend needs a long-running process (BullMQ workers, fast Vapi webhooks); rewrite makes cookies first-party without a domain; shared worker client fits 8 workers in ~11 connections |
 | 2026-10-02 | Premium voices: **included on Pro; add-on ₹2,999/mo on Basic, ₹4,999/mo on Standard** (+ GST); not sold on the trial | Founder (T0) | Covers the extra ElevenLabs cost at full usage; Standard + add-on stays below Pro (pricing doc § 11) |
 | 2026-10-02 | **PROPOSED**: default LLM GPT-4o → GPT-4o-mini (env `LLM_MODEL`, revert anytime); stay on Vapi (own platform revisit at ~20–30k min/month) | CEO Agent → Founder (T0 for pricing part) | GPT-4o was the largest controllable cost per minute; Vapi fee ($0.05/min) only pays back at volume (`gaps.md` § 14). Supersedes 2026-06-26 "GPT-4o default" once evals pass |

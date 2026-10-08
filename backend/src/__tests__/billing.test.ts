@@ -200,7 +200,7 @@ describe('POST /api/v1/billing/checkout', () => {
     const res = await request(app)
       .post('/api/v1/billing/checkout')
       .set('Cookie', cookie)
-      .send({ plan: 'bogus-plan' }); // not one of starter/growth/enterprise
+      .send({ plan: 'bogus-plan' }); // not one of lite/starter/growth/enterprise
 
     expect(res.status).toBe(400);
     expect(res.body.code).toBe('INVALID_PLAN');
@@ -302,9 +302,11 @@ describe('GET /api/v1/billing/status', () => {
 
     expect(res.status).toBe(200);
     expect(res.body.data.plan).toBe('enterprise');
-    // Pro: 500 KB docs, 3,000 min fair-use ceiling (finite, not unlimited).
+    // Pro (pricing v2): 500 KB docs, 1,500 included min (extra via top-up packs), 5 simultaneous calls.
     expect(res.body.data.kbDocs.limit).toBe(500);
-    expect(res.body.data.callMinutes.limit).toBe(3000);
+    expect(res.body.data.callMinutes.limit).toBe(1500);
+    expect(res.body.data.concurrentCalls).toBe(5);
+    expect(res.body.data.topupMinutes).toEqual({ balance: 0, nextExpiry: null, canBuy: true });
     // teamMembers is unchanged by the pricing update — still unlimited on Pro.
     expect(res.body.data.teamMembers.limit).toBeNull();
   });

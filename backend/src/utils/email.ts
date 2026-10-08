@@ -135,7 +135,7 @@ export async function sendTrialDay5Email(
         <a href="${upgradeUrl}"
            style="display:inline-block;padding:14px 28px;background:#6366f1;color:white;
                   text-decoration:none;border-radius:8px;font-weight:700;font-size:15px;margin:8px 0;">
-          Upgrade Now — from ₹4,100/month
+          Upgrade Now — from ₹4,999/month
         </a>
 
         <p style="color: #6b7280; font-size: 13px; margin-top: 20px;">
@@ -228,6 +228,63 @@ export async function sendPasswordResetEmail(
         </a>
         <p style="color: #6b7280; font-size: 14px;">This link expires in <strong>1 hour</strong>.</p>
         <p style="color: #6b7280; font-size: 14px;">If you didn't request this, ignore this email — your password won't change.</p>
+        <hr style="border:none;border-top:1px solid #e5e7eb;margin:24px 0;"/>
+        <p style="color: #9ca3af; font-size: 12px;">AgentOps Studio — AI Voice Agent Operations Platform</p>
+      </body>
+      </html>
+    `,
+  });
+}
+
+/**
+ * Usage alert — sent once a month when the org crosses 80% and 100% of its
+ * plan's included call minutes (pricing v2). Points the Owner to top-up packs.
+ */
+export async function sendUsageAlertEmail(opts: {
+  email:       string;
+  name:        string;
+  orgName:     string;
+  planName:    string;
+  percent:     number;
+  used:        number;
+  limit:       number;
+  packBalance: number;
+}): Promise<void> {
+  const billingUrl = `${env.CLIENT_URL}/billing#topups`;
+  const full = opts.percent >= 100;
+  const headline = full
+    ? `You've used all ${opts.limit} included minutes this month`
+    : `You've used ${opts.percent}% of your included minutes`;
+  const body = full
+    ? (opts.packBalance > 0
+        ? `Your agent keeps answering using your top-up balance (${opts.packBalance} min left).`
+        : `With no top-up minutes left, new calls are forwarded to your fallback number (or hear a short "call back later" message) until the 1st of next month. Buy a top-up pack to keep your AI receptionist answering.`)
+    : `You have ${Math.max(0, opts.limit - opts.used)} of ${opts.limit} minutes left on the ${opts.planName} plan this month.`;
+
+  await sendEmail({
+    to: opts.email,
+    subject: `${full ? '⚠️' : '📈'} ${headline} — ${opts.orgName}`,
+    html: `
+      <!DOCTYPE html>
+      <html>
+      <body style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 24px; background: #ffffff;">
+        <h1 style="color: #171717; font-size: 20px; margin: 0 0 12px;">${headline}</h1>
+        <p style="color: #374151; font-size: 15px; line-height: 1.6;">Hi ${opts.name},</p>
+        <p style="color: #374151; font-size: 15px; line-height: 1.6;">
+          <strong>${opts.orgName}</strong> has used <strong>${opts.used} of ${opts.limit}</strong> call minutes
+          included in the ${opts.planName} plan this month. ${body}
+        </p>
+        <p style="color: #374151; font-size: 15px; line-height: 1.6;">
+          Top-up packs: 100 min for ₹2,000 or 500 min for ₹9,000 (+ GST), valid 90 days.
+        </p>
+        <a href="${billingUrl}"
+           style="display:inline-block;padding:12px 24px;background:#21F1A8;color:#171717;
+                  text-decoration:none;border-radius:8px;font-weight:700;font-size:15px;margin:8px 0;">
+          Buy a top-up pack
+        </a>
+        <p style="color: #6b7280; font-size: 13px; margin-top: 20px;">
+          Included minutes reset on the 1st of each month. Need more every month? Upgrading gives a lower price per minute.
+        </p>
         <hr style="border:none;border-top:1px solid #e5e7eb;margin:24px 0;"/>
         <p style="color: #9ca3af; font-size: 12px;">AgentOps Studio — AI Voice Agent Operations Platform</p>
       </body>

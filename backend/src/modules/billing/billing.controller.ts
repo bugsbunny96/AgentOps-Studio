@@ -1,10 +1,11 @@
 import type { Request, Response, NextFunction } from 'express';
-import { createCheckoutSession, handleStripeWebhook, getBillingStatus, createPortalSession, createPremiumVoiceAddonCheckout } from './billing.service';
+import { createCheckoutSession, handleStripeWebhook, getBillingStatus, createPortalSession, createPremiumVoiceAddonCheckout, createTopupCheckout } from './billing.service';
 import { BadRequest } from '../../middleware/errorHandler';
 
 /**
  * POST /api/v1/billing/checkout
- * Body: { plan: 'starter' | 'growth' | 'enterprise' } (Basic | Standard | Pro)
+ * Body: { plan: 'lite' | 'starter' | 'growth' | 'enterprise', interval?: 'month' | 'year' }
+ *       (Starter | Basic | Standard | Pro; annual = 10 months' price for 12, setup fee waived)
  * Returns: { url } — redirect the browser to this Stripe Checkout URL
  */
 export async function createCheckoutSessionHandler(
@@ -13,8 +14,8 @@ export async function createCheckoutSessionHandler(
   next: NextFunction,
 ): Promise<void> {
   try {
-    const { plan } = req.body as { plan?: string };
-    const result = await createCheckoutSession(req.userId!, plan ?? '');
+    const { plan, interval } = req.body as { plan?: string; interval?: string };
+    const result = await createCheckoutSession(req.userId!, plan ?? '', interval ?? 'month');
     res.status(200).json({ success: true, data: result });
   } catch (err) {
     next(err);
@@ -84,7 +85,7 @@ export async function getBillingStatusHandler(
 
 /**
  * POST /api/v1/billing/addons/premium-voices/checkout
- * Stripe Checkout for the Premium Voices add-on (Basic ₹2,999 / Standard ₹4,999 a month).
+ * Stripe Checkout for the Premium Voices add-on (Starter ₹1,499 / Basic ₹2,999 / Standard ₹4,999 a month).
  * Returns: { url } — redirect the browser to this Stripe Checkout URL
  */
 export async function createPremiumVoiceAddonCheckoutHandler(
@@ -94,6 +95,25 @@ export async function createPremiumVoiceAddonCheckoutHandler(
 ): Promise<void> {
   try {
     const result = await createPremiumVoiceAddonCheckout(req.userId!);
+    res.status(200).json({ success: true, data: result });
+  } catch (err) {
+    next(err);
+  }
+}
+
+/**
+ * POST /api/v1/billing/topups/checkout
+ * Body: { pack: 'topup_100' | 'topup_500' } — ₹2,000 / 100 min, ₹9,000 / 500 min (+ GST)
+ * Returns: { url } — redirect the browser to this Stripe Checkout URL
+ */
+export async function createTopupCheckoutHandler(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
+  try {
+    const { pack } = req.body as { pack?: string };
+    const result = await createTopupCheckout(req.userId!, pack ?? '');
     res.status(200).json({ success: true, data: result });
   } catch (err) {
     next(err);

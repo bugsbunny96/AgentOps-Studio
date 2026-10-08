@@ -12,7 +12,7 @@ export type EnterpriseLinkStatus = 'active' | 'used' | 'expired' | 'revoked';
 export interface IEnterpriseLink extends Document {
   _id:         mongoose.Types.ObjectId;
   token:       string;            // URL-safe unique token
-  plan:        string;            // plan to auto-assign: 'starter' | 'growth' | 'enterprise'
+  plan:        string;            // plan to auto-assign: 'lite' | 'starter' | 'growth' | 'enterprise'
   trialDays:   number;            // custom trial length (0 = no trial, direct paid)
   /** Prospect metadata pre-filled in the onboarding form */
   prefilledName?:     string;
@@ -32,7 +32,7 @@ export interface IEnterpriseLink extends Document {
 const EnterpriseLinkSchema = new Schema<IEnterpriseLink>(
   {
     token:              { type: String, required: true, unique: true, index: true },
-    plan:               { type: String, enum: ['free', 'starter', 'growth', 'enterprise'], required: true },
+    plan:               { type: String, enum: ['free', 'lite', 'starter', 'growth', 'enterprise'], required: true },
     trialDays:          { type: Number, default: 14 },
     prefilledName:      { type: String },
     prefilledEmail:     { type: String },

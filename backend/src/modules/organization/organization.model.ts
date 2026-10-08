@@ -2,7 +2,19 @@ import mongoose, { Schema, Document } from 'mongoose';
 
 // ─── Organization ──────────────────────────────────────────────────────────
 export type CrawlStatus = 'idle' | 'pending' | 'processing' | 'completed' | 'failed';
-export type Plan = 'free' | 'starter' | 'growth' | 'enterprise';
+/** Internal plan IDs: lite = "Starter", starter = "Basic", growth = "Standard", enterprise = "Pro" (billing/plan-catalog.ts). */
+export type Plan = 'free' | 'lite' | 'starter' | 'growth' | 'enterprise';
+export const PLAN_VALUES: readonly Plan[] = ['free', 'lite', 'starter', 'growth', 'enterprise'];
+
+/** A prepaid top-up pack of extra call minutes (pricing v2). */
+export interface IMinutePack {
+  packId:          string;
+  minutes:         number;
+  remaining:       number;
+  purchasedAt:     Date;
+  expiresAt:       Date;
+  stripeSessionId: string;
+}
 
 export interface IOrganization extends Document {
   _id: mongoose.Types.ObjectId;
@@ -70,6 +82,15 @@ export interface IOrganization extends Document {
   /** Premium-voices add-on (Basic/Standard only; Pro includes premium voices). Separate Stripe subscription. */
   premiumVoiceAddon?: boolean;
   premiumVoiceAddonSubscriptionId?: string;
+  /** Billing period of the plan subscription (annual = 10 months' price for 12). */
+  billingInterval?: 'month' | 'year';
+  /** Set once the one-time setup fee has been paid (charged on the first monthly checkout only). */
+  setupFeePaidAt?: Date;
+  /** Prepaid top-up packs; used after the plan's included minutes (FIFO by expiry). */
+  minutePacks: IMinutePack[];
+  /** Month-start of the last 80% / 100% usage-alert email (one of each per month). */
+  usageAlert80At?: Date;
+  usageAlert100At?: Date;
   // ── Super-admin plan override ─────────────────────────────────────────
   /** When set, the SA has directly overridden the plan outside of Stripe. */
   planOverride?: Plan;
@@ -196,7 +217,7 @@ const OrganizationSchema = new Schema<IOrganization>(
     // ── Billing ────────────────────────────────────────────────────────
     plan: {
       type:    String,
-      enum:    ['free', 'starter', 'growth', 'enterprise'],
+      enum:    [...PLAN_VALUES],
       default: 'free',
     },
     stripeCustomerId:     { type: String, index: true, sparse: true },
@@ -204,8 +225,26 @@ const OrganizationSchema = new Schema<IOrganization>(
     premiumVoiceAddon:               { type: Boolean, default: false },
     premiumVoiceAddonSubscriptionId: { type: String, index: true, sparse: true },
     stripePriceId:        { type: String },
+    billingInterval:      { type: String, enum: ['month', 'year'], default: undefined },
+    setupFeePaidAt:       { type: Date },
+    minutePacks: {
+      type: [
+        {
+          _id:             false,
+          packId:          { type: String, required: true },
+          minutes:         { type: Number, required: true, min: 0 },
+          remaining:       { type: Number, required: true, min: 0 },
+          purchasedAt:     { type: Date, required: true },
+          expiresAt:       { type: Date, required: true },
+          stripeSessionId: { type: String, required: true },
+        },
+      ],
+      default: [],
+    },
+    usageAlert80At:       { type: Date },
+    usageAlert100At:      { type: Date },
     // ── Plan override ──────────────────────────────────────────────────
-    planOverride:         { type: String, enum: ['free', 'starter', 'growth', 'enterprise'], default: undefined },
+    planOverride:         { type: String, enum: [...PLAN_VALUES], default: undefined },
     planOverrideExpiry:   { type: Date, default: null },
     planOverrideBy:       { type: String },
     planOverrideAt:       { type: Date },

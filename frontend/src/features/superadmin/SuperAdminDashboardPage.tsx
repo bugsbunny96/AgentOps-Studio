@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { Building2, Users, CheckCircle, XCircle, Activity } from 'lucide-react';
 import api from '@/utils/api';
+import { PLAN_NAMES } from '@/lib/pricing';
 
 const T = {
   bgC:  'rgba(255,255,255,0.04)',
@@ -18,7 +19,7 @@ interface Stats {
   totalUsers: number;
   activeUsers: number;
   suspendedUsers: number;
-  plans: { free: number; starter: number; growth: number; enterprise: number };
+  plans: { free: number; lite?: number; starter: number; growth: number; enterprise: number };
 }
 
 interface Health {
@@ -119,7 +120,7 @@ export default function SuperAdminDashboardPage() {
               {Object.entries(stats?.plans ?? {}).map(([plan, count]) => (
                 <div key={plan}>
                   <p style={{ fontSize: 20, fontWeight: 800, color: T.t1, margin: 0 }}>{count}</p>
-                  <p style={{ fontSize: 11, color: T.t2, margin: 0, textTransform: 'capitalize' }}>{plan}</p>
+                  <p style={{ fontSize: 11, color: T.t2, margin: 0 }}>{PLAN_NAMES[plan as keyof typeof PLAN_NAMES] ?? plan}</p>
                 </div>
               ))}
             </div>

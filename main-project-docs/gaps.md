@@ -1,6 +1,8 @@
 # AgentOps Studio — Gaps Register
 
 > **Version history**
+> - [2026-10-08 11:45] v2.8 — CEO Agent — Pricing v2 (founder request): added § 15 (PRC-01…PRC-08), built on local branch `feat/pricing-v2`. BIZ-04 fixed in code (one catalog; Pro 1,500 min + packs). BIZ-05 partly: setup fees and top-up packs are billable; `invoice.payment_failed` + event idempotency still open. OFR-01 setup-fee part done. Existing gaps otherwise unchanged.
+> - [2026-10-08 10:30] v2.7 — CEO Agent — P0 status refresh: all P0 code fixes merged to `main` (PRs #6–#15) and deployed; founder confirmed the Vapi tool secret, Render secrets and a test order. Closed: SEC-01, 02, 04, 05, CORE-03, 04, BIZ-01, COST-03, 08, BIZ-07, OPS-01. Open: SEC-03 (founder), SEC-06 (manual UUID entry), live checks for CORE-01, 02, 05. See "P0 status" below the summary.
 > - [2026-10-02 16:10] v2.6 — CEO Agent — COST-07 decided (Pro free, add-on ₹2,999 Basic / ₹4,999 Standard) and built; COST-08 (tool safety net) and BIZ-07 (any cancelled subscription downgraded the org) added and fixed in code.
 > - [2026-10-02 09:50] v2.5 — CEO Agent — Cost reduction (founder request): added § 14 (COST-01…COST-07). COST-01…05 fixed in code on branch `feat/cost-reduction`; COST-06/07 are founder actions. Existing gaps unchanged.
 > - [2026-10-01 11:05] v2.4 — CEO Agent — Design review against the "4 prompts / 5 AI-look mistakes" carousel (hierarchy, AI look, first 5 seconds, designer pass, gradients, colour rules, typography, motion) plus a live-site check at 317 px and 1366 px. Added FE-19…FE-24. FE-19 landing-page part fixed on `dev`.
@@ -36,6 +38,24 @@
 | Documentation | — | — | 3 |
 | AI implementation offer (GTM, integrations, ROI) | — | 6 | 4 |
 | Agent operating system (PROPOSED) | — | — | 2 |
+
+### P0 status (2026-10-08)
+
+| ID | Status |
+|---|---|
+| SEC-01 | ✅ Closed — deployed; Vapi tool secret set; test phone order placed 2026-10-08 |
+| SEC-02 | ✅ Closed — scripts use env / hidden prompt; password rotated 2026-10-02 (git-history purge optional) |
+| SEC-03 | 🔴 Open — `.env.bak` deleted; Redis URL still in a comment in `backend/.env`; rotation not confirmed (founder) |
+| SEC-04 | ✅ Closed — boot refuses the dev default in production; value confirmed on Render |
+| SEC-05 | ✅ Closed — `orgContext` + role/permission checks on every org router; `attachEffectivePlan` moves to BIZ-02 (H4.1) |
+| SEC-06 | 🟡 Mostly fixed — ownership/uniqueness + Owner-only deployed; manual UUID entry still on Settings |
+| CORE-01 | 🟡 Deployed — confirm structured output on the next live call |
+| CORE-02 | 🟡 Deployed — Render log 2026-10-08: 8/8 workers, 11 Redis connections; still confirm one crawl + KB doc `ready` |
+| CORE-03 | ✅ Closed — webhook/tool routes exempt from the global limiter |
+| CORE-04 | ✅ Closed — `unwrapList` + test |
+| CORE-05 | 🟡 Deployed — Vercel `/api` rewrite; confirm login on the Vercel URL |
+| BIZ-01 | ✅ Closed — month-boundary check in the gate and billing status |
+| COST-03, COST-05, COST-08, BIZ-07 | ✅ Deployed — COST-05 backfill run 2026-10-08: 0 calls needed it |
 
 ---
 
@@ -174,7 +194,7 @@
 | Mobile sidebar check | 🟡 The drawers work in all three layouts; page-level fixed grids remain (FE-17). Test on a real phone. |
 | Onboard 5 beta SMBs, Punjabi detection check | ⏳ Not started (no evidence in the repo). |
 | Sentry DSN in production | ❓ Founder action. |
-| CI/CD pipeline | 🟡 `ci.yml` exists; the deploy workflow targets the wrong platform (OPS-01), and e2e is likely broken (OPS-02). |
+| CI/CD pipeline | 🟡 `ci.yml` runs on `dev`/`main`; the ECS deploy workflow was removed (OPS-01, 2026-10-02); e2e fix in progress (OPS-02). |
 | Transcript full-text search | 🟡 Backend done; no UI (FE-07). |
 
 ---
@@ -267,4 +287,23 @@ Founder request: cut per-minute cost without leaving Vapi. Build-vs-buy note: a 
 | COST-07 | P1 | Premium-voice pricing. **Founder decision 2026-10-02: free on Pro; add-on ₹2,999/mo on Basic, ₹4,999/mo on Standard** (+ GST); not sold on the trial. Sarvam stays parked (not cheaper; needs an always-on bridge). | `voice-pricing.ts`; `billing.service.ts`; `BillingPage.tsx`; `PricingPage.tsx` | Separate Stripe add-on subscription (`POST /api/v1/billing/addons/premium-voices/checkout`); add-on card on Billing; prices on plan cards + public pricing table; auto-cancel (prorated) on upgrade to Pro; agent switched to the default voice when access is lost. Pricing doc § 11. | ✅ code — founder creates the 2 Stripe prices |
 | COST-08 | P0 | A model update could still drop `submit_order` / `end_receptionist_call` if their tool IDs were in neither the DB nor `.env` (e.g. tools attached by hand in the Vapi dashboard). | `vapi.service.ts` `vapiUpdateAssistant` | Every update that touches `model` first reads the live assistant and merges its tools in (`mergeModelTools`: tool IDs unioned; inline tools kept unless they are our own `search_*` lookup tools). If that read fails, the update is not sent. | ✅ code |
 | BIZ-07 | P0 | `customer.subscription.deleted` / `.updated` treated **any** subscription of the customer as the plan, so cancelling a second subscription (e.g. an add-on) would have downgraded the org to free. | `billing.service.ts` `handleStripeWebhook` | Add-on subscriptions are recognised (metadata `addon=premium_voices`, add-on price, or stored ID) and only toggle `premiumVoiceAddon`. | ✅ code |
+
+---
+
+## 15. Pricing v2 (2026-10-08)
+
+Source: `main-project-docs/Pricing-Redesign-2026-10.md` (cost, competitor and margin analysis). Founder request 2026-10-08: "update and adjust the new pricing everywhere required". Built on local branch `feat/pricing-v2` (from `main`), **not committed**. Catalog: `backend/src/modules/billing/plan-catalog.ts` ⇄ `frontend/src/lib/pricing.ts`.
+
+| ID | Priority | Gap (before) | Where | Fix | Status |
+|---|---|---|---|---|---|
+| PRC-01 | P0 | Pro (₹25,999) had a 3,000-min hard cap with free premium voices and no overage billing — up to −₹9,303/customer/month at full use. No entry plan below ₹11,799 incl. GST. | `PLAN_LIMITS`; pricing pages | One catalog: Starter (`lite`) ₹4,999/200 min/1 call · Basic ₹9,999/500/2 · Standard ₹17,999/1,000/3 · Pro ₹29,999/1,500/5. Annual = 10× monthly. | 🟡 code — founder creates Stripe prices |
+| PRC-02 | P1 | Setup fees advertised (₹9,999–24,999) but not billable; no annual billing. | `billing.service.ts` | Checkout `{ plan, interval }`; setup fee ₹4,999 (Basic/Standard) / ₹14,999 (Pro) once on the first monthly checkout, waived on annual; `billingInterval`, `setupFeePaidAt` stored. | 🟡 code |
+| PRC-03 | P1 | Recharge packs advertised but not purchasable; heavy users blocked. | billing; webhook gate | Prepaid top-ups 100 min ₹2,000 / 500 min ₹9,000, 90 days, paid plans only; `org.minutePacks`; credited idempotently per Checkout session (incl. delayed payments); FIFO consumption after the allowance. | 🟡 code |
+| PRC-04 | P1 | Over-limit callers heard "we've reached our monthly call limit"; no simultaneous-call limit per plan (one Vapi account, 4 free lines shared by all tenants). | `webhook.service.ts` | Gate = allowance + pack balance; per-plan simultaneous calls (active calls < 20 min old); transfer to the org's `fallbackNumber` via Vapi `destination`, else a neutral "call back later" message. | 🟡 code — **verify the `destination` transfer on a live call**; buy Vapi lines as customers grow |
+| PRC-05 | P2 | No usage warnings before the limit. | `webhook.service.ts`; `utils/email.ts` | 80% and 100% emails, once per month each (atomic claim), with top-up link. | 🟡 code |
+| PRC-06 | P1 | Pricing, Billing and landing pages listed unbuilt features (assistants, CRM, n8n, booking, sentiment, cloning) and old numbers; plan IDs shown raw ("starter") in places; Terms listed old prices; "Indian data residency" claim. | Pricing/Billing/landing/Terms/Why-us/super-admin | Only built features; four plans with monthly/annual toggle; top-up card; plan names everywhere; Terms § 6 updated (effective 8 Oct 2026); residency claim replaced. | 🟡 code |
+| PRC-07 | P2 | Premium voices add-on not sold on the new Starter plan. | `voice-pricing.ts` | ₹1,499/mo add-on on Starter. | 🟡 code — Stripe price via script |
+| PRC-08 | P2 | Pro "2 phone numbers" from the redesign is not supported (one number per org). | product | Not advertised; build later if Pro customers need it. | ⏳ backlog |
+
+Not done in v2 (still open): BIZ-05 dunning (`invoice.payment_failed`) and webhook event idempotency; auto top-up (needs saved-card mandates); per-number pricing.
 

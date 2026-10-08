@@ -17,7 +17,7 @@ declare namespace Express {
      * Equals org.plan except during an active trial, where it is 'growth'.
      * Set by the trialGate middleware.
      */
-    effectivePlan?: 'free' | 'starter' | 'growth' | 'enterprise';
+    effectivePlan?: 'free' | 'lite' | 'starter' | 'growth' | 'enterprise';
     /** Member's per-section access (Owners have full access) — set by orgContext */
     memberPermissions?: { agents: boolean; calls: boolean; knowledgeBase: boolean; team: boolean };
   }

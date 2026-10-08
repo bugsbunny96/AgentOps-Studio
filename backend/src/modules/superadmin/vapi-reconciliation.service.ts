@@ -12,10 +12,11 @@
  * The old constant assumed $0.012/min all-in. Vapi's platform fee alone is
  * $0.05/min, so that understated cost ~8–10× and hid at-risk orgs.
  *
- * Plan revenue (monthly, USD — approximate, converted from the INR subscription
- * prices at ~₹83/$1 for this internal tool only; INR pricing doc is the source of
- * truth): free $0 · starter (Basic ₹9,999) $120 · growth (Standard ₹17,999) $217 ·
- * enterprise (Pro ₹25,999) $313. Revenue is prorated to the selected period
+ * Plan revenue (monthly, USD — converted from the INR list prices in
+ * billing/plan-catalog.ts at USD_INR_RATE, default ₹96.77/$1 (7 Oct 2026); for this
+ * internal tool only): free $0 · lite (Starter ₹4,999) ≈ $52 · starter (Basic
+ * ₹9,999) ≈ $103 · growth (Standard ₹17,999) ≈ $186 · enterprise (Pro ₹29,999)
+ * ≈ $310. Revenue is prorated to the selected period
  * (periodDays / 30) so a 7-day view is not compared against a full month.
  *
  * Orgs with marginPct < MARGIN_ALERT_PCT are flagged as 'at-risk'.
@@ -25,13 +26,15 @@ import mongoose from 'mongoose';
 import { CallModel } from '../calls/call.model';
 import { OrganizationModel } from '../organization/organization.model';
 import { env } from '../../config/env';
+import { PLAN_CATALOG } from '../billing/plan-catalog';
 
 /** Monthly plan revenue in USD (per plan tier) — approximate, see header comment. */
 const PLAN_MONTHLY_REVENUE_USD: Record<string, number> = {
   free:       0,
-  starter:    120,
-  growth:     217,
-  enterprise: 313,
+  lite:       Math.round(PLAN_CATALOG.lite.monthlyInr       / env.USD_INR_RATE),
+  starter:    Math.round(PLAN_CATALOG.starter.monthlyInr    / env.USD_INR_RATE),
+  growth:     Math.round(PLAN_CATALOG.growth.monthlyInr     / env.USD_INR_RATE),
+  enterprise: Math.round(PLAN_CATALOG.enterprise.monthlyInr / env.USD_INR_RATE),
 };
 
 /** Warn when estimated margin drops below this % */

@@ -1,33 +1,29 @@
 import { Link } from 'react-router-dom';
 import { color, maxW } from '../tokens';
 import { GradientText, Pill, Reveal, SectionEyebrow, SectionHeading, cardStyle } from '../primitives';
+import { PLANS as PLAN_LIST, inr } from '../../../../lib/pricing';
 
-const PLANS = [
-  {
-    badge: 'Basic', badgeBg: 'rgba(115,115,115,.2)', badgeColor: color.text2, badgeBdr: color.border,
-    price: '₹9,999', per: 'per month + GST',
-    desc: 'For solo shops with under 10 calls/day.',
-    features: ['1 AI assistant', '500 minutes / month', '1 voice (Hindi/English)', 'Google Sheets + WhatsApp alerts'],
-    missing: ['Order capture & booking', 'CRM / n8n integrations'],
-    cta: 'Start Free Trial', ctaStyle: 'outline' as const, featured: false,
-  },
-  {
-    badge: 'Standard · Most Popular', badgeBg: 'rgba(33,241,168,.15)', badgeColor: color.blueLight, badgeBdr: 'rgba(33,241,168,.3)',
-    price: '₹17,999', per: 'per month + GST',
-    desc: 'For active businesses handling 10–30 calls/day.',
-    features: ['3 AI assistants', '1,000 minutes / month', 'Order capture & appointment booking', 'CRM + n8n + Razorpay', 'Call trends & sentiment analysis'],
-    missing: [],
-    cta: 'Start Free Trial', ctaStyle: 'primary' as const, featured: true,
-  },
-  {
-    badge: 'Pro', badgeBg: 'rgba(15,201,138,.15)', badgeColor: color.violetLight, badgeBdr: 'rgba(15,201,138,.3)',
-    price: '₹25,999', per: 'per month + GST',
-    desc: 'For multi-branch, high-volume operations.',
-    features: ['5 AI assistants', '1,500 minutes / month', 'All voices + custom cloning', 'Unlimited integrations', 'Dedicated account manager'],
-    missing: [],
-    cta: 'Start Free Trial', ctaStyle: 'outline' as const, featured: false,
-  },
-];
+// Pricing v2 (2026-10-08) — data from src/lib/pricing.ts; only built features (BIZ-07).
+const PLANS = PLAN_LIST.map((p) => ({
+  badge:    p.featured ? `${p.name} · Most Popular` : p.name,
+  badgeBg:  p.featured ? 'rgba(33,241,168,.15)' : 'rgba(115,115,115,.2)',
+  badgeColor: p.featured ? color.blueLight : color.text2,
+  badgeBdr: p.featured ? 'rgba(33,241,168,.3)' : color.border,
+  price:    inr(p.monthlyInr),
+  per:      'per month + GST',
+  desc:     p.tagline,
+  features: [
+    `${p.includedMinutes.toLocaleString('en-IN')} minutes / month (≈ ${p.approxCalls} calls)`,
+    `${p.concurrentCalls} simultaneous call${p.concurrentCalls > 1 ? 's' : ''}`,
+    'Hindi, English, Punjabi',
+    p.premiumVoiceAddonInr === null ? 'Premium voices included' : 'Standard voices (premium add-on)',
+    p.setupFeeInr === 0 ? 'Self-serve setup' : p.id === 'enterprise' ? 'Managed setup' : 'Guided setup',
+  ],
+  missing:  [] as string[],
+  cta:      'Start Free Trial',
+  ctaStyle: (p.featured ? 'primary' : 'outline') as 'primary' | 'outline',
+  featured: p.featured,
+}));
 
 export function PricingSection() {
   return (
@@ -39,11 +35,11 @@ export function PricingSection() {
             Simple pricing.<br /><GradientText>No surprises.</GradientText>
           </SectionHeading>
           <p style={{ fontSize: 15, color: color.text2, margin: '10px auto 0', lineHeight: 1.6 }}>
-            Plans designed for Indian SMBs. Pay in ₹.
+            Plans for Indian SMBs, from ₹4,999/month. Pay in ₹, monthly or yearly (2 months free).
           </p>
         </Reveal>
 
-        <div className="landing-grid-3" style={{ display: 'grid', gap: 14, marginTop: 44, alignItems: 'start' }}>
+        <div className="landing-grid-4" style={{ display: 'grid', gap: 14, marginTop: 44, alignItems: 'start' }}>
           {PLANS.map(({ badge, badgeBg, badgeColor, badgeBdr, price, per, desc, features, missing, cta, ctaStyle, featured }, i) => (
             <Reveal key={i} delay={i * 100}>
               <div
@@ -53,7 +49,6 @@ export function PricingSection() {
                     background: 'rgba(33,241,168,.07)',
                     border: '1px solid rgba(33,241,168,.3)',
                     boxShadow: '0 0 36px rgba(33,241,168,.12), 0 0 0 1px rgba(15,201,138,.2)',
-                    transform: 'scale(1.02)',
                   } : {}),
                 }}
               >
@@ -95,6 +90,12 @@ export function PricingSection() {
             </Reveal>
           ))}
         </div>
+        <p style={{ textAlign: 'center', marginTop: 24, fontSize: 13, color: color.text3 }}>
+          Extra minutes from ₹18/min with top-up packs.{' '}
+          <Link to="/pricing" style={{ color: color.blueLight, textDecoration: 'none', fontWeight: 600 }}>
+            Compare all plans →
+          </Link>
+        </p>
       </div>
     </section>
   );

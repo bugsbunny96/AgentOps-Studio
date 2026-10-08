@@ -1,3 +1,4 @@
+import { PLAN_CATALOG } from '../billing/plan-catalog';
 import bcrypt from 'bcryptjs';
 import mongoose from 'mongoose';
 import { UserModel } from '../auth/auth.model';
@@ -9,13 +10,15 @@ import { Unauthorized, BadRequest, NotFound } from '../../middleware/errorHandle
 import { sendEmail } from '../../utils/email';
 
 // ── Plan pricing constants (INR / month) ─────────────────────────────────────
-// Source of truth: AgentOps Studio — SaaS Pricing & Stripe Setup (2026-09-17)
-// starter = Basic (₹9,999), growth = Standard (₹17,999), enterprise = Pro (₹25,999)
+// Source of truth: billing/plan-catalog.ts (pricing v2, 2026-10-08)
+// lite = Starter (₹4,999), starter = Basic (₹9,999), growth = Standard (₹17,999), enterprise = Pro (₹29,999)
+// Monthly list prices; annual subscribers are counted at the monthly list price (approximation).
 const PLAN_MRR: Record<string, number> = {
   free:       0,
-  starter:    9_999,
-  growth:     17_999,
-  enterprise: 25_999,
+  lite:       PLAN_CATALOG.lite.monthlyInr,
+  starter:    PLAN_CATALOG.starter.monthlyInr,
+  growth:     PLAN_CATALOG.growth.monthlyInr,
+  enterprise: PLAN_CATALOG.enterprise.monthlyInr,
 };
 
 // ─── SA Login ─────────────────────────────────────────────────────────────────
@@ -52,7 +55,7 @@ export async function getPlatformStats() {
     { $group: { _id: '$plan', count: { $sum: 1 } } },
   ]);
 
-  const plans: Record<string, number> = { free: 0, starter: 0, growth: 0, enterprise: 0 };
+  const plans: Record<string, number> = { free: 0, lite: 0, starter: 0, growth: 0, enterprise: 0 };
   planBreakdown.forEach((p) => { if (p._id) plans[p._id] = p.count; });
 
   return { totalOrgs, totalUsers, activeUsers, suspendedUsers, plans };
@@ -312,7 +315,7 @@ export async function getBillingDashboard() {
   ]);
   let mrr = 0;
   let paidOrgs = 0;
-  const plans: Record<string, number> = { free: 0, starter: 0, growth: 0, enterprise: 0 };
+  const plans: Record<string, number> = { free: 0, lite: 0, starter: 0, growth: 0, enterprise: 0 };
   planBreakdown.forEach((p) => {
     if (p._id) plans[p._id] = p.count;
     const monthly = PLAN_MRR[p._id] ?? 0;
@@ -491,6 +494,7 @@ export async function getRevenueAnalytics() {
     {
       $group: {
         _id:        { $dateToString: { format: '%Y-%m', date: '$createdAt' } },
+        lite:       { $sum: { $cond: [{ $eq: ['$plan', 'lite'] },       PLAN_MRR.lite,       0] } },
         starter:    { $sum: { $cond: [{ $eq: ['$plan', 'starter'] },    PLAN_MRR.starter,    0] } },
         growth:     { $sum: { $cond: [{ $eq: ['$plan', 'growth'] },     PLAN_MRR.growth,     0] } },
         enterprise: { $sum: { $cond: [{ $eq: ['$plan', 'enterprise'] }, PLAN_MRR.enterprise, 0] } },
