@@ -185,7 +185,7 @@ describe('BIZ-01 — monthly minutes boundary', () => {
     it('blocks an org that is over its limit this month', async () => {
       await makeOrg('pn_w2_current', startOfMonthUTC());
       const res = await askFor('pn_w2_current');
-      expect(JSON.stringify(res)).toContain('Limit Reached');
+      expect(JSON.stringify(res)).toContain('Unavailable');
     });
 
     it('does not block an org whose over-limit counter is from last month', async () => {
@@ -193,7 +193,7 @@ describe('BIZ-01 — monthly minutes boundary', () => {
       prev.setUTCMonth(prev.getUTCMonth() - 1);
       await makeOrg('pn_w2_stale', prev);
       const res = await askFor('pn_w2_stale').catch((e: unknown) => ({ threw: String(e) }));
-      expect(JSON.stringify(res)).not.toContain('Limit Reached');
+      expect(JSON.stringify(res)).not.toContain('Unavailable');
     });
   });
 });

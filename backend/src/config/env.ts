@@ -118,13 +118,15 @@ const envSchema = z.object({
    * Telephony cost per minute in USD (Vobiz SIP — billed outside Vapi, so it is
    * NOT in Vapi's per-call cost). Replace with the rate on your Vobiz invoice.
    */
-  TELEPHONY_COST_PER_MIN_USD: z.string().default('0.006').transform(Number),
+  TELEPHONY_COST_PER_MIN_USD: z.string().default('0.0047').transform(Number), // Vobiz ₹0.45/min at ₹96.77/$1 (Oct 2026)
   /**
    * Fallback all-in Vapi cost per minute (USD) for calls with no recorded cost.
    * Platform $0.05 + Deepgram STT ~$0.01 + LLM $0.004–0.045 + TTS ~$0.01–0.02.
    * Deliberately on the high side: an over-estimate only makes margin alerts stricter.
    */
   VAPI_FALLBACK_COST_PER_MIN_USD: z.string().default('0.10').transform(Number),
+  /** ₹ per $1 used to show INR plan revenue in USD on the super-admin margin page (7 Oct 2026). */
+  USD_INR_RATE: z.string().default('96.77').transform(Number),
 
   // ── Keep-alive (Render free tier) ────────────────────────────────────
   /** Injected automatically by Render — the service's public URL. */
@@ -140,7 +142,8 @@ const envSchema = z.object({
   STRIPE_SECRET_KEY:          z.string().optional(), // sk_live_... or sk_test_...
   STRIPE_WEBHOOK_SECRET:      z.string().optional(), // whsec_...
   // Primary price IDs (used as fallback if INR variants are not set)
-  // starter = Basic (₹9,999/mo), growth = Standard (₹17,999/mo), enterprise = Pro (₹25,999/mo)
+  // lite = Starter (₹4,999/mo), starter = Basic (₹9,999/mo), growth = Standard (₹17,999/mo),
+  // enterprise = Pro (₹29,999/mo — pricing v2, 2026-10-08). See billing/plan-catalog.ts.
   STRIPE_STARTER_PRICE_ID:    z.string().optional(), // price_... for Basic plan
   STRIPE_GROWTH_PRICE_ID:     z.string().optional(), // price_... for Standard plan
   STRIPE_PRO_PRICE_ID:        z.string().optional(), // price_... for Pro plan
@@ -154,6 +157,20 @@ const envSchema = z.object({
   // there is one add-on price per eligible plan. See agents/voice-pricing.ts.
   STRIPE_PREMIUM_VOICES_BASIC_PRICE_ID_INR:    z.string().optional(), // price_... ₹2,999/mo on Basic
   STRIPE_PREMIUM_VOICES_STANDARD_PRICE_ID_INR: z.string().optional(), // price_... ₹4,999/mo on Standard
+  // ── Pricing v2 (2026-10-08) — create with scripts/create-pricing-v2-prices.ts ──
+  STRIPE_LITE_PRICE_ID_INR:            z.string().optional(), // price_... Starter ₹4,999/mo
+  STRIPE_PREMIUM_VOICES_LITE_PRICE_ID_INR: z.string().optional(), // price_... ₹1,499/mo add-on on Starter
+  // Annual prices (₹, 10 months' price for 12)
+  STRIPE_LITE_ANNUAL_PRICE_ID_INR:     z.string().optional(), // ₹49,990/yr
+  STRIPE_STARTER_ANNUAL_PRICE_ID_INR:  z.string().optional(), // ₹99,990/yr  (Basic)
+  STRIPE_GROWTH_ANNUAL_PRICE_ID_INR:   z.string().optional(), // ₹1,79,990/yr (Standard)
+  STRIPE_PRO_ANNUAL_PRICE_ID_INR:      z.string().optional(), // ₹2,99,990/yr (Pro)
+  // One-time setup fees (monthly billing only; waived on annual)
+  STRIPE_SETUP_GUIDED_PRICE_ID_INR:    z.string().optional(), // ₹4,999 (Basic, Standard)
+  STRIPE_SETUP_MANAGED_PRICE_ID_INR:   z.string().optional(), // ₹14,999 (Pro)
+  // Prepaid top-up packs (one-time)
+  STRIPE_TOPUP_100_PRICE_ID_INR:       z.string().optional(), // ₹2,000 → 100 min
+  STRIPE_TOPUP_500_PRICE_ID_INR:       z.string().optional(), // ₹9,000 → 500 min
 });
 
 const parsed = envSchema.safeParse(process.env);

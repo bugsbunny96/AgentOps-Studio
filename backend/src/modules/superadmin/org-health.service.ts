@@ -8,7 +8,7 @@
  *   +20  KB documents > 0
  *   +20  Calls in last 7 days
  *   +10  Team members > 1 (at least one non-owner)
- *   +20  Plan is paid (starter / growth / enterprise)
+ *   +20  Plan is paid (lite / starter / growth / enterprise)
  *   ──────────────────────────────────────────────
  *   100  Max
  *
@@ -16,6 +16,7 @@
  * Score 40–69 → "warning"
  * Score 70+   → "healthy"
  */
+import { isPaidPlan } from '../billing/plan-catalog';
 import mongoose from 'mongoose';
 import { OrganizationModel } from '../organization/organization.model';
 import { MembershipModel }   from '../organization/organization.model';
@@ -73,7 +74,7 @@ export async function computeOrgHealthScore(orgId: string): Promise<OrgHealthSco
     hasKBDocs:     kbCount > 0,
     callsThisWeek: callCount > 0,
     multiMember:   memberCount > 1,
-    paidPlan:      ['starter', 'growth', 'enterprise'].includes(effectivePlan),
+    paidPlan:      isPaidPlan(effectivePlan),
   };
 
   const score =

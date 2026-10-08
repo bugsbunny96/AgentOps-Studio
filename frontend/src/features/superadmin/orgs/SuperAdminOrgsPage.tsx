@@ -35,6 +35,7 @@ interface OrgListResponse {
 
 const PLAN_COLOR: Record<string, string> = {
   free: T.t3,
+  lite: '#a3a3a3',
   starter: '#7CF7CB',
   growth: '#5CF4BF',
   enterprise: '#f59e0b',

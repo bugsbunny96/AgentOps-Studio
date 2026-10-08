@@ -27,6 +27,11 @@ import { logger } from '../../utils/logger';
 import { enqueueFollowUpAlert } from '../../jobs/followUpAlert.queue';
 import type { VapiCostBreakdown } from '../agents/vapi.service';
 import { currentMonthMinutesUsed, startOfMonthUTC } from '../../utils/callMinutes';
+import { validPackBalance, overflowMinutes, allocatePackConsumption } from '../../utils/minutePacks';
+import { USAGE_ALERT_THRESHOLDS, PLAN_DISPLAY_NAME } from '../billing/plan-catalog';
+import { UserModel } from '../auth/auth.model';
+import { MembershipModel, type IOrganization } from '../organization/organization.model';
+import { sendUsageAlertEmail } from '../../utils/email';
 
 // ─── Helper: start of current UTC month ──────────────────────────────────────
 function startOfCurrentMonthUTC(): Date {
@@ -201,30 +206,30 @@ function buildAfterHoursAssistant(
   };
 }
 
-// ─── buildMinutesLimitAssistant ───────────────────────────────────────────────
+// ─── Unavailable responses (minutes used up / all lines busy) ─────────────────
+
+/** Normalises the org's fallback number to E.164 (10-digit Indian numbers get +91). Null if unusable. */
+export function toE164(raw: string | undefined | null): string | null {
+  if (!raw) return null;
+  const digits = raw.replace(/[\s()-]/g, '');
+  if (/^\+\d{10,15}$/.test(digits)) return digits;
+  if (/^0?\d{10}$/.test(digits)) return `+91${digits.slice(-10)}`;
+  if (/^91\d{10}$/.test(digits)) return `+${digits}`;
+  return null;
+}
 
 /**
- * Returns an inline Vapi assistant payload that plays a "minutes limit reached"
- * message and ends the call immediately.
- *
- * Returned when the org has consumed its monthly call-minute quota.
- * This prevents any Vapi cost from accruing on over-limit calls — Vapi
- * connects the inline assistant (which is our cost), but the conversation is
- * a single short message, not the full live assistant.
+ * Inline Vapi assistant that plays one short message and ends the call.
+ * The caller never hears about plan limits — only that the line is unavailable.
  */
-function buildMinutesLimitAssistant(
-  orgName:      string,
-  limitMinutes: number,
-): object {
-  const message =
-    `Thank you for calling ${orgName}. ` +
-    `We've reached our monthly call limit of ${limitMinutes} minutes. ` +
-    `Please contact us via email or call back next month. ` +
-    `We apologize for the inconvenience. Goodbye!`;
+function buildUnavailableAssistant(orgName: string, reason: 'minutes' | 'busy'): object {
+  const message = reason === 'busy'
+    ? `Thank you for calling ${orgName}. All our lines are busy right now. Please call back in a few minutes. Goodbye!`
+    : `Thank you for calling ${orgName}. We are unable to take your call right now. Please call back later. Goodbye!`;
 
   return {
     assistant: {
-      name: `${orgName} — Limit Reached`,
+      name: `${orgName} — ${reason === 'busy' ? 'Lines Busy' : 'Unavailable'}`,
       model: {
         provider:    'openai',
         model:       'gpt-4o-mini',
@@ -251,6 +256,28 @@ function buildMinutesLimitAssistant(
     },
   };
 }
+
+/**
+ * Response when the AI agent can't take the call (minutes used up, or the
+ * plan's simultaneous-call limit reached). With a usable fallback number the
+ * call is transferred straight to the business (no dead line, no AI minutes);
+ * otherwise a short message plays.
+ * Vapi accepts `{ destination }` in the assistant-request response to transfer
+ * without an assistant — verify on the first live occurrence.
+ */
+export function buildUnavailableResponse(
+  org: { name: string; fallbackNumber?: string },
+  reason: 'minutes' | 'busy',
+): object {
+  const number = toE164(org.fallbackNumber);
+  if (number) {
+    return { destination: { type: 'number', number, message: '' } };
+  }
+  return buildUnavailableAssistant(org.name, reason);
+}
+
+/** A Call stuck in 'active' (missed end-of-call report) stops counting after this. */
+const ACTIVE_CALL_WINDOW_MS = 20 * 60 * 1000; // > the 15-min per-call cap
 
 // ─── handleAssistantRequest (SYNCHRONOUS) ─────────────────────────────────────
 
@@ -299,16 +326,34 @@ export async function handleAssistantRequest(
     const minutesLimit  = getEffectiveCallMinutesLimit(basePlan, trialState.isInTrial);
     // BIZ-01: a counter from a previous month counts as 0 (reset worker may be off)
     const minutesUsed   = currentMonthMinutesUsed(org);
+    // Pricing v2: prepaid top-up minutes extend the allowance (paid plans only)
+    const packBalance   = trialState.isInTrial ? 0 : validPackBalance(org.minutePacks);
 
-    if (minutesLimit !== Infinity && minutesUsed >= minutesLimit) {
-      logger.warn('assistant-request: call minutes limit exceeded — blocking call', {
+    if (minutesLimit !== Infinity && minutesUsed >= minutesLimit + packBalance) {
+      logger.warn('assistant-request: call minutes and top-up packs used up — not connecting the agent', {
         orgId:        org._id.toString(),
         effectivePlan,
         minutesUsed,
         minutesLimit,
+        packBalance,
         callId:       event.call.id,
       });
-      return buildMinutesLimitAssistant(org.name, minutesLimit);
+      return buildUnavailableResponse(org, 'minutes');
+    }
+
+    // Pricing v2: simultaneous-call limit per plan
+    const maxConcurrent = PLAN_LIMITS[effectivePlan as keyof typeof PLAN_LIMITS]?.concurrentCalls ?? 1;
+    const activeCalls   = await CallModel.countDocuments({
+      organizationId: org._id,
+      status:         'active',
+      createdAt:      { $gte: new Date(Date.now() - ACTIVE_CALL_WINDOW_MS) },
+      ...(event.call.id ? { vapiCallId: { $ne: event.call.id } } : {}),
+    });
+    if (activeCalls >= maxConcurrent) {
+      logger.warn('assistant-request: simultaneous-call limit reached', {
+        orgId: org._id.toString(), effectivePlan, activeCalls, maxConcurrent, callId: event.call.id,
+      });
+      return buildUnavailableResponse(org, 'busy');
     }
   }
 
@@ -431,6 +476,77 @@ export async function handleCallStarted(event: VapiCallStartedEvent): Promise<vo
   });
 }
 
+// ─── Top-up packs + usage alerts (pricing v2) ─────────────────────────────────
+
+type OrgDoc = IOrganization;
+
+/**
+ * After a call's minutes are added to the monthly counter:
+ *   1. Minutes beyond the plan allowance are deducted from top-up packs (FIFO by expiry).
+ *   2. The Owner gets one email per month at 80% and at 100% of the plan allowance.
+ * Trial orgs are skipped (30-min trial cap, no packs, trial emails cover them).
+ */
+export async function applyPackUsageAndAlerts(org: OrgDoc, minutesThisCall: number, monthStart: Date): Promise<void> {
+  const basePlan = ((org.planOverride ?? org.plan) || 'free') as keyof typeof PLAN_LIMITS;
+  const trial    = computeTrialState(basePlan, org.trialUsed ?? false, org.trialEndsAt);
+  if (trial.isInTrial) return;
+
+  const limit      = PLAN_LIMITS[basePlan]?.callMinutes ?? Infinity;
+  const usedAfter  = org.callMinutesUsed ?? 0;
+  const usedBefore = Math.max(0, usedAfter - minutesThisCall);
+
+  // 1. Pack consumption
+  const overflow = overflowMinutes(usedBefore, usedAfter, limit);
+  if (overflow > 0) {
+    const { takes, uncovered } = allocatePackConsumption(org.minutePacks, overflow);
+    for (const t of takes) {
+      await OrganizationModel.updateOne(
+        { _id: org._id, minutePacks: { $elemMatch: { stripeSessionId: t.stripeSessionId, remaining: { $gte: t.take } } } },
+        { $inc: { 'minutePacks.$.remaining': -t.take } },
+      );
+    }
+    logger.info('Top-up minutes used', { orgId: org._id.toString(), overflow, takes, uncovered });
+  }
+
+  // 2. Usage alerts (plan allowance only; free plan gets none)
+  if (!Number.isFinite(limit) || basePlan === 'free' || limit <= 0) return;
+  for (const threshold of USAGE_ALERT_THRESHOLDS) {
+    const field   = threshold >= 1 ? 'usageAlert100At' : 'usageAlert80At';
+    const crossed = usedBefore < limit * threshold && usedAfter >= limit * threshold;
+    if (!crossed) continue;
+    // Claim the alert for this month atomically so concurrent call-ends send it once
+    const claimed = await OrganizationModel.updateOne(
+      { _id: org._id, $or: [{ [field]: { $exists: false } }, { [field]: { $lt: monthStart } }] },
+      { $set: { [field]: monthStart } },
+    );
+    if (claimed.modifiedCount !== 1) continue;
+    await sendUsageAlertSafe(org, Math.round(threshold * 100), usedAfter, limit);
+  }
+}
+
+async function sendUsageAlertSafe(org: OrgDoc, percent: number, used: number, limit: number): Promise<void> {
+  try {
+    const owner = await MembershipModel.findOne({ organizationId: org._id, role: 'Owner' }).lean();
+    const user  = owner ? await UserModel.findById(owner.userId).lean() : null;
+    if (!user?.email) return;
+    const plan = ((org.planOverride ?? org.plan) || 'free') as keyof typeof PLAN_DISPLAY_NAME;
+    await sendUsageAlertEmail({
+      email:         user.email,
+      name:          (user as { name?: string }).name ?? 'there',
+      orgName:       org.name,
+      planName:      PLAN_DISPLAY_NAME[plan],
+      percent,
+      used,
+      limit,
+      packBalance:   validPackBalance(org.minutePacks),
+    });
+  } catch (err) {
+    logger.error('Usage alert email failed', {
+      orgId: org._id.toString(), percent, error: err instanceof Error ? err.message : String(err),
+    });
+  }
+}
+
 // ─── handleEndOfCallReport ────────────────────────────────────────────────────
 
 export async function handleEndOfCallReport(event: VapiEndOfCallReportEvent): Promise<void> {
@@ -507,7 +623,7 @@ export async function handleEndOfCallReport(event: VapiEndOfCallReportEvent): Pr
     const minutesThisCall = Math.max(1, Math.ceil(event.durationSeconds / 60));
     const monthStart      = startOfCurrentMonthUTC();
 
-    await OrganizationModel.findByIdAndUpdate(
+    const updatedOrg = await OrganizationModel.findByIdAndUpdate(
       ctx.org._id,
       [
         {
@@ -530,7 +646,18 @@ export async function handleEndOfCallReport(event: VapiEndOfCallReportEvent): Pr
           },
         },
       ],
+      { new: true },
     );
+
+    if (updatedOrg) {
+      try {
+        await applyPackUsageAndAlerts(updatedOrg, minutesThisCall, monthStart);
+      } catch (err) {
+        logger.error('end-of-call-report: pack/alert bookkeeping failed', {
+          orgId: ctx.org._id.toString(), error: err instanceof Error ? err.message : String(err),
+        });
+      }
+    }
 
     logger.info('end-of-call-report: call minutes incremented', {
       orgId:         ctx.org._id.toString(),

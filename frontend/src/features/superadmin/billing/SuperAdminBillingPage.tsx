@@ -15,6 +15,7 @@ import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Loader2, TrendingUp, DollarSign, Users, BarChart2, AlertTriangle, RotateCcw, Edit2 } from 'lucide-react';
 import api from '@/utils/api';
+import { PLANS, PLAN_NAMES, PLAN_ORDER } from '@/lib/pricing';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -46,19 +47,17 @@ const T = {
 
 const PLAN_COLOR: Record<string, string> = {
   free:       T.t3,
+  lite:       T.t2,
   starter:    T.blue,
   growth:     T.green,
   enterprise: T.violet,
 };
 
-// Source of truth: AgentOps Studio — SaaS Pricing & Stripe Setup (2026-09-17)
-// Internal `plan` enum values are unchanged (starter/growth/enterprise);
-// customer-facing names are Basic/Standard/Pro.
+// Source of truth: src/lib/pricing.ts (pricing v2, 2026-10-08).
+// Internal `plan` IDs: lite/starter/growth/enterprise = Starter/Basic/Standard/Pro.
 const PLAN_LABEL: Record<string, string> = {
-  free:       'Free',
-  starter:    'Basic  ₹9,999/mo',
-  growth:     'Standard  ₹17,999/mo',
-  enterprise: 'Pro  ₹25,999/mo',
+  free: 'Free',
+  ...Object.fromEntries(PLANS.map((p) => [p.id, `${p.name}  ₹${p.monthlyInr.toLocaleString('en-IN')}/mo`])),
 };
 
 const fmt = (n: number) =>
@@ -156,7 +155,7 @@ function PlanOverrideModal({
             New Plan
           </label>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
-            {['free', 'starter', 'growth', 'enterprise'].map((p) => {
+            {PLAN_ORDER.map((p) => {
               const active = plan === p;
               const col    = PLAN_COLOR[p];
               return (
@@ -168,10 +167,10 @@ function PlanOverrideModal({
                     border:     `1px solid ${active ? col : T.bdr}`,
                     background: active ? `${col}18` : T.bgC,
                     color:      active ? col : T.t2,
-                    fontSize: 13, fontWeight: 700, textTransform: 'capitalize',
+                    fontSize: 13, fontWeight: 700,
                   }}
                 >
-                  {p}
+                  {PLAN_NAMES[p]}
                 </button>
               );
             })}
@@ -283,14 +282,14 @@ export default function SuperAdminBillingPage() {
           </button>
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-          {(['free', 'starter', 'growth', 'enterprise'] as const).map((plan) => {
+          {PLAN_ORDER.map((plan) => {
             const count = data.plans[plan] ?? 0;
             const pct   = totalOrgs > 0 ? Math.round((count / totalOrgs) * 100) : 0;
             const col   = PLAN_COLOR[plan];
             return (
               <div key={plan}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 5 }}>
-                  <span style={{ fontSize: 13, fontWeight: 600, color: col, textTransform: 'capitalize' }}>{plan}</span>
+                  <span style={{ fontSize: 13, fontWeight: 600, color: col }}>{PLAN_NAMES[plan]}</span>
                   <span style={{ fontSize: 12, color: T.t2 }}>{count} org{count !== 1 ? 's' : ''} · {pct}%</span>
                 </div>
                 <div style={{ height: 6, borderRadius: 999, background: T.bgC, overflow: 'hidden' }}>

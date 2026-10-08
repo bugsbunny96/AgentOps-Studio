@@ -22,7 +22,7 @@
 import mongoose, { Document, Schema } from 'mongoose';
 
 export type AnnouncementType = 'info' | 'warning' | 'critical';
-export type AnnouncementTarget = 'all' | 'free' | 'starter' | 'growth' | 'enterprise';
+export type AnnouncementTarget = 'all' | 'free' | 'lite' | 'starter' | 'growth' | 'enterprise';
 
 export interface IAnnouncement extends Document {
   _id: mongoose.Types.ObjectId;
@@ -43,7 +43,7 @@ const AnnouncementSchema = new Schema<IAnnouncement>(
     title:       { type: String, required: true, trim: true },
     message:     { type: String, required: true, trim: true },
     type:        { type: String, enum: ['info', 'warning', 'critical'], required: true },
-    targetPlan:  { type: String, enum: ['all', 'free', 'starter', 'growth', 'enterprise'], default: 'all' },
+    targetPlan:  { type: String, enum: ['all', 'free', 'lite', 'starter', 'growth', 'enterprise'], default: 'all' },
     dismissible: { type: Boolean, default: true },
     isActive:    { type: Boolean, default: true },
     expiresAt:   { type: Date, default: null },

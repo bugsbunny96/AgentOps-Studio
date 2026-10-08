@@ -50,7 +50,7 @@ export interface VoiceOption {
 /**
  * Cost tier — mirrors backend agents/voice-pricing.ts.
  * standard: cheap, included on every plan. premium: several× the per-minute
- * cost: included on Pro, a paid add-on on Basic/Standard (backend enforces it).
+ * cost: included on Pro, a paid add-on on Starter/Basic/Standard (backend enforces it).
  */
 export type VoiceTier = 'standard' | 'premium';
 

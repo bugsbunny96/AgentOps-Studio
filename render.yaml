@@ -76,7 +76,9 @@ services:
       - key: LLM_MODEL
         value: "gpt-4o-mini"        # gpt-4.1-mini | gemini-2.5-flash | gpt-4o (legacy)
       - key: TELEPHONY_COST_PER_MIN_USD
-        value: "0.006"              # set from the Vobiz invoice
+        value: "0.0047"             # Vobiz ₹0.45/min at ₹96.77/$1 — set from the Vobiz invoice
+      - key: USD_INR_RATE
+        value: "96.77"              # super-admin margin page: INR plan revenue → USD
 
       # ── Vapi (set in Render dashboard) ────────────────────────────────────
       - key: VAPI_API_KEY
@@ -150,4 +152,25 @@ services:
       - key: STRIPE_PREMIUM_VOICES_BASIC_PRICE_ID_INR
         sync: false
       - key: STRIPE_PREMIUM_VOICES_STANDARD_PRICE_ID_INR
+        sync: false
+      # Pricing v2 (2026-10-08) — scripts/create-pricing-v2-prices.ts
+      - key: STRIPE_LITE_PRICE_ID_INR
+        sync: false
+      - key: STRIPE_PREMIUM_VOICES_LITE_PRICE_ID_INR
+        sync: false
+      - key: STRIPE_LITE_ANNUAL_PRICE_ID_INR
+        sync: false
+      - key: STRIPE_STARTER_ANNUAL_PRICE_ID_INR
+        sync: false
+      - key: STRIPE_GROWTH_ANNUAL_PRICE_ID_INR
+        sync: false
+      - key: STRIPE_PRO_ANNUAL_PRICE_ID_INR
+        sync: false
+      - key: STRIPE_SETUP_GUIDED_PRICE_ID_INR
+        sync: false
+      - key: STRIPE_SETUP_MANAGED_PRICE_ID_INR
+        sync: false
+      - key: STRIPE_TOPUP_100_PRICE_ID_INR
+        sync: false
+      - key: STRIPE_TOPUP_500_PRICE_ID_INR
         sync: false

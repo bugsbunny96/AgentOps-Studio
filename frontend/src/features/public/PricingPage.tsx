@@ -2,29 +2,30 @@
  * L3.F2 — PricingPage (Full Implementation)
  * Route: /pricing (public)
  *
- * Source of truth: main-project-docs/AgentOps Studio — SaaS Pricing & Stripe
- * Setup.md (2026-09-17). Customer-facing plan names: Basic / Standard / Pro
- * (internal enum values are unchanged: starter / growth / enterprise).
+ * Source of truth: pricing v2 (2026-10-08) — main-project-docs/Pricing-Redesign-2026-10.md
+ * § 5 and the plan catalog in src/lib/pricing.ts (mirrors the backend
+ * billing/plan-catalog.ts). Customer-facing plan names: Starter / Basic /
+ * Standard / Pro (internal IDs: lite / starter / growth / enterprise).
  *
- * No annual billing option — the current pricing model is monthly-only
- * (removed the old annual toggle, which had no backing Stripe price).
+ * Feature lists only name things that are built (BIZ-07 / H4.2).
  *
  * Sections:
- *   1. Hero — headline + trust copy
- *   2. Pricing cards — Basic / Standard (featured) / Pro, with GST + setup fee
- *   3. Feature comparison table
- *   4. Recharge packs — informational (no purchase flow exists yet)
- *   5. FAQ accordion
- *   6. Bottom CTA
+ *   1. Hero
+ *   2. Pricing cards — Monthly / Annual toggle (annual = 10 months' price for 12, setup waived)
+ *   3. What every plan includes
+ *   4. Trust strip
+ *   5. Top-up packs — prepaid extra minutes (bought from the Billing page)
+ *   6. Feature comparison table
+ *   7. FAQ accordion
+ *   8. Bottom CTA
  *
- * Design: reuses the shared landing design system (tokens/primitives/landing.css)
- * built for HomePage.tsx — same spotlight cards, gradient text, mono data labels.
+ * Design: reuses the shared landing design system (tokens/primitives/landing.css).
  */
 
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
-  Check, Plus, ArrowRight, RefreshCw, ShieldCheck, Clock, Building2,
+  Check, Plus, ArrowRight, RefreshCw, ShieldCheck, Clock, Languages,
 } from 'lucide-react';
 import '../public/landing/landing.css';
 import { color, font, maxW } from '../public/landing/tokens';
@@ -32,146 +33,56 @@ import {
   GradientText, Pill, Reveal, SectionEyebrow, SectionHeading,
   SpotlightCard, PrimaryButton, SecondaryButton, IconChip, cardStyle,
 } from '../public/landing/primitives';
-
-// ─── Plan data — source of truth: pricing doc §2, §10 ────────────────────────
-type CtaStyle = 'outline' | 'primary';
-
-const PLANS = [
-  {
-    id: 'starter',
-    name: 'Basic',
-    tagline: 'Solo shops, <10 calls/day',
-    price: 9_999,
-    gst: 1_800,
-    total: 11_799,
-    setupFee: 9_999,
-    overageRate: '₹25/min',
-    features: [
-      '500 minutes / month',
-      '1 AI assistant',
-      '1 voice (standard Hindi/English)',
-      'Premium voices add-on: ₹2,999/month',
-      '50 KB knowledge base',
-      'Google Sheets + WhatsApp alerts',
-      'Call logging, basic routing',
-      'Call logs analytics',
-      '1 concurrent call',
-      'Email support (business hours)',
-    ],
-    notIncluded: [
-      'Order capture & appointment booking',
-      'CRM / n8n / Razorpay integrations',
-      'Sentiment analysis',
-    ],
-    ctaStyle: 'outline' as CtaStyle,
-    featured: false,
-    badgeBg: 'rgba(115,115,115,.2)', badgeColor: color.text2, badgeBdr: color.border,
-    accentColor: color.text2,
-  },
-  {
-    id: 'growth',
-    name: 'Standard',
-    tagline: 'Active businesses, 10–30 calls/day',
-    price: 17_999,
-    gst: 3_240,
-    total: 21_239,
-    setupFee: 14_999,
-    overageRate: '₹20/min',
-    features: [
-      '1,000 minutes / month',
-      '3 AI assistants',
-      '3 voices',
-      'Premium voices add-on: ₹4,999/month',
-      '200 KB knowledge base',
-      '+ CRM, n8n workflows, Razorpay',
-      '+ Order capture, appointment booking',
-      'Call trends, sentiment analysis',
-      '2 concurrent calls',
-      'Priority email + WhatsApp support',
-    ],
-    notIncluded: [],
-    ctaStyle: 'primary' as CtaStyle,
-    featured: true,
-    badgeBg: 'rgba(33,241,168,.15)', badgeColor: color.blueLight, badgeBdr: 'rgba(33,241,168,.3)',
-    accentColor: color.blueLight,
-  },
-  {
-    id: 'enterprise',
-    name: 'Pro',
-    tagline: 'Multi-branch, high volume',
-    price: 25_999,
-    gst: 4_680,
-    total: 30_679,
-    setupFee: 24_999,
-    overageRate: '₹18/min',
-    features: [
-      '1,500 minutes / month',
-      '5 AI assistants',
-      'All voices + custom voice cloning',
-      'Premium voices included (ElevenLabs, Azure, PlayHT)',
-      '500 KB knowledge base',
-      'Unlimited integrations',
-      'Full automation suite + custom workflows',
-      'Full analytics + monthly reports',
-      '3 concurrent calls',
-      'Dedicated account manager',
-      'Fair-use cap: 3,000 min',
-    ],
-    notIncluded: [],
-    ctaStyle: 'outline' as CtaStyle,
-    featured: false,
-    badgeBg: 'rgba(15,201,138,.15)', badgeColor: color.violetLight, badgeBdr: 'rgba(15,201,138,.3)',
-    accentColor: color.violetLight,
-  },
-];
-
-// ─── Recharge packs — informational only, no purchase flow built yet ────────
-const RECHARGE_PACKS = [
-  { name: 'Starter', price: '₹2,000', minutes: '100 min', rate: '₹20/min' },
-  { name: 'Growth', price: '₹4,500', minutes: '250 min', rate: '₹18/min' },
-  { name: 'Mega', price: '₹8,000', minutes: '500 min', rate: '₹16/min' },
-];
+import {
+  PLANS, TOPUP_PACKS, TOPUP_VALIDITY_DAYS, ALL_PLANS_INCLUDE, AVG_CALL_MINUTES,
+  inr, withGst, monthlyEquivalent, perMinute,
+  type BillingInterval, type PaidPlanId,
+} from '../../lib/pricing';
 
 // ─── Feature comparison table data ───────────────────────────────────────────
 type CellValue = string | boolean;
 interface TableSection {
   category: string;
-  rows: { label: string; starter: CellValue; growth: CellValue; enterprise: CellValue }[];
+  rows: { label: string; values: Record<PaidPlanId, CellValue> }[];
+}
+
+function row(label: string, pick: (p: (typeof PLANS)[number]) => CellValue) {
+  return { label, values: Object.fromEntries(PLANS.map((p) => [p.id, pick(p)])) as Record<PaidPlanId, CellValue> };
 }
 
 const TABLE_DATA: TableSection[] = [
   {
-    category: 'Core',
+    category: 'Price',
     rows: [
-      { label: 'Included minutes / month', starter: '500', growth: '1,000', enterprise: '1,500' },
-      { label: 'Effective ₹/min', starter: '₹20.00', growth: '₹18.00', enterprise: '₹17.33' },
-      { label: 'AI assistants', starter: '1', growth: '3', enterprise: '5' },
-      { label: 'Concurrent calls', starter: '1', growth: '2', enterprise: '3' },
+      row('Monthly (+ GST)', (p) => inr(p.monthlyInr)),
+      row('Annual (+ GST) — 2 months free', (p) => inr(p.annualInr)),
+      row('One-time setup (monthly billing)', (p) => (p.setupFeeInr ? inr(p.setupFeeInr) : 'Free')),
     ],
   },
   {
-    category: 'Voice & Knowledge Base',
+    category: 'Calls',
     rows: [
-      { label: 'Voice options', starter: '1 (standard)', growth: '3 voices', enterprise: 'All + custom cloning' },
-      { label: 'Premium voices (ElevenLabs, Azure, PlayHT)', starter: 'Add-on ₹2,999/mo', growth: 'Add-on ₹4,999/mo', enterprise: 'Included' },
-      { label: 'Knowledge base', starter: '50 KB', growth: '200 KB', enterprise: '500 KB' },
+      row('Included minutes / month', (p) => p.includedMinutes.toLocaleString('en-IN')),
+      row(`≈ calls / month (${AVG_CALL_MINUTES}-min average)`, (p) => p.approxCalls.toLocaleString('en-IN')),
+      row('Effective price per minute', (p) => `₹${perMinute(p).toFixed(0)}`),
+      row('Simultaneous calls', (p) => String(p.concurrentCalls)),
+      row('Extra minutes', () => 'Top-up packs'),
     ],
   },
   {
-    category: 'Integrations & Automation',
+    category: 'Voice & knowledge',
     rows: [
-      { label: 'Integrations', starter: 'Google Sheets, WhatsApp', growth: '+ CRM, n8n, Razorpay', enterprise: 'Unlimited' },
-      { label: 'Automation', starter: 'Call logging, basic routing', growth: '+ Order capture, booking', enterprise: 'Full suite + custom' },
-      { label: 'Analytics', starter: 'Call logs', growth: 'Trends, sentiment', enterprise: 'Full + monthly reports' },
+      row('Standard voices (OpenAI, Deepgram, Vapi)', () => true),
+      row('Premium voices (ElevenLabs, Azure, PlayHT)', (p) => (p.premiumVoiceAddonInr === null ? 'Included' : `Add-on ${inr(p.premiumVoiceAddonInr)}/mo`)),
+      row('Knowledge-base documents', (p) => String(p.kbDocs)),
+      row('Hindi, English, Punjabi', () => true),
     ],
   },
   {
-    category: 'Billing & Support',
+    category: 'Team & support',
     rows: [
-      { label: 'Additional minutes', starter: '₹25/min', growth: '₹20/min', enterprise: '₹18/min' },
-      { label: 'Usage limit', starter: 'Hard cap', growth: 'Soft cap + overage', enterprise: 'Soft cap, 3,000 fair-use' },
-      { label: 'Support', starter: 'Email (business hours)', growth: 'Priority email + WhatsApp', enterprise: 'Dedicated account manager' },
-      { label: 'One-time setup fee', starter: '₹9,999', growth: '₹14,999', enterprise: '₹24,999' },
+      row('Team members (besides the owner)', (p) => (p.teamMembers === null ? 'Unlimited' : p.teamMembers === 0 ? 'Owner only' : String(p.teamMembers))),
+      row('Support', (p) => p.support),
     ],
   },
 ];
@@ -180,31 +91,31 @@ const TABLE_DATA: TableSection[] = [
 const FAQS = [
   {
     q: 'Do I need a developer to set this up?',
-    a: 'No. AgentOps Studio is built for non-technical founders. You enter your business details, paste your website URL, and your AI agent is live in under 30 minutes. No code, no API keys to configure, no DevOps.',
+    a: 'No. You enter your business details, paste your website URL, and your AI receptionist can be live in about 30 minutes. On Basic, Standard and Pro our team can also set it up with you.',
   },
   {
-    q: 'What happens if I exceed my monthly minutes?',
-    a: 'Once you hit your plan’s included minutes, new calls pause until the next billing cycle, you upgrade, or you add a recharge pack (see below) — we never auto-charge you for overage. Standard and Pro rates for additional capacity are ₹20/min and ₹18/min respectively, with Pro covering up to a 3,000-minute fair-use ceiling.',
+    q: 'What happens if I use up my monthly minutes?',
+    a: `We email you at 80% and 100% of your included minutes. After that your agent keeps answering using top-up minutes if you have any (100 min for ₹2,000 or 500 min for ₹9,000, valid ${TOPUP_VALIDITY_DAYS} days). With no top-up minutes left, calls are forwarded to your fallback number — or callers hear a short "please call back" message — until your minutes reset on the 1st. We never charge you automatically for extra minutes.`,
   },
   {
-    q: 'Can I use my existing phone number?',
-    a: 'Yes. You can route calls from your existing Vobiz or similar SIP number through AgentOps Studio. Our provisioning wizard walks you through the one-time configuration.',
-  },
-  {
-    q: 'How does the free trial work?',
-    a: 'Every new account gets a 7-day free trial with 30 included minutes and the full Basic-plan feature set — no credit card required. If you haven’t picked a plan by day 7, your agent pauses (it stops answering calls) but your data stays intact for 30 days.',
-  },
-  {
-    q: 'Is pricing in Indian Rupees? Are GST invoices available?',
-    a: 'Yes and yes. All plans are priced in ₹ INR plus 18% GST, shown as separate line items. GST-compliant invoices (with your GSTIN) are issued automatically every billing cycle and downloadable from your billing portal.',
-  },
-  {
-    q: 'Can I switch plans later?',
-    a: 'You can upgrade at any time — it takes effect immediately. Downgrades and cancellations are handled via support to make sure your call minutes and knowledge base data are preserved correctly.',
+    q: 'Is there an annual plan?',
+    a: 'Yes. Pay for 10 months and get 12, and the one-time setup fee is waived. Annual billing also avoids the monthly card re-approval that Indian banks require for larger recurring payments.',
   },
   {
     q: 'Is there a setup fee?',
-    a: 'Yes — a one-time setup fee (₹9,999 / ₹14,999 / ₹24,999 depending on plan) covers VAPI configuration, catalog upload, phone provisioning, and onboarding support. It’s billed once on your first invoice, alongside your first month’s subscription.',
+    a: 'Starter is self-serve and has no setup fee. Basic and Standard include guided setup for a one-time ₹4,999, and Pro includes managed setup for ₹14,999. The fee is charged once, on your first monthly invoice, and is waived on annual plans.',
+  },
+  {
+    q: 'How does the free trial work?',
+    a: 'Every new account gets a 7-day free trial with 30 included minutes and the Basic-plan feature set — no credit card required. If you haven’t picked a plan by day 7, your agent pauses but your data stays intact for 30 days.',
+  },
+  {
+    q: 'Is pricing in Indian Rupees? Are GST invoices available?',
+    a: 'Yes and yes. All prices are in ₹ plus 18% GST, shown as separate line items. GST invoices are issued every billing cycle and can be downloaded from the billing portal.',
+  },
+  {
+    q: 'Can I switch plans later?',
+    a: 'You can upgrade at any time. Downgrades and cancellations are handled from the billing portal or via support, so your call history and knowledge base stay intact.',
   },
 ];
 
@@ -280,110 +191,190 @@ function HeroSection() {
 }
 
 // ─── SECTION: Pricing cards ───────────────────────────────────────────────────
+function IntervalToggle({ value, onChange }: { value: BillingInterval; onChange: (v: BillingInterval) => void }) {
+  const opts: { v: BillingInterval; label: string }[] = [
+    { v: 'month', label: 'Monthly' },
+    { v: 'year',  label: 'Annual · 2 months free' },
+  ];
+  return (
+    <div role="radiogroup" aria-label="Billing period" style={{
+      display: 'inline-flex', padding: 4, gap: 4, borderRadius: 999,
+      border: `1px solid ${color.border}`, background: color.bgSoft,
+    }}>
+      {opts.map(({ v, label }) => {
+        const on = value === v;
+        return (
+          <button
+            key={v}
+            role="radio"
+            aria-checked={on}
+            onClick={() => onChange(v)}
+            style={{
+              padding: '8px 16px', borderRadius: 999, border: 'none', cursor: 'pointer',
+              fontSize: 13, fontWeight: 600, fontFamily: 'inherit',
+              background: on ? '#21F1A8' : 'transparent',
+              color: on ? '#171717' : color.text2,
+              transition: 'background 0.2s, color 0.2s',
+            }}
+          >
+            {label}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
 function PricingCards() {
+  const [interval, setBillingInterval] = useState<BillingInterval>('month');
+
   return (
     <section style={{ padding: '32px 0 80px' }}>
       <div style={{ maxWidth: maxW, margin: '0 auto', padding: '0 20px' }}>
-        <div className="landing-grid-3" style={{ display: 'grid', gap: 16, alignItems: 'stretch' }}>
-          {PLANS.map((plan, i) => (
-            <Reveal key={plan.id} delay={i * 80} style={{ height: '100%' }}>
-              <SpotlightCard
-                style={{
-                  padding: 28, height: '100%', display: 'flex', flexDirection: 'column',
-                  ...(plan.featured ? {
-                    background: 'rgba(33,241,168,.07)',
-                    border: '1px solid rgba(33,241,168,.3)',
-                    boxShadow: '0 0 48px rgba(33,241,168,.12), 0 0 0 1px rgba(15,201,138,.15)',
-                    transform: 'translateY(-4px)',
-                  } : {}),
-                }}
-              >
-                {plan.featured && (
-                  <div style={{
-                    position: 'absolute', top: -1, left: '50%', transform: 'translateX(-50%)',
-                    background: 'linear-gradient(135deg, #21F1A8, #0FC98A)',
-                    color: '#171717', fontSize: 10, fontWeight: 700,
-                    padding: '3px 12px', borderRadius: '0 0 8px 8px',
-                    letterSpacing: '.08em', textTransform: 'uppercase',
-                  }}>
-                    Most Popular
-                  </div>
-                )}
+        <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 28 }}>
+          <IntervalToggle value={interval} onChange={setBillingInterval} />
+        </div>
 
-                <Pill
-                  bg={plan.badgeBg} fg={plan.badgeColor} border={plan.badgeBdr}
-                  style={{ fontSize: 10, letterSpacing: '.08em', textTransform: 'uppercase', marginBottom: 16, alignSelf: 'flex-start', marginTop: plan.featured ? 12 : 0 }}
+        <div className="landing-grid-4" style={{ display: 'grid', gap: 16, alignItems: 'stretch' }}>
+          {PLANS.map((plan, i) => {
+            const shown = monthlyEquivalent(plan, interval);
+            const features = [
+              `${plan.includedMinutes.toLocaleString('en-IN')} minutes / month (≈ ${plan.approxCalls} calls)`,
+              `${plan.concurrentCalls} simultaneous call${plan.concurrentCalls > 1 ? 's' : ''}`,
+              plan.premiumVoiceAddonInr === null
+                ? 'Premium voices included'
+                : `Premium voices add-on ${inr(plan.premiumVoiceAddonInr)}/mo`,
+              `${plan.kbDocs} knowledge-base documents`,
+              plan.teamMembers === null ? 'Unlimited team members'
+                : plan.teamMembers === 0 ? 'Owner account only'
+                : `${plan.teamMembers} team member${plan.teamMembers > 1 ? 's' : ''}`,
+              'Extra minutes: top-up packs from ₹18/min',
+              plan.support,
+            ];
+            return (
+              <Reveal key={plan.id} delay={i * 80} style={{ height: '100%' }}>
+                <SpotlightCard
+                  style={{
+                    padding: 26, height: '100%', display: 'flex', flexDirection: 'column',
+                    ...(plan.featured ? {
+                      background: 'rgba(33,241,168,.07)',
+                      border: '1px solid rgba(33,241,168,.3)',
+                      boxShadow: '0 0 48px rgba(33,241,168,.12), 0 0 0 1px rgba(15,201,138,.15)',
+                    } : {}),
+                  }}
                 >
-                  {plan.name}
-                </Pill>
-
-                <div style={{ marginBottom: 2 }}>
-                  <span style={{
-                    fontSize: 40, fontWeight: 700, letterSpacing: '-.03em', lineHeight: 1,
-                    fontFamily: font.mono, color: plan.featured ? color.blueLight : color.text1,
-                  }}>
-                    ₹{plan.price.toLocaleString('en-IN')}
-                  </span>
-                  <span style={{ fontSize: 13, color: color.text3, marginLeft: 4 }}>/ month + GST</span>
-                </div>
-                <div style={{ fontSize: 11.5, color: color.text3, marginBottom: 4 }}>
-                  ₹{plan.total.toLocaleString('en-IN')} total with GST (₹{plan.gst.toLocaleString('en-IN')})
-                </div>
-                <div style={{ fontSize: 11.5, color: color.text3, marginBottom: 4 }}>
-                  + ₹{plan.setupFee.toLocaleString('en-IN')} one-time setup fee
-                </div>
-
-                <p style={{ fontSize: 12.5, color: color.text2, marginTop: 10, marginBottom: 18, lineHeight: 1.5 }}>
-                  {plan.tagline}
-                </p>
-
-                <hr style={{ border: 'none', borderTop: `1px solid ${color.border}`, marginBottom: 18 }} />
-
-                <ul style={{ listStyle: 'none', display: 'flex', flexDirection: 'column', gap: 9, flex: 1, marginBottom: 24, padding: 0, margin: 0 }}>
-                  {plan.features.map((f) => (
-                    <li key={f} style={{ display: 'flex', alignItems: 'flex-start', gap: 8, fontSize: 12.5, color: color.text2 }}>
-                      <Check size={13} style={{ color: color.emerald, flexShrink: 0, marginTop: 2 }} strokeWidth={2.5} />
-                      {f}
-                    </li>
-                  ))}
-                  {plan.notIncluded.map((f) => (
-                    <li key={f} style={{ display: 'flex', alignItems: 'flex-start', gap: 8, fontSize: 12.5, color: color.text3 }}>
-                      <span style={{ fontWeight: 700, flexShrink: 0, marginTop: 1 }}>–</span>
-                      {f}
-                    </li>
-                  ))}
-                </ul>
-
-                {/* display:grid stretches the single Link child to full width
-                    (grid's default justify-items:stretch) without needing a
-                    style-override prop on the shared button primitives. */}
-                <div style={{ marginTop: 20, display: 'grid' }}>
-                  {plan.ctaStyle === 'primary' ? (
-                    <PrimaryButton to="/register" size="md">
-                      <span style={{ margin: '0 auto', display: 'inline-flex', alignItems: 'center', gap: 6 }}>Start Free Trial <ArrowRight size={13} /></span>
-                    </PrimaryButton>
-                  ) : (
-                    <SecondaryButton to="/register" size="md">
-                      <span style={{ margin: '0 auto', display: 'inline-flex', alignItems: 'center', gap: 6 }}>Start Free Trial <ArrowRight size={13} /></span>
-                    </SecondaryButton>
+                  {plan.featured && (
+                    <div style={{
+                      position: 'absolute', top: -1, left: '50%', transform: 'translateX(-50%)',
+                      background: 'linear-gradient(135deg, #21F1A8, #0FC98A)',
+                      color: '#171717', fontSize: 10, fontWeight: 700,
+                      padding: '3px 12px', borderRadius: '0 0 8px 8px',
+                      letterSpacing: '.08em', textTransform: 'uppercase',
+                    }}>
+                      Most Popular
+                    </div>
                   )}
-                </div>
-                <p style={{ textAlign: 'center', fontSize: 10.5, color: color.text3, marginTop: 9 }}>
-                  7-day free trial · No credit card
-                </p>
-              </SpotlightCard>
-            </Reveal>
-          ))}
+
+                  <Pill
+                    bg={plan.featured ? 'rgba(33,241,168,.15)' : 'rgba(115,115,115,.2)'}
+                    fg={plan.featured ? color.blueLight : color.text2}
+                    border={plan.featured ? 'rgba(33,241,168,.3)' : color.border}
+                    style={{ fontSize: 10, letterSpacing: '.08em', textTransform: 'uppercase', marginBottom: 16, alignSelf: 'flex-start', marginTop: plan.featured ? 12 : 0 }}
+                  >
+                    {plan.name}
+                  </Pill>
+
+                  <div style={{ marginBottom: 2 }}>
+                    <span style={{
+                      fontSize: 34, fontWeight: 700, letterSpacing: '-.03em', lineHeight: 1,
+                      fontFamily: font.mono, color: plan.featured ? color.blueLight : color.text1,
+                    }}>
+                      {inr(shown)}
+                    </span>
+                    <span style={{ fontSize: 12.5, color: color.text3, marginLeft: 4 }}>/ month + GST</span>
+                  </div>
+                  <div style={{ fontSize: 11.5, color: color.text3, marginBottom: 4 }}>
+                    {interval === 'year'
+                      ? `Billed ${inr(plan.annualInr)}/year (${inr(withGst(plan.annualInr))} with GST)`
+                      : `${inr(withGst(plan.monthlyInr))}/month with GST`}
+                  </div>
+                  <div style={{ fontSize: 11.5, color: color.text3, marginBottom: 4 }}>
+                    {interval === 'year' || plan.setupFeeInr === 0
+                      ? (plan.setupFeeInr === 0 ? 'No setup fee' : 'Setup fee waived')
+                      : `+ ${inr(plan.setupFeeInr)} one-time setup`}
+                  </div>
+
+                  <p style={{ fontSize: 12.5, color: color.text2, marginTop: 10, marginBottom: 18, lineHeight: 1.5 }}>
+                    {plan.tagline}
+                  </p>
+
+                  <hr style={{ border: 'none', borderTop: `1px solid ${color.border}`, marginBottom: 18 }} />
+
+                  <ul style={{ listStyle: 'none', display: 'flex', flexDirection: 'column', gap: 9, flex: 1, padding: 0, margin: 0 }}>
+                    {features.map((f) => (
+                      <li key={f} style={{ display: 'flex', alignItems: 'flex-start', gap: 8, fontSize: 12.5, color: color.text2 }}>
+                        <Check size={13} style={{ color: color.emerald, flexShrink: 0, marginTop: 2 }} strokeWidth={2.5} />
+                        {f}
+                      </li>
+                    ))}
+                  </ul>
+
+                  <div style={{ marginTop: 20, display: 'grid' }}>
+                    {plan.featured ? (
+                      <PrimaryButton to="/register" size="md">
+                        <span style={{ margin: '0 auto', display: 'inline-flex', alignItems: 'center', gap: 6 }}>Start Free Trial <ArrowRight size={13} /></span>
+                      </PrimaryButton>
+                    ) : (
+                      <SecondaryButton to="/register" size="md">
+                        <span style={{ margin: '0 auto', display: 'inline-flex', alignItems: 'center', gap: 6 }}>Start Free Trial <ArrowRight size={13} /></span>
+                      </SecondaryButton>
+                    )}
+                  </div>
+                  <p style={{ textAlign: 'center', fontSize: 10.5, color: color.text3, marginTop: 9 }}>
+                    7-day free trial · No credit card
+                  </p>
+                </SpotlightCard>
+              </Reveal>
+            );
+          })}
         </div>
       </div>
     </section>
   );
 }
 
-// ─── SECTION: Recharge packs (informational) ─────────────────────────────────
-function RechargeSection() {
+// ─── SECTION: Included in every plan ─────────────────────────────────────────
+function IncludedStrip() {
   return (
-    <section style={{ padding: '60px 0', borderTop: `1px solid ${color.border}` }}>
+    <section style={{ padding: '0 0 56px' }}>
+      <div style={{ maxWidth: maxW, margin: '0 auto', padding: '0 20px' }}>
+        <Reveal>
+          <div style={{ ...cardStyle({ padding: 24 }) }}>
+            <p style={{ fontSize: 12, fontWeight: 700, color: color.text3, textTransform: 'uppercase', letterSpacing: '.08em', margin: '0 0 14px' }}>
+              Every plan includes
+            </p>
+            <ul style={{
+              listStyle: 'none', padding: 0, margin: 0,
+              display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '10px 24px',
+            }}>
+              {ALL_PLANS_INCLUDE.map((f) => (
+                <li key={f} style={{ display: 'flex', alignItems: 'flex-start', gap: 8, fontSize: 13, color: color.text2 }}>
+                  <Check size={13} style={{ color: color.emerald, flexShrink: 0, marginTop: 3 }} strokeWidth={2.5} />
+                  {f}
+                </li>
+              ))}
+            </ul>
+          </div>
+        </Reveal>
+      </div>
+    </section>
+  );
+}
+
+// ─── SECTION: Top-up packs ───────────────────────────────────────────────────
+function TopupSection() {
+  return (
+    <section id="topups" style={{ padding: '60px 0', borderTop: `1px solid ${color.border}` }}>
       <div style={{ maxWidth: maxW, margin: '0 auto', padding: '0 20px' }}>
         <Reveal style={{ textAlign: 'center', maxWidth: 560, margin: '0 auto 36px' }}>
           <SectionEyebrow>Need more minutes?</SectionEyebrow>
@@ -391,18 +382,19 @@ function RechargeSection() {
             Top up without <GradientText>changing plans</GradientText>
           </SectionHeading>
           <p style={{ fontSize: 14, color: color.text2, marginTop: 10, lineHeight: 1.6 }}>
-            Recharge packs roll over for 6 months — buy one anytime your plan runs low. Talk to support to add one to your account.
+            Prepaid packs are used after your monthly minutes run out and stay valid for {TOPUP_VALIDITY_DAYS} days.
+            Buy them any time from the Billing page — no automatic overage charges.
           </p>
         </Reveal>
 
-        <div className="landing-grid-3" style={{ display: 'grid', gap: 14 }}>
-          {RECHARGE_PACKS.map((pack, i) => (
-            <Reveal key={pack.name} delay={i * 80}>
+        <div style={{ display: 'grid', gap: 14, gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', maxWidth: 560, margin: '0 auto' }}>
+          {TOPUP_PACKS.map((pack, i) => (
+            <Reveal key={pack.id} delay={i * 80}>
               <div style={{ ...cardStyle({ padding: 22, textAlign: 'center' }) }}>
                 <IconChip icon={RefreshCw} bg="rgba(16,185,129,.12)" fg={color.emerald} style={{ margin: '0 auto 12px' }} />
-                <p style={{ fontSize: 13, fontWeight: 700, color: color.text1, margin: '0 0 4px' }}>{pack.name}</p>
-                <p style={{ fontSize: 24, fontWeight: 700, color: color.text1, fontFamily: font.mono, margin: '0 0 4px' }}>{pack.price}</p>
-                <p style={{ fontSize: 12, color: color.text2, margin: 0 }}>{pack.minutes} · {pack.rate}</p>
+                <p style={{ fontSize: 13, fontWeight: 700, color: color.text1, margin: '0 0 4px' }}>{pack.minutes} minutes</p>
+                <p style={{ fontSize: 24, fontWeight: 700, color: color.text1, fontFamily: font.mono, margin: '0 0 4px' }}>{inr(pack.priceInr)}</p>
+                <p style={{ fontSize: 12, color: color.text2, margin: 0 }}>₹{pack.priceInr / pack.minutes}/min · + GST</p>
               </div>
             </Reveal>
           ))}
@@ -413,6 +405,8 @@ function RechargeSection() {
 }
 
 // ─── SECTION: Feature comparison table ───────────────────────────────────────
+const GRID_COLS = `2fr ${PLANS.map(() => '1fr').join(' ')}`;
+
 function ComparisonTable() {
   return (
     <section style={{ padding: '80px 0', borderTop: `1px solid ${color.border}` }}>
@@ -421,26 +415,26 @@ function ComparisonTable() {
           <SectionEyebrow>Full comparison</SectionEyebrow>
           <SectionHeading>Everything side by side</SectionHeading>
           <p style={{ fontSize: 14, color: color.text2, marginTop: 10, lineHeight: 1.6 }}>
-            See exactly what each plan includes — no asterisks, no hidden limits.
+            All prices are in ₹ and exclude 18% GST.
           </p>
         </Reveal>
 
         <Reveal>
           <div style={{ border: `1px solid ${color.border}`, borderRadius: 18, overflow: 'auto' }}>
-            <div style={{ minWidth: 640 }}>
-              <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr', background: color.bgSoft, borderBottom: `1px solid ${color.border}` }}>
+            <div style={{ minWidth: 760 }}>
+              <div style={{ display: 'grid', gridTemplateColumns: GRID_COLS, background: color.bgSoft, borderBottom: `1px solid ${color.border}` }}>
                 <div style={{ padding: '16px 20px', fontSize: 12, fontWeight: 700, color: color.text3, textTransform: 'uppercase', letterSpacing: '.08em' }}>
                   Feature
                 </div>
-                {PLANS.map((plan, i) => (
+                {PLANS.map((plan) => (
                   <div key={plan.id} style={{
-                    padding: '16px 20px', textAlign: 'center', fontSize: 13, fontWeight: 700,
-                    color: i === 1 ? color.blueLight : color.text1,
-                    background: i === 1 ? 'rgba(33,241,168,.05)' : 'transparent',
+                    padding: '16px 14px', textAlign: 'center', fontSize: 13, fontWeight: 700,
+                    color: plan.featured ? color.blueLight : color.text1,
+                    background: plan.featured ? 'rgba(33,241,168,.05)' : 'transparent',
                     borderLeft: `1px solid ${color.border}`,
                   }}>
                     {plan.name}
-                    {i === 1 && (
+                    {plan.featured && (
                       <span style={{ display: 'block', fontSize: 9, fontWeight: 700, color: color.blueLight, letterSpacing: '.1em', textTransform: 'uppercase', marginTop: 2 }}>
                         ★ Popular
                       </span>
@@ -459,19 +453,19 @@ function ComparisonTable() {
                       {section.category}
                     </span>
                   </div>
-                  {section.rows.map((row, rIdx) => (
-                    <div key={row.label} style={{
-                      display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr',
+                  {section.rows.map((r, rIdx) => (
+                    <div key={r.label} style={{
+                      display: 'grid', gridTemplateColumns: GRID_COLS,
                       borderBottom: rIdx < section.rows.length - 1 ? '1px solid rgba(255,255,255,0.04)' : 'none',
                     }}>
-                      <div style={{ padding: '13px 20px', fontSize: 13, color: color.text2 }}>{row.label}</div>
-                      {(['starter', 'growth', 'enterprise'] as const).map((planKey) => (
-                        <div key={planKey} style={{
-                          padding: '13px 20px', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      <div style={{ padding: '13px 20px', fontSize: 13, color: color.text2 }}>{r.label}</div>
+                      {PLANS.map((plan) => (
+                        <div key={plan.id} style={{
+                          padding: '13px 12px', display: 'flex', alignItems: 'center', justifyContent: 'center', textAlign: 'center',
                           borderLeft: `1px solid ${color.border}`,
-                          background: planKey === 'growth' ? 'rgba(33,241,168,.04)' : 'transparent',
+                          background: plan.featured ? 'rgba(33,241,168,.04)' : 'transparent',
                         }}>
-                          <Cell value={row[planKey]} isGrowth={planKey === 'growth'} />
+                          <Cell value={r.values[plan.id]} isGrowth={plan.featured} />
                         </div>
                       ))}
                     </div>
@@ -479,21 +473,21 @@ function ComparisonTable() {
                 </div>
               ))}
 
-              <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr', background: color.bgSoft, borderTop: `1px solid ${color.border}` }}>
+              <div style={{ display: 'grid', gridTemplateColumns: GRID_COLS, background: color.bgSoft, borderTop: `1px solid ${color.border}` }}>
                 <div style={{ padding: 20, display: 'flex', alignItems: 'center' }}>
                   <span style={{ fontSize: 13, color: color.text3 }}>Ready to get started?</span>
                 </div>
-                {PLANS.map((plan, i) => (
+                {PLANS.map((plan) => (
                   <div key={plan.id} style={{
                     padding: 20, borderLeft: `1px solid ${color.border}`,
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    background: i === 1 ? 'rgba(33,241,168,.05)' : 'transparent',
+                    background: plan.featured ? 'rgba(33,241,168,.05)' : 'transparent',
                   }}>
                     <Link
                       to="/register"
                       style={{
-                        padding: '7px 16px', borderRadius: 8, fontSize: 12, fontWeight: 700, textDecoration: 'none',
-                        ...(i === 1
+                        padding: '7px 14px', borderRadius: 8, fontSize: 12, fontWeight: 700, textDecoration: 'none',
+                        ...(plan.featured
                           ? { background: 'linear-gradient(135deg, #21F1A8, #0FC98A)', color: '#171717' }
                           : { background: 'transparent', color: color.text1, border: `1px solid ${color.borderStrong}` }),
                       }}
@@ -516,7 +510,7 @@ function TrustStrip() {
   const items: { icon: typeof ShieldCheck; label: string; desc: string }[] = [
     { icon: ShieldCheck, label: 'GST-compliant invoicing', desc: 'Automatic, every billing cycle' },
     { icon: Clock, label: '7-day free trial', desc: 'No credit card required' },
-    { icon: Building2, label: 'Indian data residency', desc: 'Your data stays in India' },
+    { icon: Languages, label: 'Hindi · English · Punjabi', desc: 'Language detected on every call' },
   ];
   return (
     <section style={{ padding: '20px 0 60px' }}>
@@ -654,7 +648,7 @@ function CtaSection() {
         </div>
 
         <p style={{ marginTop: 20, fontSize: 11.5, color: color.text3 }}>
-          No credit card · GST invoices · Indian data residency · Cancel anytime
+          No credit card · GST invoices · Plans from ₹4,999/month · Cancel anytime
         </p>
       </Reveal>
     </section>
@@ -669,8 +663,9 @@ export default function PricingPage() {
     <div className="landing-page">
       <HeroSection />
       <PricingCards />
+      <IncludedStrip />
       <TrustStrip />
-      <RechargeSection />
+      <TopupSection />
       <ComparisonTable />
       <FaqAccordion />
       <CtaSection />
