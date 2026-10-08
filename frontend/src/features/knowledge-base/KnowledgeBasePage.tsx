@@ -26,6 +26,7 @@ import {
 import { api } from '@/utils/api';
 import { useCanWrite } from '@/hooks/usePermission';
 import { useAuth } from '@/hooks/useAuth';
+import { PLAN_NAMES } from '@/lib/pricing';
 
 // ─── Billing status (for plan limit display) ──────────────────────────────────
 interface BillingStatus {
@@ -1568,7 +1569,7 @@ export default function KnowledgeBasePage() {
           <AlertCircle size={15} className="flex-shrink-0 text-amber-300" />
           <p className="text-sm text-amber-300">
             You've reached your {billingStatus.kbDocs.limit}-document limit on the{' '}
-            <strong>{billingStatus.isInTrial ? 'Basic (Trial)' : billingStatus.effectivePlan}</strong> plan.{' '}
+            <strong>{billingStatus.isInTrial ? 'Basic (Trial)' : (PLAN_NAMES[billingStatus.effectivePlan as keyof typeof PLAN_NAMES] ?? billingStatus.effectivePlan)}</strong> plan.{' '}
             <a href="/billing" className="font-semibold underline hover:text-amber-200">Upgrade</a> to add more.
           </p>
         </div>

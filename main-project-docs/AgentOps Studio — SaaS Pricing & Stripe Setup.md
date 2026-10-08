@@ -2,6 +2,8 @@
 
 2026-09-17 · @Someone
 
+> **[2026-10-08] Superseded by § 12 (pricing v2).** §§ 2, 4, 6, 7 and 10 keep the 2026-09-17 numbers for history; the cost model in § 3 (₹8/min, Sarvam/AssemblyAI) is replaced by `Pricing-Redesign-2026-10.md` § 2 (₹7.29/min measured stack, ₹8.40 planning).
+
 Final pricing model optimized around fixed subscription prices: **Basic ₹9,999** · **Standard ₹17,999** · **Pro ₹25,999** (all + 18% GST). Recalculated from the original cost audit with verified vendor pricing.
 
 ## 1. Pricing Document Findings
@@ -354,14 +356,42 @@ Founder decision (2026-10-02): premium voices (ElevenLabs, Azure, PlayHT, Cartes
 **Why these prices.** ElevenLabs through Vapi costs roughly $0.02–0.04 more per call-minute than OpenAI TTS. At the full allowance that is about ₹900–1,800 a month on Basic (500 min) and ₹1,800–3,500 on Standard (1,000 min), so the add-on keeps a margin even at full usage. Standard + add-on (₹22,998) stays below Pro (₹25,999), which includes it, so Pro remains the better deal for heavy premium-voice users.
 
 **Stripe setup (founder):**
+> [2026-10-08] Shortcut: `cd backend && npx tsx scripts/create-premium-voice-prices.ts --apply` does steps 1–2 (re-runnable, finds existing prices by lookup key), checks step 4, and prints the IDs for step 3.
+
 1. Products → create **"Premium Voices Add-on"**.
 2. Add two recurring monthly INR prices, tax-exclusive like the plans: ₹2,999 (Basic) and ₹4,999 (Standard).
 3. Put the price IDs in Render as `STRIPE_PREMIUM_VOICES_BASIC_PRICE_ID_INR` and `STRIPE_PREMIUM_VOICES_STANDARD_PRICE_ID_INR`.
 4. In the Customer Portal settings, allow cancelling subscriptions (so customers can cancel the add-on themselves).
 
-**How it behaves in the app (branch `feat/cost-reduction`):**
+**How it behaves in the app (merged to `main`, 2026-10-02):**
 - The add-on is a separate Stripe subscription. Its webhook events only switch the add-on on/off; they never change the plan. (Before this change, *any* cancelled subscription of a customer downgraded the org to free.)
 - Upgrading to Pro cancels the add-on automatically, prorated.
 - Losing access (add-on cancelled, downgrade from Pro, plan cancelled) switches the agent to the default OpenAI "nova" voice on Vapi straight away, so we don't keep paying for a premium voice the customer no longer pays for.
 - Display prices live in `backend/src/modules/agents/voice-pricing.ts` (`PREMIUM_VOICE_ADDON_PRICE_INR`); the Stripe price is what is actually charged — change both together.
+
+## 12. Pricing v2 (2026-10-08) — current
+
+Founder decision 2026-10-08, from `main-project-docs/Pricing-Redesign-2026-10.md`. Built on branch `feat/pricing-v2`; catalog in `backend/src/modules/billing/plan-catalog.ts` (UI copy: `frontend/src/lib/pricing.ts`). All prices ₹, + 18% GST.
+
+| | Starter (new, `lite`) | Basic (`starter`) | Standard (`growth`) | Pro (`enterprise`) |
+|---|---|---|---|---|
+| Monthly | ₹4,999 | ₹9,999 | ₹17,999 | **₹29,999** (was ₹25,999) |
+| Annual (10 months' price) | ₹49,990 | ₹99,990 | ₹1,79,990 | ₹2,99,990 |
+| Included minutes | 200 | 500 | 1,000 | 1,500 (3,000 hard cap removed) |
+| Simultaneous calls | 1 | 2 | 3 | 5 |
+| Setup (monthly only; waived on annual) | ₹0 (self-serve) | ₹4,999 | ₹4,999 | ₹14,999 (managed) |
+| Premium voices | add-on ₹1,499 | add-on ₹2,999 | add-on ₹4,999 | included |
+| KB documents · team members | 25 · owner only | 50 · 1 | 200 · 5 | 500 · unlimited |
+
+**Extra minutes — prepaid top-up packs** (replace § 4 recharge packs and post-paid overage): 100 min ₹2,000 (₹20/min) · 500 min ₹9,000 (₹18/min); valid 90 days; used after the plan allowance, soonest expiry first; paid plans only; no automatic charges.
+
+**When minutes run out or all lines are busy:** the call is transferred to the org's fallback number; without one, the caller hears a short "please call back" message. Owners get an email at 80% and 100% of the allowance.
+
+**Margins** (planning cost ₹8.40/min, + ₹700/customer/month fixed, + 2.7% Stripe): at 100% use Starter 50%, Basic 48%, Standard 47%, Pro 37% (all minutes on premium voices) / 51% (standard voices); at 60% use 59–65%. Every top-up minute earns 50–55%.
+
+**Stripe setup (founder):**
+1. `cd backend && npx tsx scripts/create-pricing-v2-prices.ts` (dry run), then `--apply` with the same key mode Render uses.
+2. Set the printed IDs on Render: `STRIPE_LITE_PRICE_ID_INR`, `STRIPE_PRO_PRICE_ID_INR` (new ₹29,999 price), the four `*_ANNUAL_PRICE_ID_INR`, `STRIPE_SETUP_GUIDED_PRICE_ID_INR`, `STRIPE_SETUP_MANAGED_PRICE_ID_INR`, `STRIPE_TOPUP_100_PRICE_ID_INR`, `STRIPE_TOPUP_500_PRICE_ID_INR`, `STRIPE_PREMIUM_VOICES_LITE_PRICE_ID_INR`. Basic and Standard monthly prices are reused when unchanged.
+3. Keep the old ₹25,999 Pro price active until no subscription uses it, then archive it.
+4. Stripe webhook: also send `checkout.session.async_payment_succeeded` (top-ups paid by delayed methods).
 

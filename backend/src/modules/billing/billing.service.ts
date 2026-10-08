@@ -6,8 +6,10 @@
  *   - createCheckoutSession: generate a Stripe Checkout URL for plan upgrade
  *   - handleStripeWebhook: process Stripe events and update org plan
  *   - getBillingStatus: return current plan + usage for the billing page
+ *   - createTopupCheckout: prepaid extra-minute packs (pricing v2)
  *
- * Plan hierarchy: free → starter → growth → enterprise
+ * Plan hierarchy: free → lite (Starter) → starter (Basic) → growth (Standard) → enterprise (Pro)
+ * Prices and allowances: ./plan-catalog.ts (pricing v2, 2026-10-08).
  *
  * teamMembers limit = max number of additional Members (non-Owner) that can be
  * invited. Owners are not counted against this limit.
@@ -22,44 +24,49 @@ import { logger } from '../../utils/logger';
 import { computeTrialState } from './trial.service';
 import { getPremiumVoiceAccess, getPaidPlan, PREMIUM_VOICE_ADDON_PRICE_INR, type PremiumVoiceAccess } from '../agents/voice-pricing';
 import { currentMonthMinutesUsed } from '../../utils/callMinutes';
+import { validPackBalance, nextPackExpiry } from '../../utils/minutePacks';
+import {
+  PLAN_CATALOG, TOPUP_PACKS, TOPUP_VALIDITY_DAYS, isPaidPlan, isTopupPackId,
+  type BillingInterval, type PaidPlan, type TopupPackId,
+} from './plan-catalog';
 import { membershipFilter } from '../../utils/requestContext';
 
 // ─── Plan Limits (shared with kb.service + team.service + webhook.service) ────
 //
-// Source of truth: AgentOps Studio — SaaS Pricing & Stripe Setup (2026-09-17)
-// Internal enum values (free/starter/growth/enterprise) are unchanged from the
-// prior pricing model to avoid a data migration; they map to the doc's
-// customer-facing plan names as: starter → "Basic", growth → "Standard",
-// enterprise → "Pro". Only the numeric limits below were updated.
+// Source of truth: ./plan-catalog.ts (pricing v2, 2026-10-08 — see
+// main-project-docs/Pricing-Redesign-2026-10.md). Internal enum values are kept
+// from the old model to avoid a data migration:
+//   lite → "Starter" · starter → "Basic" · growth → "Standard" · enterprise → "Pro"
 //
-// callMinutes: max cumulative call-minutes per calendar month.
-//   - Enforced at assistant-request webhook BEFORE Vapi connects the call.
-//   - free=60       (1 hr — internal-only fallback for orgs with no plan/trial)
-//   - starter=500   (Basic: ₹9,999/mo, 500 min, ~125 calls/month @ 4 min avg)
-//   - growth=1000   (Standard: ₹17,999/mo, 1,000 min, ~250 calls/month)
-//   - enterprise=3000 (Pro: ₹25,999/mo, 1,500 min included; doc specifies a
-//     "soft cap with overage billing" up to a 3,000 min fair-use ceiling, but
-//     no overage-billing system exists yet — see recharge/overage note in the
-//     pricing doc §4/§9 Step 7. Until that's built, 3,000 is enforced as a
-//     hard cap (the fair-use ceiling) rather than allowing unbilled overage.)
+// callMinutes: call minutes included per calendar month. Enforced at the
+//   assistant-request webhook BEFORE Vapi connects the call. Usage beyond it is
+//   covered by prepaid top-up packs (org.minutePacks); with no pack balance the
+//   call is forwarded to the org's fallback number or gets a short message.
+//   free=60 is an internal fallback for orgs with no plan/trial.
+//   Pro was a 3,000-min hard cap with no overage billing (BIZ-04) — now 1,500 + packs.
 //
-// kbDocs: max knowledge-base documents (not KB size in bytes — each doc ≤50KB).
-//   The pricing doc's "Knowledge base: 50 KB / 200 KB / 500 KB" row is treated
-//   as matching these existing document-count limits (50/200/500), not a
-//   literal byte-size migration — flagged in the implementation report.
-//   - free=5, starter=50, growth=200, enterprise=500
+// concurrentCalls: calls the org's agent may handle at the same time (checked
+//   at assistant-request against Call records with status 'active').
+//
+// kbDocs: max knowledge-base documents (each doc ≤50KB).
 //
 // teamMembers: max additional Members (non-Owner). Owners excluded from count.
-//   Not present in the new pricing doc's package table — left unchanged.
-//   - free=0 (solo), starter=1, growth=5, enterprise=∞
 
 export const TRIAL_CALL_MINUTES = 30;
 
-export const PLAN_LIMITS: Record<Plan, { kbDocs: number; teamMembers: number; callMinutes: number }> = {
-  free:       { kbDocs: 5,   teamMembers: 0,        callMinutes: 60    },
-  starter:    { kbDocs: 50,  teamMembers: 1,        callMinutes: 500   },
-  growth:     { kbDocs: 200, teamMembers: 5,        callMinutes: 1_000 },
-  enterprise: { kbDocs: 500, teamMembers: Infinity, callMinutes: 3_000 },
+export interface PlanLimits {
+  kbDocs:          number;
+  teamMembers:     number;
+  callMinutes:     number;
+  concurrentCalls: number;
+}
+
+export const PLAN_LIMITS: Record<Plan, PlanLimits> = {
+  free:       { kbDocs: 5,   teamMembers: 0,        callMinutes: 60,                                       concurrentCalls: 1 },
+  lite:       { kbDocs: 25,  teamMembers: 0,        callMinutes: PLAN_CATALOG.lite.includedMinutes,       concurrentCalls: PLAN_CATALOG.lite.concurrentCalls },
+  starter:    { kbDocs: 50,  teamMembers: 1,        callMinutes: PLAN_CATALOG.starter.includedMinutes,    concurrentCalls: PLAN_CATALOG.starter.concurrentCalls },
+  growth:     { kbDocs: 200, teamMembers: 5,        callMinutes: PLAN_CATALOG.growth.includedMinutes,     concurrentCalls: PLAN_CATALOG.growth.concurrentCalls },
+  enterprise: { kbDocs: 500, teamMembers: Infinity, callMinutes: PLAN_CATALOG.enterprise.includedMinutes, concurrentCalls: PLAN_CATALOG.enterprise.concurrentCalls },
 };
 
 /**
@@ -78,33 +85,60 @@ export function getEffectiveCallMinutesLimit(plan: Plan, isInTrial: boolean): nu
 // the Stripe Price object — no `currency` param needed on the session).
 // If the INR variants are absent, we fall back to the primary price IDs.
 
-function getPlanPriceId(plan: 'starter' | 'growth' | 'enterprise'): string {
-  if (plan === 'starter') {
-    const id = env.STRIPE_STARTER_PRICE_ID_INR ?? env.STRIPE_STARTER_PRICE_ID;
-    if (!id) throw BadRequest('Basic plan is not configured');
-    return id;
+const MONTHLY_PRICE_ENV: Record<PaidPlan, () => string | undefined> = {
+  lite:       () => env.STRIPE_LITE_PRICE_ID_INR,
+  starter:    () => env.STRIPE_STARTER_PRICE_ID_INR ?? env.STRIPE_STARTER_PRICE_ID,
+  growth:     () => env.STRIPE_GROWTH_PRICE_ID_INR  ?? env.STRIPE_GROWTH_PRICE_ID,
+  enterprise: () => env.STRIPE_PRO_PRICE_ID_INR     ?? env.STRIPE_PRO_PRICE_ID,
+};
+
+const ANNUAL_PRICE_ENV: Record<PaidPlan, () => string | undefined> = {
+  lite:       () => env.STRIPE_LITE_ANNUAL_PRICE_ID_INR,
+  starter:    () => env.STRIPE_STARTER_ANNUAL_PRICE_ID_INR,
+  growth:     () => env.STRIPE_GROWTH_ANNUAL_PRICE_ID_INR,
+  enterprise: () => env.STRIPE_PRO_ANNUAL_PRICE_ID_INR,
+};
+
+function getPlanPriceId(plan: PaidPlan, interval: BillingInterval = 'month'): string {
+  const id = interval === 'year' ? ANNUAL_PRICE_ENV[plan]() : MONTHLY_PRICE_ENV[plan]();
+  if (!id) {
+    const label = `${PLAN_CATALOG[plan].name}${interval === 'year' ? ' (annual)' : ''}`;
+    throw BadRequest(`${label} plan is not configured`, 'PLAN_NOT_CONFIGURED');
   }
-  if (plan === 'growth') {
-    const id = env.STRIPE_GROWTH_PRICE_ID_INR ?? env.STRIPE_GROWTH_PRICE_ID;
-    if (!id) throw BadRequest('Standard plan is not configured');
-    return id;
-  }
-  const id = env.STRIPE_PRO_PRICE_ID_INR ?? env.STRIPE_PRO_PRICE_ID;
-  if (!id) throw BadRequest('Pro plan is not configured');
   return id;
 }
 
-function getPlanFromPriceId(priceId: string): Plan | null {
-  // Check INR variants first (they are preferred at checkout)
-  if (priceId === env.STRIPE_STARTER_PRICE_ID_INR || priceId === env.STRIPE_STARTER_PRICE_ID) return 'starter';
-  if (priceId === env.STRIPE_GROWTH_PRICE_ID_INR  || priceId === env.STRIPE_GROWTH_PRICE_ID)  return 'growth';
-  if (priceId === env.STRIPE_PRO_PRICE_ID_INR     || priceId === env.STRIPE_PRO_PRICE_ID)     return 'enterprise';
+/** Maps a Stripe price ID back to the plan and billing interval it sells. */
+export function getPlanFromPriceId(priceId: string): { plan: PaidPlan; interval: BillingInterval } | null {
+  for (const plan of Object.keys(PLAN_CATALOG) as PaidPlan[]) {
+    const monthly = MONTHLY_PRICE_ENV[plan]();
+    if (monthly && priceId === monthly) return { plan, interval: 'month' };
+    const annual = ANNUAL_PRICE_ENV[plan]();
+    if (annual && priceId === annual) return { plan, interval: 'year' };
+  }
+  // Primary (non-INR) fallbacks
+  if (priceId === env.STRIPE_STARTER_PRICE_ID) return { plan: 'starter',    interval: 'month' };
+  if (priceId === env.STRIPE_GROWTH_PRICE_ID)  return { plan: 'growth',     interval: 'month' };
+  if (priceId === env.STRIPE_PRO_PRICE_ID)     return { plan: 'enterprise', interval: 'month' };
   return null;
+}
+
+/** One-time setup-fee price for a plan, or null when the plan is self-serve or the price is not configured. */
+function getSetupFeePriceId(plan: PaidPlan): string | null {
+  if (PLAN_CATALOG[plan].setupFeeInr <= 0) return null;
+  const id = plan === 'enterprise' ? env.STRIPE_SETUP_MANAGED_PRICE_ID_INR : env.STRIPE_SETUP_GUIDED_PRICE_ID_INR;
+  return id ?? null;
+}
+
+function getTopupPriceId(pack: TopupPackId): string {
+  const id = pack === 'topup_100' ? env.STRIPE_TOPUP_100_PRICE_ID_INR : env.STRIPE_TOPUP_500_PRICE_ID_INR;
+  if (!id) throw BadRequest('Top-up packs are not configured yet', 'TOPUP_NOT_CONFIGURED');
+  return id;
 }
 
 // ─── Premium-voices add-on (separate Stripe subscription) ─────────────────────
 //
-// Pro includes premium voices. Basic and Standard can buy them as a monthly
+// Pro includes premium voices. Starter, Basic and Standard can buy them as a monthly
 // add-on; each plan has its own add-on price (agents/voice-pricing.ts).
 // The add-on is its own subscription so it can be cancelled independently —
 // and its webhook events must NEVER change `plan` (see isAddonSubscription).
@@ -113,15 +147,17 @@ export const PREMIUM_VOICES_ADDON = 'premium_voices';
 
 function getAddonPriceId(plan: Plan): string {
   const id =
-    plan === 'starter' ? env.STRIPE_PREMIUM_VOICES_BASIC_PRICE_ID_INR
-      : plan === 'growth' ? env.STRIPE_PREMIUM_VOICES_STANDARD_PRICE_ID_INR
-        : undefined;
+    plan === 'lite' ? env.STRIPE_PREMIUM_VOICES_LITE_PRICE_ID_INR
+      : plan === 'starter' ? env.STRIPE_PREMIUM_VOICES_BASIC_PRICE_ID_INR
+        : plan === 'growth' ? env.STRIPE_PREMIUM_VOICES_STANDARD_PRICE_ID_INR
+          : undefined;
   if (!id) throw BadRequest('The Premium Voices add-on is not configured for this plan', 'ADDON_NOT_CONFIGURED');
   return id;
 }
 
 function isAddonPriceId(priceId: string | undefined): boolean {
   return !!priceId && (
+    priceId === env.STRIPE_PREMIUM_VOICES_LITE_PRICE_ID_INR ||
     priceId === env.STRIPE_PREMIUM_VOICES_BASIC_PRICE_ID_INR ||
     priceId === env.STRIPE_PREMIUM_VOICES_STANDARD_PRICE_ID_INR
   );
@@ -151,7 +187,7 @@ async function enforceVoiceAccessSafe(orgId: string): Promise<void> {
 
 /**
  * Stripe Checkout for the Premium Voices add-on. Owner-only.
- * Allowed on paid Basic / Standard when the add-on is not already active.
+ * Allowed on paid Starter / Basic / Standard when the add-on is not already active.
  */
 export async function createPremiumVoiceAddonCheckout(userId: string): Promise<{ url: string }> {
   const { org, orgId } = await resolveOwnerOrgForBilling(userId);
@@ -160,7 +196,7 @@ export async function createPremiumVoiceAddonCheckout(userId: string): Promise<{
   if (access.includedInPlan) throw BadRequest('Premium voices are already included in your plan', 'ADDON_INCLUDED');
   if (access.addonActive)    throw BadRequest('The Premium Voices add-on is already active', 'ADDON_ACTIVE');
   if (!access.addonEligible) {
-    throw BadRequest('Choose a paid Basic or Standard plan first — the add-on is not sold on the free trial', 'ADDON_NOT_ELIGIBLE');
+    throw BadRequest('Choose a paid Starter, Basic or Standard plan first — the add-on is not sold on the free trial', 'ADDON_NOT_ELIGIBLE');
   }
 
   const paidPlan = getPaidPlan(org as unknown as Parameters<typeof getPaidPlan>[0]);
@@ -226,32 +262,57 @@ async function resolveOwnerOrgForBilling(userId: string) {
 
 // ─── createCheckoutSession ────────────────────────────────────────────────────
 
+const PAID_PLAN_IDS = Object.keys(PLAN_CATALOG) as PaidPlan[];
+
 /**
- * Creates a Stripe Checkout session for upgrading to `starter`, `growth`, or `enterprise`
- * (customer-facing: Basic, Standard, Pro). Returns the Stripe Checkout URL for redirect.
+ * Creates a Stripe Checkout session for a paid plan — `lite`, `starter`,
+ * `growth` or `enterprise` (Starter, Basic, Standard, Pro) — billed monthly or
+ * annually. Monthly checkouts add the plan's one-time setup fee the first time
+ * (Basic/Standard ₹4,999, Pro ₹14,999); annual checkouts waive it.
+ * Returns the Stripe Checkout URL for redirect.
  */
 export async function createCheckoutSession(
   userId: string,
   targetPlan: string,
+  interval: string = 'month',
 ): Promise<{ url: string }> {
-  if (!targetPlan || !['starter', 'growth', 'enterprise'].includes(targetPlan)) {
-    throw BadRequest('Plan must be "starter", "growth", or "enterprise"', 'INVALID_PLAN');
+  if (!targetPlan || !isPaidPlan(targetPlan)) {
+    throw BadRequest(`Plan must be one of: ${PAID_PLAN_IDS.join(', ')}`, 'INVALID_PLAN');
+  }
+  if (interval !== 'month' && interval !== 'year') {
+    throw BadRequest('Interval must be "month" or "year"', 'INVALID_INTERVAL');
   }
 
   const stripe = getStripe();
   const { org, orgId } = await resolveOwnerOrgForBilling(userId);
 
-  const priceId = getPlanPriceId(targetPlan as 'starter' | 'growth' | 'enterprise');
+  const priceId = getPlanPriceId(targetPlan, interval);
+  const line_items: Stripe.Checkout.SessionCreateParams.LineItem[] = [{ price: priceId, quantity: 1 }];
+
+  // One-time setup fee: monthly billing only, charged once per org
+  const setupFeePaidAt = (org as unknown as { setupFeePaidAt?: Date }).setupFeePaidAt;
+  let setupFee = false;
+  if (interval === 'month' && !setupFeePaidAt) {
+    const setupPriceId = getSetupFeePriceId(targetPlan);
+    if (setupPriceId) {
+      line_items.push({ price: setupPriceId, quantity: 1 });
+      setupFee = true;
+    } else if (PLAN_CATALOG[targetPlan].setupFeeInr > 0) {
+      logger.warn('Setup-fee price not configured — checkout continues without it', { orgId, targetPlan });
+    }
+  }
 
   const successUrl = `${env.CLIENT_URL}/billing?upgraded=true&session_id={CHECKOUT_SESSION_ID}`;
   const cancelUrl  = `${env.CLIENT_URL}/billing?cancelled=true`;
 
+  const metadata = { organizationId: orgId, plan: targetPlan, interval, setupFee: String(setupFee) };
   const params: Stripe.Checkout.SessionCreateParams = {
     mode:               'subscription',
-    line_items:         [{ price: priceId, quantity: 1 }],
+    line_items,
     success_url:        successUrl,
     cancel_url:         cancelUrl,
-    metadata:           { organizationId: orgId, plan: targetPlan },
+    metadata,
+    subscription_data:  { metadata: { organizationId: orgId, plan: targetPlan, interval } },
     allow_promotion_codes: true,
   };
 
@@ -267,9 +328,90 @@ export async function createCheckoutSession(
     throw new Error('Stripe did not return a checkout URL');
   }
 
-  logger.info('Stripe Checkout session created', { orgId, targetPlan, sessionId: session.id });
+  logger.info('Stripe Checkout session created', { orgId, targetPlan, interval, setupFee, sessionId: session.id });
 
   return { url: session.url };
+}
+
+// ─── createTopupCheckout ──────────────────────────────────────────────────────
+
+/**
+ * Stripe Checkout (one-time payment) for a prepaid top-up pack. Owner-only.
+ * Sold on paid plans only — not on the free plan or the trial.
+ * Pack minutes are added on checkout.session.completed and expire
+ * TOPUP_VALIDITY_DAYS after purchase.
+ */
+export async function createTopupCheckout(userId: string, packId: string): Promise<{ url: string }> {
+  if (!isTopupPackId(packId)) {
+    throw BadRequest(`Pack must be one of: ${Object.keys(TOPUP_PACKS).join(', ')}`, 'INVALID_TOPUP_PACK');
+  }
+  const { org, orgId } = await resolveOwnerOrgForBilling(userId);
+  const o = org as unknown as { plan?: Plan; planOverride?: Plan; stripeCustomerId?: string };
+  const paidPlan = (o.planOverride ?? o.plan) || 'free';
+  if (!isPaidPlan(paidPlan)) {
+    throw BadRequest('Top-up packs are available on paid plans. Choose a plan first.', 'TOPUP_NOT_ELIGIBLE');
+  }
+
+  const pack     = TOPUP_PACKS[packId];
+  const priceId  = getTopupPriceId(packId);
+  const stripe   = getStripe();
+  const metadata = { organizationId: orgId, topupPack: packId, minutes: String(pack.minutes) };
+
+  const params: Stripe.Checkout.SessionCreateParams = {
+    mode:            'payment',
+    line_items:      [{ price: priceId, quantity: 1 }],
+    success_url:     `${env.CLIENT_URL}/billing?topup=${packId}`,
+    cancel_url:      `${env.CLIENT_URL}/billing?cancelled=true`,
+    metadata,
+    payment_intent_data: { metadata },
+    invoice_creation:    { enabled: true }, // GST invoice for the pack
+  };
+  if (o.stripeCustomerId) params.customer = o.stripeCustomerId;
+  else params.customer_creation = 'always';
+
+  const session = await stripe.checkout.sessions.create(params);
+  if (!session.url) throw new Error('Stripe did not return a checkout URL');
+
+  logger.info('Top-up checkout created', { orgId, packId, sessionId: session.id });
+  return { url: session.url };
+}
+
+/** Credits a paid top-up pack to the org. Idempotent per Checkout session. */
+export async function creditTopupPack(
+  orgId: string,
+  packId: TopupPackId,
+  stripeSessionId: string,
+  now: Date = new Date(),
+): Promise<boolean> {
+  const pack = TOPUP_PACKS[packId];
+  const expiresAt = new Date(now.getTime() + TOPUP_VALIDITY_DAYS * 24 * 60 * 60 * 1000);
+  const res = await OrganizationModel.updateOne(
+    { _id: orgId, 'minutePacks.stripeSessionId': { $ne: stripeSessionId } },
+    {
+      $push: {
+        minutePacks: {
+          packId, minutes: pack.minutes, remaining: pack.minutes,
+          purchasedAt: now, expiresAt, stripeSessionId,
+        },
+      },
+    },
+  );
+  return res.modifiedCount === 1;
+}
+
+/** Credits a paid top-up Checkout session and stores the Stripe customer if missing. */
+async function handlePaidTopupSession(session: Stripe.Checkout.Session): Promise<void> {
+  const orgId  = session.metadata?.organizationId;
+  const packId = session.metadata?.topupPack;
+  if (!orgId || !isTopupPackId(packId)) return;
+  const credited = await creditTopupPack(orgId, packId, session.id);
+  if (session.customer) {
+    await OrganizationModel.updateOne(
+      { _id: orgId, stripeCustomerId: { $exists: false } },
+      { $set: { stripeCustomerId: String(session.customer) } },
+    );
+  }
+  logger.info('Top-up pack credited', { orgId, packId, credited, sessionId: session.id });
 }
 
 // ─── handleStripeWebhook ──────────────────────────────────────────────────────
@@ -278,8 +420,10 @@ export async function createCheckoutSession(
  * Verifies Stripe webhook signature and processes events.
  *
  * Handles:
- *   checkout.session.completed       → set plan + stripeCustomerId
- *   customer.subscription.updated    → update plan if price changed
+ *   checkout.session.completed       → set plan + interval + setup-fee flag + stripeCustomerId;
+ *                                      top-up pack → credit minutes; add-on → flag
+ *   checkout.session.async_payment_succeeded → credit a top-up paid by a delayed method
+ *   customer.subscription.updated    → update plan/interval if price changed
  *   customer.subscription.deleted    → downgrade to 'free'
  */
 export async function handleStripeWebhook(
@@ -310,6 +454,15 @@ export async function handleStripeWebhook(
       const orgId   = session.metadata?.organizationId;
       const plan    = session.metadata?.plan as Plan | undefined;
 
+      // Top-up pack (one-time payment) — adds minutes, never touches `plan`.
+      // Delayed methods (e.g. some UPI flows) arrive unpaid here and are credited
+      // on checkout.session.async_payment_succeeded instead.
+      if (orgId && isTopupPackId(session.metadata?.topupPack)) {
+        if (session.payment_status === 'paid') await handlePaidTopupSession(session);
+        else logger.info('Top-up checkout completed, payment pending', { orgId, sessionId: session.id });
+        break;
+      }
+
       // Premium Voices add-on purchase — never touches `plan`
       if (orgId && session.metadata?.addon === PREMIUM_VOICES_ADDON) {
         await OrganizationModel.findByIdAndUpdate(orgId, {
@@ -328,9 +481,12 @@ export async function handleStripeWebhook(
         break;
       }
 
+      const interval: BillingInterval = session.metadata?.interval === 'year' ? 'year' : 'month';
       await OrganizationModel.findByIdAndUpdate(orgId, {
         $set: {
           plan,
+          billingInterval: interval,
+          ...(session.metadata?.setupFee === 'true' ? { setupFeePaidAt: new Date() } : {}),
           ...(session.customer         ? { stripeCustomerId:     String(session.customer)         } : {}),
           ...(session.subscription     ? { stripeSubscriptionId: String(session.subscription)     } : {}),
           ...(session.metadata?.priceId ? { stripePriceId:        session.metadata.priceId }        : {}),
@@ -345,6 +501,12 @@ export async function handleStripeWebhook(
         await cancelRedundantAddon(orgId, updatedOrg?.premiumVoiceAddonSubscriptionId);
       }
       await enforceVoiceAccessSafe(orgId);
+      break;
+    }
+
+    case 'checkout.session.async_payment_succeeded': {
+      const session = event.data.object as Stripe.Checkout.Session;
+      if (isTopupPackId(session.metadata?.topupPack)) await handlePaidTopupSession(session);
       break;
     }
 
@@ -370,11 +532,13 @@ export async function handleStripeWebhook(
         break;
       }
 
-      const newPlan = priceId ? getPlanFromPriceId(priceId) : null;
-      if (newPlan) {
+      const mapped  = priceId ? getPlanFromPriceId(priceId) : null;
+      const newPlan = mapped?.plan ?? null;
+      if (mapped && newPlan) {
         await OrganizationModel.findByIdAndUpdate(org._id, {
           $set: {
             plan:                 newPlan,
+            billingInterval:      mapped.interval,
             stripeSubscriptionId: sub.id,
             stripePriceId:        priceId,
           },
@@ -412,7 +576,7 @@ export async function handleStripeWebhook(
 
       await OrganizationModel.findByIdAndUpdate(org._id, {
         $set:   { plan: 'free' },
-        $unset: { stripeSubscriptionId: '', stripePriceId: '' },
+        $unset: { stripeSubscriptionId: '', stripePriceId: '', billingInterval: '' },
       });
 
       logger.info('Org downgraded to free on subscription.deleted', {
@@ -480,8 +644,16 @@ export interface BillingStatus {
   effectivePlan:   Plan;
   kbDocs:          { used: number; limit: number | null };
   teamMembers:     { used: number; limit: number | null };
-  /** Monthly call-minute quota. limit=null means unlimited (enterprise). resetAt = ISO string of next reset. */
+  /** Monthly call-minute quota (plan allowance). limit=null means unlimited. resetAt = ISO string of next reset. */
   callMinutes:     { used: number; limit: number | null; resetAt: string };
+  /** Prepaid top-up minutes left (unexpired packs), used after the plan allowance. */
+  topupMinutes:    { balance: number; nextExpiry: string | null; canBuy: boolean };
+  /** Calls the agent may handle at the same time on this plan. */
+  concurrentCalls: number;
+  /** Billing period of the current plan subscription (null on free / trial). */
+  billingInterval: BillingInterval | null;
+  /** True once the one-time setup fee has been paid. */
+  setupFeePaid:    boolean;
   stripeCustomerId: string | null;
   // ── Trial ─────────────────────────────────────────────────────────
   isInTrial:       boolean;
@@ -493,7 +665,7 @@ export interface BillingStatus {
   /** Premium Voices add-on state + price for the current plan — see agents/voice-pricing.ts */
   premiumVoiceAddon: PremiumVoiceAccess & {
     /** Display prices for every plan that sells the add-on (₹/month + GST) */
-    pricesInr: { starter: number; growth: number };
+    pricesInr: { lite: number; starter: number; growth: number };
   };
 }
 
@@ -512,6 +684,10 @@ export async function getBillingStatus(userId: string): Promise<BillingStatus> {
     trialEndsAt?:        Date;
     callMinutesUsed?:    number;
     callMinutesResetAt?: Date;
+    planOverride?:       Plan;
+    billingInterval?:    BillingInterval;
+    setupFeePaidAt?:     Date;
+    minutePacks?:        Array<{ remaining: number; expiresAt: Date; stripeSessionId: string }>;
   };
   const orgData = org as unknown as OrgExtra;
 
@@ -554,6 +730,14 @@ export async function getBillingStatus(userId: string): Promise<BillingStatus> {
       limit:   callMinutesLimit === Infinity ? null : callMinutesLimit,
       resetAt: nextResetAt.toISOString(),
     },
+    topupMinutes: {
+      balance:    validPackBalance(orgData.minutePacks, now),
+      nextExpiry: nextPackExpiry(orgData.minutePacks, now)?.toISOString() ?? null,
+      canBuy:     isPaidPlan(orgData.planOverride ?? plan),
+    },
+    concurrentCalls: limits.concurrentCalls,
+    billingInterval: isPaidPlan(plan) ? (orgData.billingInterval ?? 'month') : null,
+    setupFeePaid:    !!orgData.setupFeePaidAt,
     stripeCustomerId: orgData.stripeCustomerId ?? null,
     isInTrial:        trial.isInTrial,
     isTrialExpired:   trial.isTrialExpired,
@@ -564,6 +748,7 @@ export async function getBillingStatus(userId: string): Promise<BillingStatus> {
     premiumVoiceAddon: {
       ...voiceAccess,
       pricesInr: {
+        lite:    PREMIUM_VOICE_ADDON_PRICE_INR.lite ?? 0,
         starter: PREMIUM_VOICE_ADDON_PRICE_INR.starter ?? 0,
         growth:  PREMIUM_VOICE_ADDON_PRICE_INR.growth ?? 0,
       },

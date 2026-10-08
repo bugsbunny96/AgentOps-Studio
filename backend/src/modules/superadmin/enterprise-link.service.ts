@@ -17,7 +17,7 @@ function generateToken(): string {
 }
 
 export interface CreateEnterpriseLinkInput {
-  plan:              'free' | 'starter' | 'growth' | 'enterprise';
+  plan:              'free' | 'lite' | 'starter' | 'growth' | 'enterprise';
   trialDays?:        number;
   prefilledName?:    string;
   prefilledEmail?:   string;

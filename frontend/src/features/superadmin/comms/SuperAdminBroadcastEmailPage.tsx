@@ -40,7 +40,7 @@ const T = {
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 type AudienceType = 'all' | 'plan' | 'org';
-type PlanTier = 'free' | 'starter' | 'growth' | 'enterprise';
+type PlanTier = 'free' | 'lite' | 'starter' | 'growth' | 'enterprise';
 
 interface Org { _id: string; name: string; plan: string }
 
@@ -69,9 +69,10 @@ const INITIAL: ComposeState = {
 
 const PLAN_LABELS: Record<PlanTier, string> = {
   free:       'Free',
-  starter:    'Starter',
-  growth:     'Growth',
-  enterprise: 'Enterprise',
+  lite:       'Starter',
+  starter:    'Basic',
+  growth:     'Standard',
+  enterprise: 'Pro',
 };
 
 // ─── API ──────────────────────────────────────────────────────────────────────

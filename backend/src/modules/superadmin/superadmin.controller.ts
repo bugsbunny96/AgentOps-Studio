@@ -857,7 +857,7 @@ export async function saCreateAnnouncementHandler(req: Request, res: Response, n
     const ann = await createAnnouncement({
       title, message,
       type:        type as 'info' | 'warning' | 'critical',
-      targetPlan:  (targetPlan as 'all' | 'free' | 'starter' | 'growth' | 'enterprise') ?? 'all',
+      targetPlan:  (targetPlan as 'all' | 'free' | 'lite' | 'starter' | 'growth' | 'enterprise') ?? 'all',
       dismissible,
       expiresAt:   expiresAt ? new Date(expiresAt) : null,
       createdBy:   saEmail,
@@ -1490,7 +1490,7 @@ export async function saCreateEnterpriseLinkHandler(req: Request, res: Response,
   try {
     const saEmail = req.superAdminEmail ?? 'superadmin';
     const { plan, trialDays, prefilledName, prefilledEmail, prefilledCompany, prefilledIndustry, note, expiryHours } = req.body as {
-      plan:               'free' | 'starter' | 'growth' | 'enterprise';
+      plan:               'free' | 'lite' | 'starter' | 'growth' | 'enterprise';
       trialDays?:         number;
       prefilledName?:     string;
       prefilledEmail?:    string;

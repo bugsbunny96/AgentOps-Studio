@@ -210,7 +210,7 @@ export default function VoiceSelector({ value, onChange, disabled = false }: Voi
           {provider.tagline}
           {provider.tier === 'standard'
             ? ' · Standard voice, included on every plan.'
-            : ' · Premium voice: included on Pro, add-on on Basic and Standard.'}
+            : ' · Premium voice: included on Pro, add-on on Starter, Basic and Standard.'}
         </p>
 
         {/* Premium provider clicked on a plan that doesn't include it */}
@@ -221,7 +221,7 @@ export default function VoiceSelector({ value, onChange, disabled = false }: Voi
               <strong>{lockedNotice}</strong> is a premium voice.{' '}
               {addonPrice !== null
                 ? <>Add premium voices for ₹{addonPrice.toLocaleString('en-IN')}/month, or get them included with Pro.</>
-                : <>Premium voices are included on Pro and available as an add-on on Basic and Standard.</>}
+                : <>Premium voices are included on Pro and available as an add-on on Starter, Basic and Standard.</>}
               {' '}OpenAI and Deepgram voices are included on your plan.{' '}
               <Link to="/billing#premium-voices" className="font-medium text-brand-300 underline underline-offset-2">
                 {addonPrice !== null ? 'Add premium voices' : 'See plans'}

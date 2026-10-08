@@ -95,7 +95,7 @@ const S = {
 };
 
 export default function TermsPage() {
-  const EFFECTIVE_DATE = '29 July 2026';
+  const EFFECTIVE_DATE = '8 October 2026';
 
   return (
     <div style={{ background: T.bg, minHeight: '100vh', color: T.t1 }}>
@@ -202,7 +202,7 @@ export default function TermsPage() {
         <div style={S.section}>
           <h2 style={S.h2}>6. Subscription Plans & Billing</h2>
           <h3 style={S.h3}>6.1 Plan Tiers</h3>
-          <p style={S.p}>The Service is offered under three plans — Basic (₹9,999/month), Standard (₹17,999/month), and Pro (₹25,999/month), each plus 18% GST. Feature availability and usage limits vary by plan and are described on the Pricing page. We may introduce additional plans or modify existing plans with 30 days' notice.</p>
+          <p style={S.p}>The Service is offered under four plans — Starter (₹4,999/month), Basic (₹9,999/month), Standard (₹17,999/month), and Pro (₹29,999/month), each plus 18% GST, billed monthly or annually (annual plans are charged at ten months' price for twelve months). Basic, Standard and Pro carry a one-time setup fee on monthly billing (₹4,999, ₹4,999 and ₹14,999), waived on annual billing. Additional call minutes are sold as prepaid top-up packs, valid for 90 days from purchase and non-refundable. Feature availability and usage limits vary by plan and are described on the Pricing page. We may introduce additional plans or modify existing plans with 30 days' notice.</p>
 
           <h3 style={S.h3}>6.2 Billing Cycle</h3>
           <p style={S.p}>Paid subscriptions are billed monthly in advance. Your subscription auto-renews on the same calendar day each month unless cancelled before the renewal date.</p>
@@ -219,8 +219,8 @@ export default function TermsPage() {
           <h3 style={S.h3}>6.6 Failed Payments</h3>
           <p style={S.p}>If a payment fails, we will retry the charge up to three times and notify you by email. Persistent payment failure may result in suspension or downgrade of your account. We are not liable for service disruption caused by your payment failure.</p>
 
-          <h3 style={S.h3}>6.7 Usage Limits & Overages</h3>
-          <p style={S.p}>Each plan includes defined call minute limits per month. Call minutes reset on the first day of each calendar month. Calls initiated when your organisation has exhausted its monthly limit may be rejected until the limit resets or you upgrade your plan. We do not automatically charge overages; upgrading to unlock additional capacity is your responsibility.</p>
+          <h3 style={S.h3}>6.7 Usage Limits & Top-up Packs</h3>
+          <p style={S.p}>Each plan includes defined call minute limits per month. Call minutes reset on the first day of each calendar month. Minutes beyond the monthly limit are taken from prepaid top-up packs you have purchased, oldest expiry first. When both are exhausted, incoming calls may be forwarded to your fallback number or receive a short message instead of the AI agent until the limit resets, you buy a top-up pack or you upgrade. Each plan also limits how many calls the AI agent handles at the same time; calls above that limit are treated the same way. We do not automatically charge overages.</p>
         </div>
 
         {/* Section 7 */}

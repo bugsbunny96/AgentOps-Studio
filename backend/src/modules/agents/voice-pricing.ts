@@ -3,19 +3,16 @@
  *
  * Standard voices are cheap and included on every plan. Premium voices cost
  * several times more per minute through Vapi:
- *   • Pro        → premium voices included, no extra charge
- *   • Basic      → paid add-on, PREMIUM_VOICE_ADDON_PRICE_INR.starter / month
- *   • Standard   → paid add-on, PREMIUM_VOICE_ADDON_PRICE_INR.growth / month
- *   • Free/trial → not available (upgrade to a paid plan first)
- * The add-on is a separate Stripe subscription (billing.service.ts).
+ *   • Pro                     → premium voices included, no extra charge
+ *   • Starter/Basic/Standard  → paid add-on (₹1,499 / ₹2,999 / ₹4,999 a month)
+ *   • Free/trial              → not available (upgrade to a paid plan first)
+ * The add-on is a separate Stripe subscription (billing.service.ts). Prices come
+ * from billing/plan-catalog.ts (pricing v2, 2026-10-08).
  *
- * Add-on pricing rationale (founder decision 2026-10-02: free on Pro, add-on on
- * Basic/Standard). ElevenLabs through Vapi costs roughly $0.02–0.04 more per
- * call-minute than OpenAI TTS. At the full minute allowance that is about
- * ₹900–1,800 (Basic, 500 min) and ₹1,800–3,500 (Standard, 1,000 min) a month,
- * so ₹2,999 / ₹4,999 keeps a margin at full usage, and Standard + add-on
- * (₹22,998) stays below Pro (₹25,999), which includes it. Stripe prices are the
- * source of truth for what is charged; these numbers are for display.
+ * Add-on pricing rationale: ElevenLabs through Vapi costs about $0.03 (≈ ₹2.90)
+ * more per call-minute than OpenAI TTS. At the full allowance that is about
+ * ₹580 (Starter, 200 min), ₹1,450 (Basic, 500 min) and ₹2,900 (Standard,
+ * 1,000 min) a month, so each add-on keeps a margin at full usage.
  *
  * Approximate TTS cost per call-minute through Vapi (agent speaks ~400–500
  * characters per call-minute; list prices 2026-10-02 — see RD-LOG):
@@ -25,6 +22,7 @@
 
 import type { IOrganization, Plan } from '../organization/organization.model';
 import { computeTrialState } from '../billing/trial.service';
+import { PLAN_CATALOG } from '../billing/plan-catalog';
 
 export type VoiceTier = 'standard' | 'premium';
 
@@ -45,8 +43,9 @@ export const PREMIUM_VOICE_PLANS: readonly Plan[] = ['enterprise'];
 
 /** Monthly add-on price (₹, + GST) per plan that can buy it. */
 export const PREMIUM_VOICE_ADDON_PRICE_INR: Readonly<Partial<Record<Plan, number>>> = {
-  starter: 2_999, // Basic
-  growth:  4_999, // Standard
+  lite:    PLAN_CATALOG.lite.premiumVoiceAddonInr ?? undefined,    // Starter
+  starter: PLAN_CATALOG.starter.premiumVoiceAddonInr ?? undefined, // Basic
+  growth:  PLAN_CATALOG.growth.premiumVoiceAddonInr ?? undefined,  // Standard
 };
 
 /** Cheap default used when a premium voice is not allowed. */
@@ -83,7 +82,7 @@ export interface PremiumVoiceAccess {
   includedInPlan: boolean;
   /** The org holds an active add-on (it may be redundant on Pro). */
   addonActive:    boolean;
-  /** The add-on can be bought on the current plan (Basic / Standard, add-on not active). */
+  /** The add-on can be bought on the current plan (Starter / Basic / Standard, add-on not active). */
   addonEligible:  boolean;
   /** Monthly add-on price for the current plan, or null when not sold on it. */
   addonPriceInr:  number | null;

@@ -37,7 +37,7 @@ const T = {
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 type AnnouncementType = 'info' | 'warning' | 'critical';
-type TargetPlan = 'all' | 'free' | 'starter' | 'growth' | 'enterprise';
+type TargetPlan = 'all' | 'free' | 'lite' | 'starter' | 'growth' | 'enterprise';
 
 interface Announcement {
   _id:         string;
@@ -104,9 +104,10 @@ const TYPE_META: Record<AnnouncementType, { label: string; color: string; bg: st
 const PLAN_LABELS: Record<TargetPlan, string> = {
   all:        'All Plans',
   free:       'Free',
-  starter:    'Starter',
-  growth:     'Growth',
-  enterprise: 'Enterprise',
+  lite:       'Starter',
+  starter:    'Basic',
+  growth:     'Standard',
+  enterprise: 'Pro',
 };
 
 function TypeBadge({ type }: { type: AnnouncementType }) {

@@ -16,6 +16,7 @@ import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Loader2, Phone, Building2, TrendingUp, Clock, XCircle, DollarSign, BarChart2, Users } from 'lucide-react';
 import api from '@/utils/api';
+import { PLAN_NAMES } from '@/lib/pricing';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -52,7 +53,7 @@ interface RevenueData {
   ltv:           number;
   paidOrgs:      number;
   revenueByPlan: Array<{ plan: string; count: number; unitPrice: number; mrr: number }>;
-  mrrByMonth:    Array<{ _id: string; starter: number; growth: number; enterprise: number; newOrgs: number }>;
+  mrrByMonth:    Array<{ _id: string; lite?: number; starter: number; growth: number; enterprise: number; newOrgs: number }>;
 }
 
 // ─── Design tokens ────────────────────────────────────────────────────────────
@@ -66,7 +67,7 @@ const T = {
 };
 
 const PLAN_COLOR: Record<string, string> = {
-  free: T.t3, starter: T.blue, growth: T.green, enterprise: T.violet,
+  free: T.t3, lite: T.t2, starter: T.blue, growth: T.green, enterprise: T.violet,
 };
 
 const FUNNEL_ORDER = ['REGISTRATION', 'ORG_CREATION', 'WEBSITE_CRAWL', 'BUSINESS_CONFIG', 'VOICE_SETUP', 'COMPLETED'];
@@ -180,14 +181,15 @@ function MrrChart({ data }: { data: RevenueData['mrrByMonth'] }) {
     return <p style={{ color: T.t3, fontSize: 13, textAlign: 'center', padding: 20 }}>No paid orgs in last 12 months.</p>;
   }
 
-  const maxMrr = Math.max(...data.map((d) => d.starter + d.growth + d.enterprise), 1);
+  const maxMrr = Math.max(...data.map((d) => (d.lite ?? 0) + d.starter + d.growth + d.enterprise), 1);
   const H = 100; const W = 700;
   const barW = Math.max(8, Math.floor(W / data.length) - 4);
 
   return (
     <svg viewBox={`0 0 ${W} ${H + 28}`} style={{ width: '100%', display: 'block' }}>
       {data.map((d, i) => {
-        const total = d.starter + d.growth + d.enterprise;
+        // Starter (lite) and Basic (starter) share the first segment
+        const total = (d.lite ?? 0) + d.starter + d.growth + d.enterprise;
         const x = (i / data.length) * W + (W / data.length - barW) / 2;
         const totalH = Math.max(2, Math.round((total / maxMrr) * H));
         const growthH = Math.round((d.growth / maxMrr) * H);
@@ -435,7 +437,7 @@ export default function SuperAdminAnalyticsPage() {
                 {r.revenueByPlan.map((row) => (
                   <tr key={row.plan} style={{ borderBottom: `1px solid ${T.bdr}` }}>
                     <td style={{ padding: '10px 0' }}>
-                      <span style={{ fontSize: 12, fontWeight: 700, color: PLAN_COLOR[row.plan] ?? T.t3, textTransform: 'capitalize' }}>{row.plan}</span>
+                      <span style={{ fontSize: 12, fontWeight: 700, color: PLAN_COLOR[row.plan] ?? T.t3 }}>{PLAN_NAMES[row.plan as keyof typeof PLAN_NAMES] ?? row.plan}</span>
                     </td>
                     <td style={{ padding: '10px 0', fontSize: 12, color: T.t2 }}>{row.count}</td>
                     <td style={{ padding: '10px 0', fontSize: 12, color: T.t2 }}>

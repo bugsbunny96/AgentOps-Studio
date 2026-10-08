@@ -119,6 +119,14 @@
   .landing-grid-3 { grid-template-columns: 1fr; }
 }
 
+.landing-grid-4 { grid-template-columns: repeat(4, 1fr); }
+@media (max-width: 1080px) {
+  .landing-grid-4 { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 640px) {
+  .landing-grid-4 { grid-template-columns: 1fr; }
+}
+
 .landing-bento { grid-template-columns: repeat(12, 1fr); }
 @media (max-width: 760px) {
   .landing-bento { grid-template-columns: 1fr; }

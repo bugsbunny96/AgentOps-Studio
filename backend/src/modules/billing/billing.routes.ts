@@ -19,6 +19,7 @@ import {
   getBillingStatusHandler,
   createPortalSessionHandler,
   createPremiumVoiceAddonCheckoutHandler,
+  createTopupCheckoutHandler,
 } from './billing.controller';
 import { orgContext } from '../../middleware/orgContext';
 
@@ -38,7 +39,7 @@ billingRouter.post(
 /**
  * POST /api/v1/billing/checkout
  * Create a Stripe Checkout session. Owner-only.
- * Body: { plan: 'starter' | 'growth' }
+ * Body: { plan: 'lite' | 'starter' | 'growth' | 'enterprise', interval?: 'month' | 'year' }
  */
 billingRouter.post(
   '/checkout',
@@ -64,7 +65,7 @@ billingRouter.post(
 
 /**
  * POST /api/v1/billing/addons/premium-voices/checkout
- * Stripe Checkout for the Premium Voices add-on. Owner-only; Basic / Standard only.
+ * Stripe Checkout for the Premium Voices add-on. Owner-only; Starter / Basic / Standard only.
  */
 billingRouter.post(
   '/addons/premium-voices/checkout',
@@ -72,6 +73,18 @@ billingRouter.post(
   authenticate,
   orgContext,   // SEC-05: honour X-Organization-ID (service stays Owner-only)
   createPremiumVoiceAddonCheckoutHandler,
+);
+
+/**
+ * POST /api/v1/billing/topups/checkout
+ * Stripe Checkout (one-time) for a prepaid top-up pack. Owner-only; paid plans only.
+ */
+billingRouter.post(
+  '/topups/checkout',
+  express.json(),
+  authenticate,
+  orgContext,   // SEC-05: honour X-Organization-ID (service stays Owner-only)
+  createTopupCheckoutHandler,
 );
 
 /**
