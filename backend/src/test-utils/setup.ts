@@ -6,6 +6,9 @@ import { MongoMemoryServer } from 'mongodb-memory-server';
 import mongoose from 'mongoose';
 import { beforeAll, afterAll, afterEach, vi } from 'vitest';
 
+// Outbound calls are limited to 09:00–21:00 IST in production; tests run at any hour
+process.env.OUTBOUND_CALLING_HOURS ??= '00:00-24:00';
+
 let mongod: MongoMemoryServer;
 
 // Suppress logger output during tests

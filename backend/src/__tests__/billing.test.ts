@@ -108,6 +108,10 @@ vi.mock('@/config/env', async (importOriginal) => {
       // INR-denominated price IDs — these take priority in getPlanPriceId()
       STRIPE_STARTER_PRICE_ID_INR: 'price_starter_inr_mock',
       STRIPE_GROWTH_PRICE_ID_INR:  'price_growth_inr_mock',
+      // Keep the setup fee out of these tests even when backend/.env has it
+      // (pricing-v2.test.ts covers the setup-fee line item)
+      STRIPE_SETUP_GUIDED_PRICE_ID_INR:  undefined,
+      STRIPE_SETUP_MANAGED_PRICE_ID_INR: undefined,
     },
   };
 });

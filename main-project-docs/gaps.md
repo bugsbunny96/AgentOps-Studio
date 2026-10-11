@@ -1,6 +1,7 @@
 # AgentOps Studio — Gaps Register
 
 > **Version history**
+> - [2026-10-08 12:30] v2.9 — CEO Agent — Number automation (founder request): added § 16 (NUM-01…NUM-08), built on branch `feat/number-automation`. BIZ-06 (ungated outbound) fixed in code. SEC-06 manual UUID entry removed from Settings. PRC-08 superseded by the number model in § 16.
 > - [2026-10-08 11:45] v2.8 — CEO Agent — Pricing v2 (founder request): added § 15 (PRC-01…PRC-08), built on local branch `feat/pricing-v2`. BIZ-04 fixed in code (one catalog; Pro 1,500 min + packs). BIZ-05 partly: setup fees and top-up packs are billable; `invoice.payment_failed` + event idempotency still open. OFR-01 setup-fee part done. Existing gaps otherwise unchanged.
 > - [2026-10-08 10:30] v2.7 — CEO Agent — P0 status refresh: all P0 code fixes merged to `main` (PRs #6–#15) and deployed; founder confirmed the Vapi tool secret, Render secrets and a test order. Closed: SEC-01, 02, 04, 05, CORE-03, 04, BIZ-01, COST-03, 08, BIZ-07, OPS-01. Open: SEC-03 (founder), SEC-06 (manual UUID entry), live checks for CORE-01, 02, 05. See "P0 status" below the summary.
 > - [2026-10-02 16:10] v2.6 — CEO Agent — COST-07 decided (Pro free, add-on ₹2,999 Basic / ₹4,999 Standard) and built; COST-08 (tool safety net) and BIZ-07 (any cancelled subscription downgraded the org) added and fixed in code.
@@ -306,4 +307,24 @@ Source: `main-project-docs/Pricing-Redesign-2026-10.md` (cost, competitor and ma
 | PRC-08 | P2 | Pro "2 phone numbers" from the redesign is not supported (one number per org). | product | Not advertised; build later if Pro customers need it. | ⏳ backlog |
 
 Not done in v2 (still open): BIZ-05 dunning (`invoice.payment_failed`) and webhook event idempotency; auto top-up (needs saved-card mandates); per-number pricing.
+
+---
+
+## 16. Number automation and outbound limits (2026-10-08)
+
+Founder request 2026-10-08: no manual number buying in Vobiz; customers pick a number or the system picks one. Founder decisions: **local numbers by default; trial accounts make outbound calls only (one number or a list) from 2–3 shared numbers the founder buys once; the customer's own number is bought when they pay; inbound + outbound only on a paid plan.** Built on branch `feat/number-automation` (from `dev`), not committed.
+
+| ID | Priority | Gap (before) | Where | Fix | Status |
+|---|---|---|---|---|---|
+| NUM-01 | P1 | Founder bought every number by hand and linked it to the trunk; customers could only pick from that pool, trial accounts included. | `telephony/number.service.ts` | Paid plans: spare owned numbers first, then Vobiz local inventory, bought on claim (`purchase-from-inventory`) and linked to `VOBIZ_INBOUND_TRUNK_GROUP_ID`; "Pick one for me" (`POST /telephony/number/auto`); search by digits. Trial/free → 402 `NUMBER_NEEDS_PLAN`. | 🟡 code + tests — **verify the Vobiz inventory/purchase/assign API paths and field names against a live response** |
+| NUM-02 | P1 | 92-series (₹1,000/mo) and costly numbers could be offered. | number.service | Only local, voice, no-KYC numbers ≤ `NUMBER_MAX_MONTHLY_FEE_INR` (₹600); `+9192…` excluded. | 🟡 code |
+| NUM-03 | P1 | Trial accounts had no way to try outbound without their own number. | `calls/outbound.service.ts` | Trial outbound from the least-busy shared trial number (`VAPI_TRIAL_PHONE_NUMBER_IDS`); `scripts/setup-trial-numbers.ts` checks, links and imports the numbers. | 🟡 code — founder runs the script |
+| NUM-04 | P1 | Callbacks to a shared number would reach nobody. | `webhook.service.ts` | Routed to the trial business that last called that person from a shared number within `TRIAL_CALLBACK_WINDOW_DAYS` (7); otherwise a neutral message. | 🟡 code |
+| NUM-05 | P1 | No way to call a list of numbers. | `calls/call-batch.*`, `jobs/outboundBatch.*` | `POST /calls/batches` (paste a list); dialled one at a time by a 9th BullMQ worker; busy → retry, outside hours → wait, minutes/plan → stop and skip the rest; trial ≤ 20 numbers, paid ≤ 500; one running list per org; cancel. | 🟡 code |
+| BIZ-06 | P1 | Outbound calls had no plan, quota, concurrency or hours check. | `call.service.ts` | `checkCallCapacity` (shared with the inbound gate): trial or paid plan, minutes + packs, simultaneous calls (trial 1), `OUTBOUND_CALLING_HOURS` 09:00–21:00 IST. Codes: 402 `PLAN_REQUIRED` / `MINUTES_EXHAUSTED`, 429 `LINES_BUSY`, 422 `OUTSIDE_CALLING_HOURS`, 422 `NO_PHONE_NUMBER`. | ✅ code + tests |
+| NUM-06 | P2 | Cancelled customers kept their number linked (paying rent, inbound still routed). | `billing.service.ts` | On `customer.subscription.deleted` the number is unlinked from Vapi and the org and kept as a spare (no ₹700 release fee). | 🟡 code |
+| NUM-07 | P2 | After paying, nothing told the customer to get a number. | billing webhook; email | "Choose your business number" email on the first paid checkout; picker in Settings (manual Vapi-ID form removed — SEC-06). | 🟡 code |
+| NUM-08 | P1 | Vobiz is prepaid (₹20.50 on 2026-10-08); a purchase or calls fail silently when it runs out. | ops | Failed purchase → `OPS_ALERT_EMAIL`; founder keeps the balance topped up. Balance polling not built (Vobiz balance endpoint not verified). | ⏳ founder |
+
+Compliance note: trial lists are capped and limited to 09:00–21:00 IST, but DND/NCPR scrubbing is not built. Outbound lists to people who have not agreed to be called can breach TRAI rules — keep lists to customers' own contacts.
 

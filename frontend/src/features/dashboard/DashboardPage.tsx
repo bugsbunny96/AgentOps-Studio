@@ -8,16 +8,17 @@ import {
   useState, useRef, useEffect, useCallback, type CSSProperties,
 } from 'react';
 import { Link } from 'react-router-dom';
-import { useQuery, useMutation } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import {
   Bot, BookOpen, PhoneCall, ArrowRight, Copy, CheckCheck,
-  Timer, CheckCircle2, PhoneOutgoing, X, Loader2, CheckCircle,
+  Timer, CheckCircle2, PhoneOutgoing,
   AlertCircle, Activity, Zap, Phone, Settings, Clock,
 } from 'lucide-react';
 import { useAppSelector } from '@/store';
 import { api } from '@/utils/api';
 import type { VoiceAgent, Call } from '@/types';
 import { unwrapList } from '@/utils/unwrapList';
+import OutboundCallModal from './OutboundCallModal';
 
 // ── Design tokens ─────────────────────────────────────────────────────────────
 const T = {
@@ -266,110 +267,6 @@ function SetupStep({
           {linkLabel} <ArrowRight size={10} />
         </Link>
       )}
-    </div>
-  );
-}
-
-// ── Outbound call modal ───────────────────────────────────────────────────────
-function CallNumberModal({ agentId, onClose }: { agentId: string; onClose: () => void }) {
-  const [num, setNum] = useState('');
-  const { mutate, isPending, isSuccess, error } = useMutation({
-    mutationFn: () => api.post('/calls/initiate', { phoneNumber: num, agentId }),
-  });
-
-  return (
-    <div style={{
-      position: 'fixed', inset: 0, zIndex: 9999,
-      display: 'flex', alignItems: 'center', justifyContent: 'center',
-      background: 'rgba(23,23,23,0.85)', backdropFilter: 'blur(8px)',
-    }}>
-      <div style={{
-        width: 420, borderRadius: 20,
-        background: T.bgS, border: `1px solid ${T.bdr}`,
-        boxShadow: '0 0 60px rgba(33,241,168,0.15)',
-        animation: 'dashFadeUp 0.2s ease-out both', overflow: 'hidden',
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '20px 24px', borderBottom: `1px solid ${T.bdr}` }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <div style={{
-              width: 32, height: 32, borderRadius: 9,
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              background: 'rgba(33,241,168,0.15)', border: '1px solid rgba(33,241,168,0.25)',
-            }}>
-              <PhoneOutgoing size={15} style={{ color: T.blueL }} />
-            </div>
-            <div>
-              <p style={{ fontSize: 14, fontWeight: 700, color: T.t1, margin: 0 }}>Outbound Call</p>
-              <p style={{ fontSize: 11, color: T.t3, margin: 0 }}>Enter number to dial</p>
-            </div>
-          </div>
-          <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: T.t3, display: 'flex' }}>
-            <X size={14} />
-          </button>
-        </div>
-        <div style={{ padding: 24, display: 'flex', flexDirection: 'column', gap: 16 }}>
-          {isSuccess ? (
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12, padding: '16px 0' }}>
-              <div style={{ width: 48, height: 48, borderRadius: '50%', background: 'rgba(16,185,129,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <CheckCircle size={22} style={{ color: T.em }} />
-              </div>
-              <p style={{ fontSize: 14, fontWeight: 600, color: T.t1, margin: 0 }}>Call initiated!</p>
-              <p style={{ fontSize: 12, color: T.t3, margin: 0 }}>Your agent is dialling {num}</p>
-            </div>
-          ) : (
-            <>
-              <div>
-                <label style={{ fontSize: 11, fontWeight: 600, color: T.t2, display: 'block', marginBottom: 8 }}>
-                  Phone number (with country code)
-                </label>
-                <input
-                  value={num}
-                  onChange={(e) => setNum(e.target.value)}
-                  placeholder="+91 98765 43210"
-                  onKeyDown={(e) => e.key === 'Enter' && num.trim().length >= 7 && mutate()}
-                  style={{
-                    width: '100%', boxSizing: 'border-box',
-                    padding: '11px 14px', borderRadius: 10,
-                    background: T.bgC, border: `1px solid ${T.bdr}`,
-                    color: T.t1, fontSize: 14, outline: 'none',
-                  }}
-                  onFocus={(e) => { e.target.style.borderColor = T.blue; }}
-                  onBlur={(e)  => { e.target.style.borderColor = T.bdr; }}
-                />
-              </div>
-              {error && (
-                <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 12px', borderRadius: 8, background: 'rgba(244,63,94,0.1)', border: '1px solid rgba(244,63,94,0.2)' }}>
-                  <AlertCircle size={13} style={{ color: T.rose, flexShrink: 0 }} />
-                  <span style={{ fontSize: 12, color: '#f87171' }}>Failed to initiate call. Please try again.</span>
-                </div>
-              )}
-              <div style={{ display: 'flex', gap: 10 }}>
-                <button onClick={onClose} style={{
-                  flex: 1, padding: '10px 0', borderRadius: 10, border: `1px solid ${T.bdr}`,
-                  background: 'transparent', color: T.t2, fontSize: 13, cursor: 'pointer',
-                }}>
-                  Cancel
-                </button>
-                <button
-                  onClick={() => mutate()}
-                  disabled={isPending || num.trim().length < 7}
-                  style={{
-                    flex: 2, padding: '10px 0', borderRadius: 10, border: 'none',
-                    background: `linear-gradient(135deg, ${T.blue}, ${T.violet})`,
-                    color: '#171717', fontSize: 13, fontWeight: 700, cursor: 'pointer',
-                    opacity: isPending || num.trim().length < 7 ? 0.6 : 1,
-                    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-                  }}
-                >
-                  {isPending
-                    ? <><Loader2 size={14} style={{ animation: 'dashSpin 1s linear infinite' }} /> Connecting…</>
-                    : <><Phone size={14} /> Call Now</>}
-                </button>
-              </div>
-            </>
-          )}
-        </div>
-      </div>
     </div>
   );
 }
@@ -848,7 +745,7 @@ export function DashboardPage() {
 
       {/* Outbound call modal */}
       {showCallModal && primaryAgent && (
-        <CallNumberModal agentId={primaryAgent.id ?? (primaryAgent as any)._id} onClose={() => setShowCallModal(false)} />
+        <OutboundCallModal agentId={primaryAgent.id ?? (primaryAgent as any)._id} onClose={() => setShowCallModal(false)} />
       )}
     </>
   );

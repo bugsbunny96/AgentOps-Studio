@@ -9,6 +9,7 @@
 > **Execution Framework**: `agents/EXECUTION-FRAMEWORK.md` · **SOP**: `agents/SOP.md` · **R&D Log**: `main-project-docs/RD-LOG.md`
 
 **Version history**
+- [2026-10-08 12:30] v3.2 — CEO Agent — Number automation (founder request): Wave 8 (N1–N7) built on local branch `feat/number-automation` (from `dev`, uncommitted): own number bought on payment (spare first, local only), shared trial numbers for outbound-only trials, call lists, callback routing, outbound limits (BIZ-06 → H4.4 done). Backend + frontend `tsc` clean, lint clean, frontend 36/36 + build OK; pure tests pass; Backend `npm test` 422/422 (founder, 2026-10-11).
 - [2026-10-08 11:45] v3.1 — CEO Agent — Pricing v2 (founder request): new Wave 7 (P1–P8) built on local branch `feat/pricing-v2` (from `main`, uncommitted): Starter ₹4,999 plan, Pro ₹29,999 / 1,500 min, annual billing, setup fees, prepaid top-up packs, per-plan simultaneous-call limit, fallback-number transfer, 80/100% usage emails; Pricing/Billing/landing/Terms/super-admin updated; H4.2 pricing-page claims done. Backend + frontend `tsc` clean, frontend 36/36 tests + build OK, 11 pure pricing tests + 82 non-DB backend tests pass; 20 DB-backed pricing tests written but not run (no MongoDB binary in the sandbox) → run `npm test` before merge.
 - [2026-10-08 10:30] v3.0 — CEO Agent — Status refresh from git: Waves 1, 1b, 1c, 2, 3 and `feat/cost-reduction` are merged to `dev` and `main` (PRs #6–#15; Render/Vercel auto-deploy). Founder confirmed: Vapi tool secret set, Render secrets set, test phone order placed → SEC-01, SEC-04 closed. Added `scripts/create-premium-voice-prices.ts` (C7). Active task → production verification, then H4.2. Typecheck clean (backend + frontend); frontend tests 36/36 (AuthGuard/GuestGuard fixed in wave 1b).
 - [2026-10-02 18:10] v2.9 — CEO Agent — Wave 3 on `harden/wave3`: CORE-05 (Vercel /api rewrite), CORE-02 (shared worker client, all 8 workers + schedules on), SEC-07 (SSRF-safe crawler). Decisions: stay on Render + free Redis.
@@ -138,7 +139,7 @@ Every sprint task has a lead agent. Every other agent runs a supporting or backg
 | H4.1 | BIZ-02, BIZ-03 | Single `getEffectivePlan(org)` (trial = Basic; override + expiry) used everywhere | 🟢 | ⏳ |
 | H4.2 | BIZ-04, BIZ-07 | Align plan numbers with the pricing doc; mark unbuilt features "coming soon" (WhatsApp, Sheets, CRM, n8n, booking, reports) | 🔵 + 🟡 | 🟡 Pricing page, landing pricing, Billing page, Terms done in Wave 7 (P6, only built features listed; plan numbers served from one catalog). Still open: Services + Industries copy (FE-19) |
 | H4.3 | BIZ-05 | Stripe `invoice.payment_failed` handling + event idempotency | 🟢 | ⏳ |
-| H4.4 | BIZ-06 | Gate outbound calls (trial, quota, role) | 🟢 | ⏳ |
+| H4.4 | BIZ-06 | Gate outbound calls (trial, quota, role) | 🟢 | 🟡 done in Wave 8 (N6) — `checkCallCapacity` on every outbound call |
 | H4.5 | TEAM-01…04 | Invite permissions, backend permission parity, route guards, per-session refresh tokens | 🟢 | ⏳ |
 | H4.6 | SA-01, SA-02 | Fix broadcast and transfer-ownership queries; wire or hide unused super-admin features | 🟢 | ⏳ |
 | H4.7 | SEC-07…12 | Remaining security P1s (SSRF, access-log membership, email escaping, SA rate limit, auth hardening, order fallback) | 🟢 | ⏳ |
@@ -196,6 +197,20 @@ Branch `feat/pricing-v2` (local, from `main`, **not committed**). Plan catalog: 
 | P6 | PRC-06, BIZ-07 | UI: Pricing page (4 plans, monthly/annual toggle, "every plan includes", top-ups, comparison), landing pricing, Billing page (plan names, interval switch, top-up card, simultaneous calls), Terms § 6, Why-us, super-admin plan lists/labels/MRR | 🔵 + 🟡 + 🟢 | 🟡 code done, build OK |
 | P7 | PRC-07 | Premium Voices add-on on Starter (₹1,499) | 🟢 | 🟡 code done |
 | P8 | PRC-08 | `scripts/create-pricing-v2-prices.ts` (dry run by default) + `.env.example` + `render.yaml` keys; `scripts/update-stripe-webhook-events.ts` adds `checkout.session.async_payment_succeeded` | 🟢 | ✅ backend `npm test` 388/388 (founder, 2026-10-08); Stripe **test-mode** prices created 2026-10-08 and written to local `.env` — set them on Render |
+
+### Wave 8 — Number automation (founder request 2026-10-08) — `gaps.md` § 16
+
+Branch `feat/number-automation` (local, from `dev`, **not committed**).
+
+| Task | Gap | Description | Lead | Status |
+|---|---|---|---|---|
+| N1 | NUM-01, NUM-02 | Paid plans pick a number or "Pick one for me": spares first, then Vobiz local inventory bought on claim + linked to the inbound trunk; ≤ ₹600/mo, no 92-series | 🟢 | 🟡 code + tests |
+| N2 | NUM-03 | Shared trial numbers for outbound-only trials + `scripts/setup-trial-numbers.ts` | 🟢 + Founder | 🟡 code |
+| N3 | NUM-04 | Callback to a shared number → the trial business that called (7 days) | 🟢 + 🟠 | 🟡 code |
+| N4 | NUM-05 | Outbound call lists (paste numbers; one at a time; cancel; progress) | 🟢 + 🔵 | 🟡 code |
+| N5 | NUM-06, NUM-07 | Cancel → number back to spares; "choose your number" email; picker in Settings (SEC-06 form removed) | 🟢 | 🟡 code |
+| N6 | BIZ-06 | Outbound limits: plan, minutes + packs, simultaneous calls, 09:00–21:00 IST | 🟢 | 🟡 code + tests |
+| N7 | — | UI: number picker (trial/paid states, search, groups), outbound window (one number / list), pricing FAQ + Terms § 7.1 (trial = outbound only) | 🔵 + 🟢 | 🟡 code, build OK |
 
 ### Supporting lanes this sprint (zero-idle)
 
@@ -259,6 +274,7 @@ Source and full specs: `main-project-docs/AI-Implementation-Offer-Plan.md`. Gap 
 | 🟡 P1 | **D2**: pick **one** beachhead niche (replaces "choose 2–3 launch industries"); default = electrical/hardware retail | GTM-01 |
 | 🟡 P1 | Fill in the legal-page placeholders (entity, address, GSTIN, grievance officer); advocate review | FE-03 |
 | 🔴 P0 (before charging) | **Pricing v2**: review branch `feat/pricing-v2`, run `npm test` (backend, needs MongoDB binary download) and commit/PR; then `cd backend && npx tsx scripts/create-pricing-v2-prices.ts` (dry run) → `--apply`, and set the printed 10 price IDs + new `STRIPE_PRO_PRICE_ID_INR` (₹29,999) on Render | PRC-01…08 |
+| 🔴 P0 (before merging Wave 8) | **Numbers**: top up Vobiz (balance ₹20.50); buy 2–3 local numbers for trials; set `VOBIZ_INBOUND_TRUNK_GROUP_ID`, `VOBIZ_TRIAL_NUMBERS`, `OPS_ALERT_EMAIL` in `.env`; run `npx tsx scripts/setup-trial-numbers.ts --apply`; put the printed `VAPI_TRIAL_PHONE_NUMBER_IDS` + the others on Render; run backend `npm test` | NUM-01…08 |
 | 🟡 P1 | Ask each customer to set a **fallback number** in Settings (calls transfer there when minutes run out or lines are busy) | PRC-04 |
 | 🟢 P2 | **D3–D5**: managed service in Pro or paid add-on; which plans get webhooks/n8n; first CRM for templates | Plan § 8 |
 | 🟢 P2 | Formspree form ID (or approve a backend contact endpoint); real testimonials | FE-01, FE-02 |
@@ -327,6 +343,7 @@ Source and full specs: `main-project-docs/AI-Implementation-Offer-Plan.md`. Gap 
 
 | Date | Decision | Owner | Rationale |
 |---|---|---|---|
+| 2026-10-08 | **Numbers**: local numbers by default; trial = outbound only from 2–3 shared numbers; own number bought automatically on payment (spare first); kept as a spare on cancel (no release fee) | Founder (T0) | Removes manual buying; avoids ₹1,000 92-series and ₹700 release fees (`gaps.md` § 16) |
 | 2026-10-08 | **Pricing v2**: Starter ₹4,999 (new) · Basic ₹9,999 · Standard ₹17,999 · Pro ₹29,999 (was ₹25,999, 1,500 min, no 3,000 cap); annual = 2 months free; setup ₹0/₹4,999/₹4,999/₹14,999 waived on annual; prepaid top-ups ₹20/₹18 per min; premium add-on ₹1,499 on Starter | Founder (T0) | Pro could lose up to ₹9,303/customer/month; blended margin ≈63%, floor ≈37% (`Pricing-Redesign-2026-10.md`) |
 | 2026-10-02 | Keep the backend on Render (not Vercel); API reached through a Vercel `/api` rewrite; stay on the Redis Cloud free tier | Founder (T0) | Backend needs a long-running process (BullMQ workers, fast Vapi webhooks); rewrite makes cookies first-party without a domain; shared worker client fits 8 workers in ~11 connections |
 | 2026-10-02 | Premium voices: **included on Pro; add-on ₹2,999/mo on Basic, ₹4,999/mo on Standard** (+ GST); not sold on the trial | Founder (T0) | Covers the extra ElevenLabs cost at full usage; Standard + add-on stays below Pro (pricing doc § 11) |

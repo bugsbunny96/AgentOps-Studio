@@ -3,7 +3,7 @@
  *
  * One place that starts every BullMQ worker and schedules the recurring jobs.
  * All workers share one Redis client (config/bullmq-connection.ts), so the
- * whole set costs ~11 Redis connections — inside the free tier.
+ * whole set costs ~12 Redis connections — inside the free tier.
  *
  * Turn individual workers off without a deploy via WORKERS_DISABLED.
  */
@@ -17,6 +17,7 @@ import { startCallMinutesResetWorker } from './callMinutesReset.worker';
 import { startTrialEmailWorker } from './trialEmail.worker';
 import { startTrialScanWorker } from './trialScan.worker';
 import { startChurnRiskWorker } from './churnRisk.worker';
+import { startOutboundBatchWorker } from './outboundBatch.worker';
 import { callMinutesResetQueue } from './callMinutesReset.queue';
 import { trialScanQueue } from './trialScan.queue';
 import { churnRiskQueue } from './churnRisk.queue';
@@ -30,6 +31,7 @@ export const WORKER_NAMES = [
   'trialEmail',        // trial day-5 / day-7 emails
   'trialScan',         // daily trial scan (06:00 UTC)
   'churnRisk',         // daily churn scan (02:00 UTC)
+  'outboundBatch',     // outbound call lists, one number at a time
 ] as const;
 export type WorkerName = (typeof WORKER_NAMES)[number];
 
@@ -42,6 +44,7 @@ const STARTERS: Record<WorkerName, () => Worker> = {
   trialEmail:       startTrialEmailWorker as () => Worker,
   trialScan:        startTrialScanWorker as () => Worker,
   churnRisk:        startChurnRiskWorker as () => Worker,
+  outboundBatch:    startOutboundBatchWorker as () => Worker,
 };
 
 /** Which workers to start, given WORKERS_DISABLED ("a,b"). Unknown names are ignored. */

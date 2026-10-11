@@ -292,3 +292,33 @@ export async function sendUsageAlertEmail(opts: {
     `,
   });
 }
+
+/** After the first paid checkout: ask the owner to choose their business number. */
+export async function sendChooseNumberEmail(email: string, name: string, orgName: string): Promise<void> {
+  const url = `${env.CLIENT_URL}/settings#phone-number`;
+  await sendEmail({
+    to: email,
+    subject: `Choose your business phone number — ${orgName}`,
+    html: `
+      <!DOCTYPE html>
+      <html>
+      <body style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 24px; background: #ffffff;">
+        <h1 style="color: #171717; font-size: 20px; margin: 0 0 12px;">Your plan is active — pick your number</h1>
+        <p style="color: #374151; font-size: 15px; line-height: 1.6;">Hi ${name},</p>
+        <p style="color: #374151; font-size: 15px; line-height: 1.6;">
+          Thanks for choosing a plan for <strong>${orgName}</strong>. Your own Indian phone number is included.
+          Choose one (or let us pick one for you) so customers can call your AI receptionist and your agent
+          can call out from your number.
+        </p>
+        <a href="${url}"
+           style="display:inline-block;padding:12px 24px;background:#21F1A8;color:#171717;
+                  text-decoration:none;border-radius:8px;font-weight:700;font-size:15px;margin:8px 0;">
+          Choose my number
+        </a>
+        <hr style="border:none;border-top:1px solid #e5e7eb;margin:24px 0;"/>
+        <p style="color: #9ca3af; font-size: 12px;">AgentOps Studio — AI Voice Agent Operations Platform</p>
+      </body>
+      </html>
+    `,
+  });
+}

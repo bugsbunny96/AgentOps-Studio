@@ -54,6 +54,10 @@ export interface ICall extends Document {
     ttsCharacters?: number;
   };
   endedReason?: string;   // e.g. 'silence-timed-out', 'hangup', 'customer-ended-call'
+  /** Outbound: Vapi phone-number ID the call was placed from (own number or a shared trial number) */
+  fromPhoneNumberId?: string;
+  /** Outbound list this call belongs to (CallBatch) */
+  batchId?: mongoose.Types.ObjectId;
 
   // ── Structured output from Vapi artifactPlan (electrical-shop-call-summary schema) ──
   /** Languages detected during the call, from Vapi structuredDataOutput */
@@ -136,6 +140,8 @@ const CallSchema = new Schema<ICall>(
       _id: false,
     },
     endedReason: { type: String },
+    fromPhoneNumberId: { type: String },
+    batchId:           { type: Schema.Types.ObjectId, ref: 'CallBatch' },
 
     // ── Structured output fields (from Vapi artifactPlan / structuredDataOutput) ──
     languageUsed: { type: [String], enum: ['hi', 'en', 'mixed'], default: undefined },
@@ -194,6 +200,9 @@ CallSchema.set('toJSON', {
     return ret;
   },
 });
+
+// Callback routing for shared trial numbers: latest outbound call to a number
+CallSchema.index({ direction: 1, callerNumber: 1, createdAt: -1 });
 
 export const CallModel = mongoose.model<ICall>('Call', CallSchema);
 

@@ -10,7 +10,7 @@
  *   - 400 missing agentId
  *   - 400 invalid phone number format (not E.164)
  *   - 404 agent does not belong to the authenticated org
- *   - 422 org has no vapiPhoneNumberId
+ *   - 422 paid org has no own number yet (NO_PHONE_NUMBER)
  *   - 422 agent has no vapiAssistantId
  *   - 200 happy path — Vapi called, Call record created
  *   - Vapi error propagates as 500
@@ -86,7 +86,7 @@ beforeEach(() => {
 
 async function createOwnerWithOrg(
   suffix: string | number = Date.now(),
-  opts: { withPhoneNumberId?: boolean } = {},
+  opts: { withPhoneNumberId?: boolean; plan?: string } = {},
 ) {
   const user = await UserModel.create({
     name:         'Owner',
@@ -103,6 +103,8 @@ async function createOwnerWithOrg(
     timezone:          'Asia/Kolkata',
     onboardingStatus:  'COMPLETED',
     businessHours:     { start: '09:00', end: '18:00' },
+    plan:              opts.plan ?? 'starter',   // outbound needs a paid plan or an active trial
+    trialUsed:         true,
     ...(opts.withPhoneNumberId ? { vapiPhoneNumberId: 'vapi-phone-xyz' } : {}),
   });
   await MembershipModel.create({ userId: user._id, organizationId: org._id, role: 'Owner' });
@@ -163,7 +165,7 @@ describe('POST /api/v1/calls/initiate', () => {
     const res = await request(app)
       .post('/api/v1/calls/initiate')
       .set('Cookie', cookie)
-      .send({ phoneNumber: '9876543210', agentId: agent.id }); // missing +
+      .send({ phoneNumber: '12345', agentId: agent.id }); // too short to be a number
 
     expect(res.status).toBe(400);
     expect(res.body.code).toBe('INVALID_PHONE_FORMAT');
@@ -182,7 +184,7 @@ describe('POST /api/v1/calls/initiate', () => {
     expect(res.body.code).toBe('MISSING_AGENT_ID');
   });
 
-  it('returns 422 when org has no vapiPhoneNumberId', async () => {
+  it('returns 422 when a paid org has not chosen its number yet', async () => {
     const ts = Date.now();
     // withPhoneNumberId: false (default)
     const { org, cookie } = await createOwnerWithOrg(ts);
@@ -236,6 +238,7 @@ describe('POST /api/v1/calls/initiate', () => {
       phoneNumberId: 'vapi-phone-xyz',
       customer:      { number: '+919876543210' },
     });
+    expect(res.body.data.sharedNumber).toBe(false);
 
     // Verify Call record was persisted in the DB
     const dbCall = await CallModel.findOne({ vapiCallId: 'vapi-outbound-call-123' });
@@ -268,7 +271,8 @@ describe('POST /api/v1/calls/initiate', () => {
 
   it('accepts various valid E.164 formats', async () => {
     const ts = Date.now();
-    const { org, cookie } = await createOwnerWithOrg(ts, { withPhoneNumberId: true });
+    // Pro: 5 simultaneous calls, so four back-to-back calls are allowed
+    const { org, cookie } = await createOwnerWithOrg(ts, { withPhoneNumberId: true, plan: 'enterprise' });
     const agent = await createAgent(org._id, ts);
 
     const validNumbers = [
@@ -304,7 +308,7 @@ describe('POST /api/v1/calls/initiate', () => {
     const agent = await createAgent(org._id, ts);
 
     const invalidNumbers = [
-      '9876543210',     // no +
+      '12345',          // too short
       '+',              // + only
       '+0123456789',    // starts with 0 after +
       'not-a-number',   // letters

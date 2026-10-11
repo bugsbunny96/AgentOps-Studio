@@ -72,6 +72,9 @@ async function getVerificationToken(email: string): Promise<string> {
 /** Register + verify email → user is Active and ready to login */
 async function registerAndVerify(overrides: Record<string, unknown> = {}): Promise<void> {
   const email = (overrides.email as string) ?? VALID_USER.email;
+  // Start clean: a leftover user from an earlier test would make register return
+  // 409 and leave no verification token (seen once as a flaky AT3.5 failure)
+  await UserModel.deleteMany({ email });
   await registerUser(overrides);
   const token = await getVerificationToken(email);
   await request(app).post('/api/v1/auth/verify-email').send({ token });

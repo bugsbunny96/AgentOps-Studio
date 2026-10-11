@@ -20,13 +20,14 @@ import { OrganizationModel }  from '../organization/organization.model';
 import { VoiceAgentModel }    from '../agents/agent.model';
 import { CallModel, TranscriptModel, SummaryModel } from './call.model';
 import { isWithinBusinessHours, formatBusinessHours } from '../../utils/businessHours';
-import { PLAN_LIMITS, getEffectiveCallMinutesLimit } from '../billing/billing.service';
+import { PLAN_LIMITS } from '../billing/billing.service';
 import { computeTrialState }  from '../billing/trial.service';
 import { env }    from '../../config/env';
 import { logger } from '../../utils/logger';
 import { enqueueFollowUpAlert } from '../../jobs/followUpAlert.queue';
 import type { VapiCostBreakdown } from '../agents/vapi.service';
-import { currentMonthMinutesUsed, startOfMonthUTC } from '../../utils/callMinutes';
+import { startOfMonthUTC } from '../../utils/callMinutes';
+import { checkCallCapacity } from './call-capacity';
 import { validPackBalance, overflowMinutes, allocatePackConsumption } from '../../utils/minutePacks';
 import { USAGE_ALERT_THRESHOLDS, PLAN_DISPLAY_NAME } from '../billing/plan-catalog';
 import { UserModel } from '../auth/auth.model';
@@ -276,8 +277,53 @@ export function buildUnavailableResponse(
   return buildUnavailableAssistant(org.name, reason);
 }
 
-/** A Call stuck in 'active' (missed end-of-call report) stops counting after this. */
-const ACTIVE_CALL_WINDOW_MS = 20 * 60 * 1000; // > the 15-min per-call cap
+// ─── Shared trial numbers (number automation, 2026-10-08) ─────────────────────
+
+/** Vapi phone-number IDs of the shared trial numbers (VAPI_TRIAL_PHONE_NUMBER_IDS). */
+export function trialPhoneNumberIds(): string[] {
+  return env.VAPI_TRIAL_PHONE_NUMBER_IDS.split(',').map((s) => s.trim()).filter(Boolean);
+}
+
+export function isTrialPhoneNumberId(id: string | undefined | null): boolean {
+  return !!id && trialPhoneNumberIds().includes(id);
+}
+
+/**
+ * The org whose outbound call from a shared trial number most recently reached
+ * this caller, within TRIAL_CALLBACK_WINDOW_DAYS. Null when there is none.
+ */
+export async function findTrialCallbackOrg(callerNumber: string | undefined | null) {
+  const ids = trialPhoneNumberIds();
+  if (!callerNumber || ids.length === 0) return null;
+  const since = new Date(Date.now() - env.TRIAL_CALLBACK_WINDOW_DAYS * 24 * 60 * 60 * 1000);
+  const last = await CallModel.findOne(
+    { direction: 'Outbound', callerNumber, fromPhoneNumberId: { $in: ids }, createdAt: { $gte: since } },
+    { organizationId: 1 },
+  ).sort({ createdAt: -1 }).lean();
+  return last ? OrganizationModel.findById(last.organizationId) : null;
+}
+
+/** Callback to a shared trial number that we can't match to a business. */
+function buildSharedNumberAssistant(): object {
+  const message =
+    'Thank you for calling. This number is used by businesses on AgentOps Studio for outgoing calls, ' +
+    'and we could not match your call to one of them. Please contact the business directly. Goodbye!';
+  return {
+    assistant: {
+      name: 'Shared number — Unmatched',
+      model: {
+        provider: 'openai', model: 'gpt-4o-mini', temperature: 0, maxTokens: 150,
+        messages: [{ role: 'system', content: `Say exactly this message and then end the call: "${message}"` }],
+      },
+      voice: { provider: 'openai', voiceId: 'nova' },
+      firstMessage: message,
+      firstMessageMode: 'assistant-speaks-first',
+      endCallPhrases: ['goodbye', 'bye'],
+      maxDurationSeconds: 45,
+      backgroundSound: 'off',
+    },
+  };
+}
 
 // ─── handleAssistantRequest (SYNCHRONOUS) ─────────────────────────────────────
 
@@ -296,9 +342,21 @@ export async function handleAssistantRequest(
     event.call.phoneNumberId ?? event.call.phoneNumber?.id;
 
   // ── Look up org by Vapi phone number ID ───────────────────────────────────
-  const org = phoneNumberId
+  let org = phoneNumberId
     ? await OrganizationModel.findOne({ vapiPhoneNumberId: phoneNumberId })
     : null;
+
+  // Shared trial number: route the callback to the trial business that last
+  // called this person from a shared number (number automation, 2026-10-08)
+  if (!org && phoneNumberId && isTrialPhoneNumberId(phoneNumberId)) {
+    org = await findTrialCallbackOrg(event.call.customer?.number);
+    if (!org) {
+      logger.info('assistant-request: callback to a shared trial number with no recent caller', {
+        phoneNumberId, callId: event.call.id,
+      });
+      return buildSharedNumberAssistant();
+    }
+  }
 
   // Fallback: if phone number not yet linked, try matching by assistantId
   // (works during test calls where assistantId is set but no phone number)
@@ -311,49 +369,19 @@ export async function handleAssistantRequest(
     return { message: 'No matching organization found for this phone number' };
   }
 
-  // ── Call minutes quota gate ───────────────────────────────────────────────
+  // ── Capacity gate: minutes (+ top-up packs) and simultaneous calls ───────
   // Must be checked BEFORE Vapi connects any assistant to prevent cost exposure.
-  // Trial orgs get the 30-min trial cap (not the full plan allocation);
-  // planOverride takes precedence over plan.
+  // Trial orgs get the 30-min trial cap; planOverride takes precedence over plan.
   {
-    const basePlan   = ((org.planOverride ?? org.plan) || 'free') as keyof typeof PLAN_LIMITS;
-    const trialState = computeTrialState(
-      basePlan,
-      org.trialUsed  ?? false,
-      org.trialEndsAt,
-    );
-    const effectivePlan = trialState.isInTrial ? 'starter' : basePlan;
-    const minutesLimit  = getEffectiveCallMinutesLimit(basePlan, trialState.isInTrial);
-    // BIZ-01: a counter from a previous month counts as 0 (reset worker may be off)
-    const minutesUsed   = currentMonthMinutesUsed(org);
-    // Pricing v2: prepaid top-up minutes extend the allowance (paid plans only)
-    const packBalance   = trialState.isInTrial ? 0 : validPackBalance(org.minutePacks);
-
-    if (minutesLimit !== Infinity && minutesUsed >= minutesLimit + packBalance) {
-      logger.warn('assistant-request: call minutes and top-up packs used up — not connecting the agent', {
-        orgId:        org._id.toString(),
-        effectivePlan,
-        minutesUsed,
-        minutesLimit,
-        packBalance,
-        callId:       event.call.id,
-      });
-      return buildUnavailableResponse(org, 'minutes');
-    }
-
-    // Pricing v2: simultaneous-call limit per plan
-    const maxConcurrent = PLAN_LIMITS[effectivePlan as keyof typeof PLAN_LIMITS]?.concurrentCalls ?? 1;
-    const activeCalls   = await CallModel.countDocuments({
-      organizationId: org._id,
-      status:         'active',
-      createdAt:      { $gte: new Date(Date.now() - ACTIVE_CALL_WINDOW_MS) },
-      ...(event.call.id ? { vapiCallId: { $ne: event.call.id } } : {}),
-    });
-    if (activeCalls >= maxConcurrent) {
-      logger.warn('assistant-request: simultaneous-call limit reached', {
-        orgId: org._id.toString(), effectivePlan, activeCalls, maxConcurrent, callId: event.call.id,
-      });
-      return buildUnavailableResponse(org, 'busy');
+    const capacity = await checkCallCapacity(org, { direction: 'inbound', excludeVapiCallId: event.call.id });
+    if (!capacity.ok) {
+      logger.warn(
+        capacity.reason === 'busy'
+          ? 'assistant-request: simultaneous-call limit reached'
+          : 'assistant-request: call minutes and top-up packs used up — not connecting the agent',
+        { orgId: org._id.toString(), effectivePlan: capacity.plan.effectivePlan, reason: capacity.reason, callId: event.call.id },
+      );
+      return buildUnavailableResponse(org, capacity.reason === 'busy' ? 'busy' : 'minutes');
     }
   }
 

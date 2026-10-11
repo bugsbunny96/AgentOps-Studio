@@ -226,7 +226,7 @@ export default function TermsPage() {
         {/* Section 7 */}
         <div style={S.section}>
           <h2 style={S.h2}>7. Free Trial</h2>
-          <p style={S.p}>7.1 New Organisations receive a 7-day free trial with the Basic-plan feature set and 30 included call-minutes. No credit card or payment method is required to start a trial.</p>
+          <p style={S.p}>7.1 New Organisations receive a 7-day free trial with 30 included call-minutes. During the trial, calls are outbound only and are placed from a phone number shared between trial accounts; an Organisation's own phone number and inbound calls are provided with a paid plan. No credit card or payment method is required to start a trial.</p>
           <p style={S.p}>7.2 If you do not select a paid plan before the trial ends, your AI agent will pause — it will stop answering new calls — but your account data is retained for 30 days. No charge is made automatically; you are only billed once you actively choose and confirm a paid plan.</p>
           <p style={S.p}>7.3 We reserve the right to modify or terminate free trial offerings at any time without liability.</p>
         </div>
