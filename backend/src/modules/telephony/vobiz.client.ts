@@ -43,10 +43,23 @@ export function isVobizApiConfigured(): boolean {
   return !!(env.VOBIZ_AUTH_ID && env.VOBIZ_AUTH_TOKEN);
 }
 
-async function vobizGet<T>(path: string, query: Record<string, string | number>): Promise<T> {
+/** Error from the Vobiz API, with the HTTP status and response body kept for callers. */
+export class VobizApiError extends Error {
+  constructor(public status: number, public body: string, message: string) {
+    super(message);
+    this.name = 'VobizApiError';
+  }
+}
+
+async function vobizRequest<T>(
+  method: 'GET' | 'POST' | 'DELETE',
+  path: string,
+  opts: { query?: Record<string, string | number>; body?: unknown } = {},
+): Promise<T> {
   if (!env.VOBIZ_AUTH_ID || !env.VOBIZ_AUTH_TOKEN) {
     throw new Error('VOBIZ_AUTH_ID / VOBIZ_AUTH_TOKEN are not configured');
   }
+  const query = opts.query ?? {};
   const qs  = new URLSearchParams(Object.entries(query).map(([k, v]): [string, string] => [k, String(v)])).toString();
   const url = `${VOBIZ_BASE}/account/${encodeURIComponent(env.VOBIZ_AUTH_ID)}${path}${qs ? `?${qs}` : ''}`;
 
@@ -54,22 +67,29 @@ async function vobizGet<T>(path: string, query: Record<string, string | number>)
   const timer = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
   try {
     const resp = await fetch(url, {
-      method: 'GET',
+      method,
       headers: {
         'X-Auth-ID':    env.VOBIZ_AUTH_ID,
         'X-Auth-Token': env.VOBIZ_AUTH_TOKEN,
         'Content-Type': 'application/json',
       },
+      ...(opts.body !== undefined ? { body: JSON.stringify(opts.body) } : {}),
       signal: controller.signal,
     });
     if (!resp.ok) {
       const text = await resp.text().catch(() => '');
-      throw new Error(`Vobiz API ${resp.status} on GET ${path}: ${text.slice(0, 300)}`);
+      throw new VobizApiError(resp.status, text.slice(0, 500), `Vobiz API ${resp.status} on ${method} ${path}: ${text.slice(0, 300)}`);
     }
-    return (await resp.json()) as T;
+    if (resp.status === 204) return undefined as T;
+    const text = await resp.text();
+    return (text ? JSON.parse(text) : undefined) as T;
   } finally {
     clearTimeout(timer);
   }
+}
+
+function vobizGet<T>(path: string, query: Record<string, string | number>): Promise<T> {
+  return vobizRequest<T>('GET', path, { query });
 }
 
 /**
@@ -91,4 +111,55 @@ export async function listAccountNumbers(search?: string): Promise<VobizPhoneNum
     }
   }
   return all;
+}
+
+// ─── Inventory + purchase (number automation, 2026-10-08) ─────────────────────
+//
+// Vobiz docs (Account → Phone Numbers):
+//   GET    /account/{auth_id}/inventory/numbers?country=IN&search=&page=&per_page=   unassigned numbers for sale
+//   POST   /account/{auth_id}/numbers/purchase-from-inventory  { e164, currency }  debits setup + first month
+//   POST   /account/{auth_id}/numbers/{e164}/assign            { trunk_group_id }  route to our SIP trunk
+// Field names of inventory items are read defensively — verify against a live response.
+
+/** A number Vobiz has for sale. Fee fields are ₹ when currency is INR. */
+export interface VobizInventoryNumber {
+  e164:            string;
+  country?:        string;
+  region?:         string | null;
+  /** e.g. "local" | "mobile" | "national" | "tollfree" — when Vobiz returns it */
+  number_type?:    string;
+  type?:           string;
+  series?:         string | null;
+  monthly_fee?:    number;
+  setup_fee?:      number;
+  currency?:       string;
+  voice_enabled?:  boolean;
+  aadhaar_verification_required?: boolean;
+}
+
+/** One page of the Vobiz inventory (search = digits contained in the number). */
+export async function listInventoryNumbers(
+  opts: { search?: string; page?: number; perPage?: number } = {},
+): Promise<VobizInventoryNumber[]> {
+  const res = await vobizGet<{ items?: VobizInventoryNumber[] }>('/inventory/numbers', {
+    country:  'IN',
+    page:     opts.page ?? 1,
+    per_page: Math.min(opts.perPage ?? PER_PAGE, PER_PAGE),
+    ...(opts.search ? { search: opts.search } : {}),
+  });
+  return res?.items ?? [];
+}
+
+/** Buys a number from inventory. Debits the Vobiz balance (setup + monthly fee). */
+export async function purchaseFromInventory(e164: string): Promise<VobizPhoneNumber | undefined> {
+  return vobizRequest<VobizPhoneNumber | undefined>('POST', '/numbers/purchase-from-inventory', {
+    body: { e164, currency: 'INR' },
+  });
+}
+
+/** Routes an owned number to a SIP trunk group (our "Vobiz Inbound" trunk → Vapi). */
+export async function assignNumberToTrunk(e164: string, trunkGroupId: string): Promise<void> {
+  await vobizRequest<unknown>('POST', `/numbers/${encodeURIComponent(e164)}/assign`, {
+    body: { trunk_group_id: trunkGroupId },
+  });
 }

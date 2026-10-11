@@ -107,7 +107,7 @@ const FAQS = [
   },
   {
     q: 'How does the free trial work?',
-    a: 'Every new account gets a 7-day free trial with 30 included minutes and the Basic-plan feature set — no credit card required. If you haven’t picked a plan by day 7, your agent pauses but your data stays intact for 30 days.',
+    a: 'Every new account gets a 7-day free trial with 30 call minutes — no credit card required. During the trial your agent makes outbound calls (one number or a list of up to 20) from a shared AgentOps number. Your own Indian number, with incoming calls, comes with any paid plan and is set up automatically when you choose one. If you haven’t picked a plan by day 7, calling pauses but your data stays intact for 30 days.',
   },
   {
     q: 'Is pricing in Indian Rupees? Are GST invoices available?',
@@ -627,7 +627,7 @@ function CtaSection() {
         </h2>
 
         <p style={{ fontSize: 16, color: color.text2, marginBottom: 32, lineHeight: 1.6 }}>
-          Full Basic-plan features. No credit card. Live in 30 minutes.
+          Try outbound calls free for 7 days. No credit card. Your own number when you choose a plan.
         </p>
 
         <div style={{ display: 'flex', justifyContent: 'center', gap: 12, flexWrap: 'wrap' }}>

@@ -99,6 +99,30 @@ const envSchema = z.object({
    */
   VOBIZ_VAPI_INBOUND_CREDENTIAL_ID: z.string().optional(),
 
+  // ── Number automation (2026-10-08) ────────────────────────────────────
+  /**
+   * Vobiz trunk group that routes numbers to Vapi ("Vobiz Inbound" trunk, UUID
+   * from Vobiz Console → SIP Trunk). Numbers bought by the app are linked to it.
+   * Required for buying numbers automatically; without it customers can only
+   * take numbers you already own.
+   */
+  VOBIZ_INBOUND_TRUNK_GROUP_ID: z.string().optional(),
+  /** Shared trial numbers (E.164, comma-separated). Never given to a customer. */
+  VOBIZ_TRIAL_NUMBERS: z.string().default(''),
+  /** Vapi phone-number IDs of the shared trial numbers (scripts/setup-trial-numbers.ts). */
+  VAPI_TRIAL_PHONE_NUMBER_IDS: z.string().default(''),
+  /** Highest monthly rent (₹) of a number the app may buy — local numbers are ₹500–600. */
+  NUMBER_MAX_MONTHLY_FEE_INR: z.string().default('600').transform(Number),
+  /** Outbound calls are only placed inside this IST window (TRAI calling hours). */
+  OUTBOUND_CALLING_HOURS: z.string().default('09:00-21:00'),
+  /** Max numbers in one outbound list, on the trial / on paid plans. */
+  TRIAL_BATCH_MAX_NUMBERS: z.string().default('20').transform(Number),
+  PAID_BATCH_MAX_NUMBERS:  z.string().default('500').transform(Number),
+  /** How long a callback to a shared trial number is routed to the trial business that called. */
+  TRIAL_CALLBACK_WINDOW_DAYS: z.string().default('7').transform(Number),
+  /** Founder inbox for operational alerts (number purchase failed, low Vobiz balance). */
+  OPS_ALERT_EMAIL: z.string().optional(),
+
   // ── Prompt size / lookup tools (cost reduction) ───────────────────────
   /**
    * Public base URL of this API, used as the server URL for the

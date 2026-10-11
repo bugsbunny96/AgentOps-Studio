@@ -1,10 +1,14 @@
 /**
- * Onboarding Step 5 — phone number pool (Vobiz → Vapi)
+ * Business phone number (Vobiz → Vapi) — number automation, 2026-10-08
  *
  * Routes under test:
  *   GET  /api/v1/telephony/numbers/available
  *   GET  /api/v1/telephony/number
  *   POST /api/v1/telephony/number
+ *   POST /api/v1/telephony/number/auto
+ *
+ * Paid plans only: spare owned numbers first, then local Vobiz inventory
+ * (bought on claim + linked to the inbound trunk). Trial accounts get none.
  */
 
 import { describe, it, expect, beforeAll, beforeEach, afterAll, vi } from 'vitest';
@@ -16,16 +20,22 @@ import { OrganizationModel, MembershipModel } from '@/modules/organization/organ
 import { signAccessToken } from '@/utils/jwt';
 
 // ── Mocks ─────────────────────────────────────────────────────────────────────
-const { mockList, mockConfigured, mockCreatePhone, mockDeletePhone } = vi.hoisted(() => ({
+const { mockList, mockConfigured, mockCreatePhone, mockDeletePhone, mockInventory, mockPurchase, mockAssignTrunk } = vi.hoisted(() => ({
   mockList:        vi.fn(),
   mockConfigured:  vi.fn(),
   mockCreatePhone: vi.fn(),
   mockDeletePhone: vi.fn(),
+  mockInventory:   vi.fn(),
+  mockPurchase:    vi.fn(),
+  mockAssignTrunk: vi.fn(),
 }));
 
 vi.mock('@/modules/telephony/vobiz.client', () => ({
-  listAccountNumbers:   mockList,
-  isVobizApiConfigured: mockConfigured,
+  listAccountNumbers:     mockList,
+  isVobizApiConfigured:   mockConfigured,
+  listInventoryNumbers:   mockInventory,
+  purchaseFromInventory:  mockPurchase,
+  assignNumberToTrunk:    mockAssignTrunk,
 }));
 
 vi.mock('@/modules/agents/vapi.service', () => ({
@@ -63,7 +73,14 @@ const vobiz = (e164: string, extra: Record<string, unknown> = {}) => ({
   voice_enabled: true, is_blocked: false, ...extra,
 });
 
-const savedEnv = { cred: env.VOBIZ_VAPI_INBOUND_CREDENTIAL_ID };
+const savedEnv = {
+  cred:  env.VOBIZ_VAPI_INBOUND_CREDENTIAL_ID,
+  trunk: env.VOBIZ_INBOUND_TRUNK_GROUP_ID,
+  trial: env.VOBIZ_TRIAL_NUMBERS,
+};
+
+const INV_A = '+918064000001';
+const INV_B = '+918064000002';
 
 beforeAll(async () => {
   await OrganizationModel.syncIndexes(); // make sure the unique phoneNumber index exists
@@ -71,6 +88,8 @@ beforeAll(async () => {
 
 afterAll(() => {
   (env as Record<string, unknown>).VOBIZ_VAPI_INBOUND_CREDENTIAL_ID = savedEnv.cred;
+  (env as Record<string, unknown>).VOBIZ_INBOUND_TRUNK_GROUP_ID = savedEnv.trunk;
+  (env as Record<string, unknown>).VOBIZ_TRIAL_NUMBERS = savedEnv.trial;
 });
 
 beforeEach(() => {
@@ -91,6 +110,11 @@ beforeEach(() => {
   });
   mockCreatePhone.mockResolvedValue({ id: 'vapi-phone-new' });
   mockDeletePhone.mockResolvedValue(undefined);
+  (env as Record<string, unknown>).VOBIZ_INBOUND_TRUNK_GROUP_ID = undefined;
+  (env as Record<string, unknown>).VOBIZ_TRIAL_NUMBERS = '';
+  mockInventory.mockResolvedValue([]);
+  mockPurchase.mockResolvedValue({ e164: INV_A, status: 'active' });
+  mockAssignTrunk.mockResolvedValue(undefined);
 });
 
 async function createOwner(suffix: string, orgExtra: Record<string, unknown> = {}, role: 'Owner' | 'Member' = 'Owner') {
@@ -101,7 +125,7 @@ async function createOwner(suffix: string, orgExtra: Record<string, unknown> = {
   const org = await OrganizationModel.create({
     name: `Tel Org ${suffix}`, slug: `tel-org-${suffix}`, ownerId: user._id,
     industry: 'Healthcare', timezone: 'Asia/Kolkata', onboardingStatus: 'VOICE_SETUP',
-    businessHours: { start: '09:00', end: '18:00' }, ...orgExtra,
+    businessHours: { start: '09:00', end: '18:00' }, plan: 'starter', trialUsed: true, ...orgExtra,
   });
   await MembershipModel.create({ userId: user._id, organizationId: org._id, role });
   const token = signAccessToken({ userId: user._id.toString(), email: user.email });
@@ -225,3 +249,161 @@ describe('POST /api/v1/telephony/number', () => {
     expect(res.status).toBe(503);
   });
 });
+
+// ── Number automation (2026-10-08) ────────────────────────────────────────────
+
+const inv = (e164: string, extra: Record<string, unknown> = {}) => ({
+  e164, country: 'IN', region: 'Karnataka', number_type: 'local', monthly_fee: 500, setup_fee: 100, currency: 'INR', ...extra,
+});
+
+describe('trial accounts', () => {
+  const trialOrg = { plan: 'free', trialUsed: true, trialEndsAt: new Date(Date.now() + 3 * 86_400_000) };
+
+  it('GET /number reports the trial plan state', async () => {
+    const { cookie } = await createOwner('trial-state', trialOrg);
+    const res = await request(app).get('/api/v1/telephony/number').set('Cookie', cookie);
+    expect(res.body.data).toMatchObject({ phoneNumber: null, planState: 'trial' });
+  });
+
+  it('402 NUMBER_NEEDS_PLAN for the picker and for claiming', async () => {
+    const { cookie } = await createOwner('trial-pick', trialOrg);
+    const list = await request(app).get('/api/v1/telephony/numbers/available').set('Cookie', cookie);
+    expect(list.status).toBe(402);
+    expect(list.body.code).toBe('NUMBER_NEEDS_PLAN');
+    const claim = await request(app).post('/api/v1/telephony/number').set('Cookie', cookie).send({ e164: NUM_A });
+    expect(claim.status).toBe(402);
+    expect(mockCreatePhone).not.toHaveBeenCalled();
+  });
+});
+
+describe('spare numbers + Vobiz inventory', () => {
+  beforeEach(() => {
+    (env as Record<string, unknown>).VOBIZ_INBOUND_TRUNK_GROUP_ID = 'trunk-in';
+  });
+
+  it('lists spares first, then local inventory; hides trial, 92-series, costly and KYC numbers', async () => {
+    (env as Record<string, unknown>).VOBIZ_TRIAL_NUMBERS = NUM_C;
+    mockInventory.mockResolvedValue([
+      inv(INV_B, { monthly_fee: 600 }),
+      inv(INV_A),
+      inv('+919240953872', { number_type: 'mobile', monthly_fee: 1000 }),  // 92-series
+      inv('+918064000009', { monthly_fee: 900 }),                         // above the ₹600 cap
+      inv('+918064000008', { aadhaar_verification_required: true }),
+      inv(NUM_A),                                                         // already owned
+    ]);
+    const { cookie } = await createOwner('inv-list');
+    const res = await request(app).get('/api/v1/telephony/numbers/available').set('Cookie', cookie);
+    expect(res.status).toBe(200);
+    expect(res.body.data.numbers.map((n: { e164: string; source: string }) => `${n.source}:${n.e164}`)).toEqual([
+      `owned:${NUM_A}`, `owned:${NUM_B}`, `inventory:${INV_A}`, `inventory:${INV_B}`,
+    ]);
+  });
+
+  it('passes search digits to the inventory and filters spares', async () => {
+    const { cookie } = await createOwner('inv-search');
+    const res = await request(app).get('/api/v1/telephony/numbers/available?search=80%207138%207371').set('Cookie', cookie);
+    expect(mockInventory).toHaveBeenCalledWith(expect.objectContaining({ search: '8071387371' }));
+    expect(res.body.data.numbers.map((n: { e164: string }) => n.e164)).toEqual([NUM_B]);
+  });
+
+  it('shows only spares when buying is not configured (no trunk group)', async () => {
+    (env as Record<string, unknown>).VOBIZ_INBOUND_TRUNK_GROUP_ID = undefined;
+    mockInventory.mockResolvedValue([inv(INV_A)]);
+    const { cookie } = await createOwner('inv-off');
+    const res = await request(app).get('/api/v1/telephony/numbers/available').set('Cookie', cookie);
+    expect(res.body.data.numbers.every((n: { source: string }) => n.source === 'owned')).toBe(true);
+    expect(mockInventory).not.toHaveBeenCalled();
+  });
+
+  it('buys an inventory number, links it to the trunk, then imports it into Vapi', async () => {
+    mockInventory.mockResolvedValue([inv(INV_A)]);
+    const { org, cookie } = await createOwner('inv-buy');
+    const res = await request(app).post('/api/v1/telephony/number').set('Cookie', cookie).send({ e164: INV_A });
+    expect(res.status).toBe(200);
+    expect(mockPurchase).toHaveBeenCalledWith(INV_A);
+    expect(mockAssignTrunk).toHaveBeenCalledWith(INV_A, 'trunk-in');
+    expect(mockCreatePhone).toHaveBeenCalledWith(expect.objectContaining({ number: INV_A }));
+    expect((await OrganizationModel.findById(org._id).lean())?.phoneNumber).toBe(INV_A);
+  });
+
+  it('links an owned spare to the trunk when it is not linked yet, without buying', async () => {
+    mockList.mockImplementation(async () => [vobiz(NUM_A, { trunk_group_id: null })]);
+    const { cookie } = await createOwner('spare-link');
+    const res = await request(app).post('/api/v1/telephony/number').set('Cookie', cookie).send({ e164: NUM_A });
+    expect(res.status).toBe(200);
+    expect(mockPurchase).not.toHaveBeenCalled();
+    expect(mockAssignTrunk).toHaveBeenCalledWith(NUM_A, 'trunk-in');
+  });
+
+  it('502 and rolls back when the purchase fails (e.g. low Vobiz balance)', async () => {
+    mockInventory.mockResolvedValue([inv(INV_A)]);
+    mockPurchase.mockRejectedValueOnce(new Error('Vobiz API 402: insufficient balance'));
+    const { org, cookie } = await createOwner('inv-fail');
+    const res = await request(app).post('/api/v1/telephony/number').set('Cookie', cookie).send({ e164: INV_A });
+    expect(res.status).toBe(502);
+    expect(res.body.code).toBe('NUMBER_PURCHASE_FAILED');
+    expect(mockCreatePhone).not.toHaveBeenCalled();
+    expect((await OrganizationModel.findById(org._id).lean())?.phoneNumber).toBeUndefined();
+  });
+
+  it('409 for a 92-series or unknown number', async () => {
+    mockInventory.mockResolvedValue([inv('+919240953872', { number_type: 'mobile', monthly_fee: 1000 })]);
+    const { cookie } = await createOwner('inv-92');
+    const res = await request(app).post('/api/v1/telephony/number').set('Cookie', cookie).send({ e164: '+919240953872' });
+    expect(res.status).toBe(409);
+    expect(mockPurchase).not.toHaveBeenCalled();
+  });
+
+  it('refuses a shared trial number', async () => {
+    (env as Record<string, unknown>).VOBIZ_TRIAL_NUMBERS = NUM_A;
+    const { cookie } = await createOwner('trial-num');
+    const res = await request(app).post('/api/v1/telephony/number').set('Cookie', cookie).send({ e164: NUM_A });
+    expect(res.status).toBe(409);
+  });
+});
+
+describe('POST /api/v1/telephony/number/auto', () => {
+  it('takes the first spare number (no purchase)', async () => {
+    const { cookie } = await createOwner('auto-spare');
+    const res = await request(app).post('/api/v1/telephony/number/auto').set('Cookie', cookie);
+    expect(res.status).toBe(200);
+    expect(res.body.data.phoneNumber).toBe(NUM_A);
+    expect(mockPurchase).not.toHaveBeenCalled();
+  });
+
+  it('buys from inventory when there are no spares', async () => {
+    (env as Record<string, unknown>).VOBIZ_INBOUND_TRUNK_GROUP_ID = 'trunk-in';
+    mockList.mockImplementation(async () => []);
+    mockInventory.mockResolvedValue([inv(INV_A)]);
+    const { cookie } = await createOwner('auto-buy');
+    const res = await request(app).post('/api/v1/telephony/number/auto').set('Cookie', cookie);
+    expect(res.status).toBe(200);
+    expect(res.body.data.phoneNumber).toBe(INV_A);
+    expect(mockPurchase).toHaveBeenCalledWith(INV_A);
+  });
+
+  it('409 NO_NUMBERS_AVAILABLE when nothing is free', async () => {
+    mockList.mockImplementation(async () => []);
+    const { cookie } = await createOwner('auto-none');
+    const res = await request(app).post('/api/v1/telephony/number/auto').set('Cookie', cookie);
+    expect(res.status).toBe(409);
+    expect(res.body.code).toBe('NO_NUMBERS_AVAILABLE');
+  });
+});
+
+describe('releaseOrgNumber (plan cancelled)', () => {
+  it('unlinks the number from Vapi and the org, keeping it as a spare', async () => {
+    const { releaseOrgNumber } = await import('@/modules/telephony/number.service');
+    const { org } = await createOwner('release', { phoneNumber: NUM_A, vapiPhoneNumberId: 'vapi-old' });
+    await releaseOrgNumber(org._id.toString());
+    expect(mockDeletePhone).toHaveBeenCalledWith('vapi-old');
+    const saved = await OrganizationModel.findById(org._id).lean();
+    expect(saved?.phoneNumber).toBeUndefined();
+    expect(saved?.vapiPhoneNumberId).toBeUndefined();
+
+    const { cookie } = await createOwner('after-release');
+    const res = await request(app).get('/api/v1/telephony/numbers/available').set('Cookie', cookie);
+    expect(res.body.data.numbers.map((n: { e164: string }) => n.e164)).toContain(NUM_A);
+  });
+});
+

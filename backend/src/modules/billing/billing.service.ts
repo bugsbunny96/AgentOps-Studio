@@ -173,6 +173,32 @@ export function isAddonSubscription(
   return (sub.items?.data ?? []).some((item) => isAddonPriceId(item.price?.id));
 }
 
+/** Plan cancelled → the number goes back to the spare pool (lazy import avoids a cycle). */
+async function releaseNumberSafe(orgId: string): Promise<void> {
+  try {
+    const { releaseOrgNumber } = await import('../telephony/number.service');
+    await releaseOrgNumber(orgId);
+  } catch (err) {
+    logger.error('Releasing the number after cancellation failed', { orgId, error: err instanceof Error ? err.message : String(err) });
+  }
+}
+
+/** New paid plan without a number → email the owner to choose one. Never throws. */
+async function promptNumberChoiceSafe(orgId: string): Promise<void> {
+  try {
+    const org = await OrganizationModel.findById(orgId).select('name phoneNumber vapiPhoneNumberId').lean();
+    if (!org || org.phoneNumber || org.vapiPhoneNumberId) return;
+    const owner = await MembershipModel.findOne({ organizationId: orgId, role: 'Owner' }).lean();
+    const { UserModel } = await import('../auth/auth.model');
+    const user = owner ? await UserModel.findById(owner.userId).select('email name').lean() : null;
+    if (!user?.email) return;
+    const { sendChooseNumberEmail } = await import('../../utils/email');
+    await sendChooseNumberEmail(user.email, user.name ?? 'there', org.name);
+  } catch (err) {
+    logger.error('Choose-number email failed', { orgId, error: err instanceof Error ? err.message : String(err) });
+  }
+}
+
 /** Re-checks the org's agent voice after an entitlement change (lazy import avoids a load-order cycle). */
 async function enforceVoiceAccessSafe(orgId: string): Promise<void> {
   try {
@@ -494,6 +520,7 @@ export async function handleStripeWebhook(
       });
 
       logger.info('Org plan upgraded via checkout', { orgId, plan });
+      await promptNumberChoiceSafe(orgId);
 
       // Pro includes premium voices — stop charging for the add-on
       if (plan === 'enterprise') {
@@ -582,6 +609,7 @@ export async function handleStripeWebhook(
       logger.info('Org downgraded to free on subscription.deleted', {
         orgId: org._id.toString(),
       });
+      await releaseNumberSafe(org._id.toString());
       await enforceVoiceAccessSafe(org._id.toString());
       break;
     }

@@ -18,15 +18,16 @@ import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { useAppSelector } from '@/store';
 import { useAuth } from '@/hooks/useAuth';
 import {
-  Copy, CheckCircle2, Phone, ExternalLink, Loader2,
+  Copy, CheckCircle2, Loader2,
   Pencil, Save, Eye, EyeOff, Shield,
 } from 'lucide-react';
 import { api } from '@/utils/api';
 import type { AxiosError } from 'axios';
+import PhoneNumberPicker from '@/features/onboarding/PhoneNumberPicker';
 
 // ─── Language options ──────────────────────────────────────────────────────────
 
@@ -539,160 +540,14 @@ function ChangePasswordForm({ onSaved, onCancel }: { onSaved: () => void; onCanc
 }
 
 // ─── Phone Number Setup ────────────────────────────────────────────────────────
-
-async function fetchPhoneNumber() {
-  const res = await api.get<{
-    success: boolean;
-    data: { vapiPhoneNumberId: string | null; vapiAssistantId: string | null };
-  }>('/agents/phone-number');
-  return res.data.data;
-}
-
-async function savePhoneNumber(vapiPhoneNumberId: string) {
-  const res = await api.post<{
-    success: boolean;
-    data: { vapiPhoneNumberId: string | null; message: string };
-  }>('/agents/phone-number', { vapiPhoneNumberId });
-  return res.data.data;
-}
+// Number automation (2026-10-08): the owner picks (or auto-assigns) a number;
+// the app buys/links it in Vobiz and connects it to Vapi. Replaces the manual
+// "paste a Vapi phone number ID" form (SEC-06).
 
 function PhoneNumberSetup() {
-  const queryClient       = useQueryClient();
-  const [inputValue, setInputValue] = useState('');
-  const [saveError, setSaveError]   = useState<string | null>(null);
-  const [saved, setSaved]           = useState(false);
-
-  const { data, isLoading } = useQuery({
-    queryKey: ['phoneNumber'],
-    queryFn:  fetchPhoneNumber,
-    staleTime: 60_000,
-  });
-
-  const mutation = useMutation({
-    mutationFn: savePhoneNumber,
-    onSuccess: () => {
-      setSaved(true);
-      setSaveError(null);
-      setInputValue('');
-      void queryClient.invalidateQueries({ queryKey: ['phoneNumber'] });
-      setTimeout(() => setSaved(false), 3000);
-    },
-    onError: (err: unknown) => {
-      const msg = err instanceof Error ? err.message : 'Failed to save phone number';
-      setSaveError(msg);
-    },
-  });
-
-  const handleSave = () => {
-    const trimmed = inputValue.trim();
-    if (!trimmed) {
-      setSaveError('Please enter the Vapi phone number ID');
-      return;
-    }
-    const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-    if (!uuidPattern.test(trimmed)) {
-      setSaveError('Should look like a UUID: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx');
-      return;
-    }
-    setSaveError(null);
-    mutation.mutate(trimmed);
-  };
-
   return (
-    <div className="mt-3 space-y-4">
-      {/* Status row */}
-      <div className="flex items-center gap-3 pb-4 border-b border-white/5">
-        <div
-          className="flex h-9 w-9 items-center justify-center rounded-lg flex-shrink-0"
-          style={{ background: 'rgba(33,241,168,.08)', border: '1px solid rgba(33,241,168,.15)' }}
-        >
-          <Phone size={15} className="text-brand-300" strokeWidth={1.8} />
-        </div>
-        <div className="flex-1">
-          <p className="text-sm font-medium text-slate-100">Inbound Call Routing</p>
-          {isLoading ? (
-            <p className="text-xs text-slate-400 mt-0.5">Loading…</p>
-          ) : data?.vapiPhoneNumberId ? (
-            <div className="flex items-center gap-1.5 mt-0.5">
-              <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
-              <span className="text-xs text-emerald-300 font-medium">Phone number linked</span>
-            </div>
-          ) : (
-            <div className="flex items-center gap-1.5 mt-0.5">
-              <span className="h-1.5 w-1.5 rounded-full bg-amber-400" />
-              <span className="text-xs text-amber-300 font-medium">No phone number linked yet</span>
-            </div>
-          )}
-        </div>
-      </div>
-
-      {data?.vapiPhoneNumberId && (
-        <CopyRow label="Linked Phone ID" value={data.vapiPhoneNumberId} />
-      )}
-
-      {/* How-to instructions */}
-      <div className="rounded-lg bg-white/[0.03] border border-white/10 p-4 text-xs text-slate-400
-        leading-relaxed space-y-2">
-        <p className="font-semibold text-slate-300">How to connect your Vapi phone number:</p>
-        <ol className="list-decimal list-inside space-y-1.5">
-          <li>
-            Open the{' '}
-            <a
-              href="https://dashboard.vapi.ai/phone-numbers"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-brand-300 hover:underline inline-flex items-center gap-0.5"
-            >
-              Vapi Phone Numbers dashboard
-              <ExternalLink size={10} className="inline" />
-            </a>
-          </li>
-          <li>Buy or import a phone number (Twilio, Vonage, or Vapi-managed)</li>
-          <li>
-            In the number's settings, set <strong>Server URL</strong> to:<br />
-            <code className="bg-surface border border-white/10 rounded px-1.5 py-0.5
-              font-mono text-slate-200 text-[10px] break-all">
-              https://your-api-domain.com/api/v1/webhooks/vapi
-            </code>
-          </li>
-          <li>Copy the phone number's <strong>ID</strong> (UUID format) and paste it below</li>
-        </ol>
-      </div>
-
-      {/* Input + save */}
-      <div className="space-y-2">
-        <label className="text-xs font-medium text-slate-300" htmlFor="phoneNumberId">
-          Vapi Phone Number ID
-        </label>
-        <div className="flex gap-2">
-          <input
-            id="phoneNumberId"
-            type="text"
-            value={inputValue}
-            onChange={(e) => setInputValue(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && handleSave()}
-            placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
-            className="flex-1 rounded-lg border border-white/10 px-3 py-2 text-sm font-mono
-              text-slate-200 placeholder:text-slate-300 focus:outline-none focus:ring-2
-              focus:ring-brand-500 focus:border-transparent transition-shadow"
-          />
-          <button
-            onClick={handleSave}
-            disabled={mutation.isPending || !inputValue.trim()}
-            className="flex items-center gap-1.5 rounded-lg px-4 py-2 text-sm font-medium
-              bg-brand-400 text-slate-900 hover:bg-brand-300 disabled:opacity-50
-              disabled:cursor-not-allowed transition-colors"
-          >
-            {mutation.isPending
-              ? <Loader2 size={14} className="animate-spin" />
-              : saved
-                ? <CheckCircle2 size={14} className="text-emerald-300" />
-                : null}
-            {saved ? 'Saved!' : 'Save'}
-          </button>
-        </div>
-        {saveError && <p className="text-xs text-rose-500">{saveError}</p>}
-      </div>
+    <div className="mt-3">
+      <PhoneNumberPicker />
     </div>
   );
 }

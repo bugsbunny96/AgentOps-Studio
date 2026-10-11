@@ -9,7 +9,7 @@ import mongoose from 'mongoose';
 import { MembershipModel } from '../organization/organization.model';
 import type { IOrganization } from '../organization/organization.model';
 import { VoiceAgentModel } from '../agents/agent.model';
-import { vapiInitiateOutboundCall } from '../agents/vapi.service';
+import { normalizePhone, placeOutboundCall } from './outbound.service';
 import { CallModel, TranscriptModel, SummaryModel } from './call.model';
 import { BadRequest, NotFound, UnprocessableEntity } from '../../middleware/errorHandler';
 import { membershipFilter } from '../../utils/requestContext';
@@ -169,26 +169,21 @@ export async function exportCalls(userId: string, query: ExportCallsQuery): Prom
 
 // ─── initiateCall ─────────────────────────────────────────────────────────────
 
-/** Strict E.164: + followed by 2–15 digits, total 2–16 chars */
-const E164_RE = /^\+[1-9]\d{1,14}$/;
-
 /**
- * Initiates an outbound phone call via Vapi.
+ * Initiates one outbound phone call via Vapi.
  *
  * Flow:
- *   1. Validate phone number format (E.164)
- *   2. Resolve caller's org from userId (any membership)
- *   3. Verify org has a vapiPhoneNumberId (the Vapi caller-ID number)
- *   4. Look up the agent by agentId — must belong to this org
- *   5. Verify the agent has a vapiAssistantId provisioned
- *   6. Call Vapi POST /call/phone
- *   7. Pre-create a Call record (webhook will upsert the same vapiCallId)
+ *   1. Validate + normalise the number (E.164; Indian 10-digit numbers get +91)
+ *   2. Resolve the caller's org; the agent must belong to it and be provisioned
+ *   3. placeOutboundCall: plan / minutes / simultaneous calls / calling hours,
+ *      then the org's own number or a shared trial number (outbound.service.ts)
  */
 export async function initiateCall(userId: string, payload: InitiateCallPayload) {
-  const { phoneNumber, agentId } = payload;
+  const { agentId } = payload;
 
-  // 1. Validate E.164 format
-  if (!phoneNumber || !E164_RE.test(phoneNumber)) {
+  // 1. Validate phone number
+  const phoneNumber = payload.phoneNumber ? normalizePhone(payload.phoneNumber) : null;
+  if (!phoneNumber) {
     throw BadRequest(
       'Phone number must be in E.164 format (e.g. +919876543210)',
       'INVALID_PHONE_FORMAT',
@@ -202,20 +197,10 @@ export async function initiateCall(userId: string, payload: InitiateCallPayload)
   if (!membership) throw NotFound('Organization');
   const org = membership.organizationId as IOrganization;
 
-  // 3. Org must have a connected Vapi phone number to use as caller ID
-  if (!org.vapiPhoneNumberId) {
-    throw UnprocessableEntity(
-      'No phone number connected to your account. Go to Settings → Phone Number to connect one.',
-      'NO_PHONE_NUMBER',
-    );
-  }
-
-  // 4. Agent must belong to this org
+  // Agent must belong to this org and be provisioned in Vapi
   if (!agentId) throw BadRequest('agentId is required', 'MISSING_AGENT_ID');
   const agent = await VoiceAgentModel.findOne({ _id: agentId, organizationId: org._id });
   if (!agent) throw NotFound('Agent');
-
-  // 5. Agent must be provisioned in Vapi
   if (!agent.vapiAssistantId) {
     throw UnprocessableEntity(
       'Agent is not yet provisioned in Vapi. Try saving the agent configuration again.',
@@ -223,27 +208,9 @@ export async function initiateCall(userId: string, payload: InitiateCallPayload)
     );
   }
 
-  // 6. Initiate Vapi outbound call
-  const vapiCall = await vapiInitiateOutboundCall({
-    assistantId:   agent.vapiAssistantId,
-    phoneNumberId: org.vapiPhoneNumberId,
-    customer:      { number: phoneNumber },
-  });
-
-  // 7. Pre-create a Call record so it appears in the dashboard immediately.
-  //    The Vapi `call-started` webhook will upsert the same vapiCallId (idempotent).
-  const call = await CallModel.create({
-    organizationId: org._id,
-    agentId:        agent._id,
-    vapiCallId:     vapiCall.id,
-    direction:      'Outbound',
-    callerNumber:   phoneNumber,
-    status:         'active',
-    duration:       0,
-    cost:           0,
-  });
-
-  return { call: call.toJSON(), vapiCallId: vapiCall.id };
+  // 3. Checks + caller ID + Vapi call
+  const { call, vapiCallId, shared } = await placeOutboundCall(org, agent, phoneNumber);
+  return { call: call.toJSON(), vapiCallId, sharedNumber: shared };
 }
 
 // ─── getCallStats ─────────────────────────────────────────────────────────────

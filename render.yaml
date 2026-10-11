@@ -79,6 +79,19 @@ services:
         value: "0.0047"             # Vobiz ₹0.45/min at ₹96.77/$1 — set from the Vobiz invoice
       - key: USD_INR_RATE
         value: "96.77"              # super-admin margin page: INR plan revenue → USD
+      # ── Number automation (2026-10-08) ────────────────────────────────
+      - key: VOBIZ_INBOUND_TRUNK_GROUP_ID
+        sync: false
+      - key: VOBIZ_TRIAL_NUMBERS
+        sync: false
+      - key: VAPI_TRIAL_PHONE_NUMBER_IDS
+        sync: false
+      - key: OPS_ALERT_EMAIL
+        sync: false
+      - key: NUMBER_MAX_MONTHLY_FEE_INR
+        value: "600"
+      - key: OUTBOUND_CALLING_HOURS
+        value: "09:00-21:00"
 
       # ── Vapi (set in Render dashboard) ────────────────────────────────────
       - key: VAPI_API_KEY
