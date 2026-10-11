@@ -90,7 +90,7 @@ export const TOPUP_VALIDITY_DAYS = 90;
 export const ALL_PLANS_INCLUDE: readonly string[] = [
   'Answers calls in the hours you set, with an after-hours message outside them',
   'Hindi, English and Punjabi, detected automatically',
-  'One Indian phone number',
+  'Your own local Indian number (inbound + outbound), set up automatically',
   'Product catalog + order capture on calls',
   'Call recordings, transcripts and AI summaries',
   'Follow-up alerts by email',

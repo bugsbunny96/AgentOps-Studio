@@ -13,10 +13,10 @@
  * Connection budget (CORE-02, see getSharedWorkerClient below):
  *   1  shared queue client
  *   1  shared worker client
- *   8  workers × 1 blocking connection = 8
+ *   9  workers × 1 blocking connection = 9
  *   1  main app Redis client (config/redis.ts)
  *   ─────────────────────────────────────────
- *   11 per instance (~22 while Render overlaps two instances on deploy)
+ *   12 per instance (~24 while Render overlaps two instances on deploy)
  */
 
 import Redis, { type RedisOptions } from 'ioredis';

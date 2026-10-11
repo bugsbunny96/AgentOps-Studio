@@ -8,6 +8,10 @@ import {
   getCallStatsHandler,
   getCallsByDayHandler,
   searchTranscriptsHandler,
+  createBatchHandler,
+  listBatchesHandler,
+  getBatchHandler,
+  cancelBatchHandler,
 } from './call.controller';
 import { orgContext, requirePermission } from '../../middleware/orgContext';
 
@@ -37,6 +41,18 @@ callsRouter.get('/export', exportCallsHandler);
  * MUST be registered before /:id.
  */
 callsRouter.post('/initiate', requirePermission('calls'), initiateCallHandler);
+
+/**
+ * Outbound call lists — dialled one number at a time (number automation).
+ *   POST /api/v1/calls/batches              { agentId, numbers }
+ *   GET  /api/v1/calls/batches              latest 20
+ *   GET  /api/v1/calls/batches/:id
+ *   POST /api/v1/calls/batches/:id/cancel
+ */
+callsRouter.post('/batches', requirePermission('calls'), createBatchHandler);
+callsRouter.get('/batches', requirePermission('calls'), listBatchesHandler);
+callsRouter.get('/batches/:id', requirePermission('calls'), getBatchHandler);
+callsRouter.post('/batches/:id/cancel', requirePermission('calls'), cancelBatchHandler);
 
 /**
  * GET /api/v1/calls/stats

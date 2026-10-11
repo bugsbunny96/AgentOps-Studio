@@ -12,6 +12,7 @@ import {
   type InitiateCallPayload,
   type SearchTranscriptsQuery,
 } from './call.service';
+import { createBatch, listBatches, getBatch, cancelBatch } from './call-batch.service';
 
 /**
  * GET /api/v1/calls
@@ -180,4 +181,41 @@ export async function searchTranscriptsHandler(
   } catch (err) {
     next(err);
   }
+}
+
+// ─── Outbound call lists (number automation, 2026-10-08) ─────────────────────
+
+/** POST /api/v1/calls/batches — { agentId, numbers: string | string[] } */
+export async function createBatchHandler(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const { batch, invalid } = await createBatch(req.userId!, {
+      agentId: req.body?.agentId as string | undefined,
+      numbers: req.body?.numbers as string | string[] | undefined,
+    });
+    res.status(201).json({ success: true, data: { batch: batch.toJSON(), invalid } });
+  } catch (err) { next(err); }
+}
+
+/** GET /api/v1/calls/batches — latest 20 lists */
+export async function listBatchesHandler(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const batches = await listBatches(req.userId!);
+    res.status(200).json({ success: true, data: { batches: batches.map((b) => b.toJSON()) } });
+  } catch (err) { next(err); }
+}
+
+/** GET /api/v1/calls/batches/:id */
+export async function getBatchHandler(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const batch = await getBatch(req.userId!, String(req.params.id));
+    res.status(200).json({ success: true, data: { batch: batch.toJSON() } });
+  } catch (err) { next(err); }
+}
+
+/** POST /api/v1/calls/batches/:id/cancel */
+export async function cancelBatchHandler(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const batch = await cancelBatch(req.userId!, String(req.params.id));
+    res.status(200).json({ success: true, data: { batch: batch.toJSON() } });
+  } catch (err) { next(err); }
 }

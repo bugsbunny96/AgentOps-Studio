@@ -48,12 +48,12 @@ beforeEach(() => {
 });
 
 describe('CORE-02 — worker registry', () => {
-  it('starts all 8 workers, each on the same shared client', async () => {
+  it('starts all 9 workers, each on the same shared client', async () => {
     const workers = await startBackgroundWorkers('');
-    expect(workers).toHaveLength(8);
-    expect(workerOpts).toHaveLength(8);
+    expect(workers).toHaveLength(9);
+    expect(workerOpts).toHaveLength(9);
     for (const w of workerOpts) expect(w.connection).toBe(SHARED);
-    expect(new Set(workerOpts.map((w) => w.name)).size).toBe(8);
+    expect(new Set(workerOpts.map((w) => w.name)).size).toBe(9);
   });
 
   it('schedules the monthly reset, daily trial scan and daily churn scan', async () => {
@@ -63,7 +63,7 @@ describe('CORE-02 — worker registry', () => {
 
   it('honours WORKERS_DISABLED (and skips their schedules)', async () => {
     const workers = await startBackgroundWorkers(' churnRisk, trialScan ,nonsense');
-    expect(workers).toHaveLength(6);
+    expect(workers).toHaveLength(7);
     expect(schedulers).toEqual(['monthly-minutes-reset']);
   });
 
@@ -74,7 +74,7 @@ describe('CORE-02 — worker registry', () => {
   });
 
   it('stays inside the free tier (30) even with two instances during a deploy', () => {
-    expect(redisConnectionBudget(8)).toBe(11);
-    expect(redisConnectionBudget(8) * 2).toBeLessThanOrEqual(30);
+    expect(redisConnectionBudget(9)).toBe(12);
+    expect(redisConnectionBudget(9) * 2).toBeLessThanOrEqual(30);
   });
 });

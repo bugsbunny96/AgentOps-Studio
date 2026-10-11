@@ -1,6 +1,7 @@
 # AgentOps Studio — Pricing Redesign (Unit Economics, Competitors, Recommendation)
 
 > **Version history**
+> - [2026-10-08 12:30] v1.2 — CEO Agent — § 2.2a Vobiz number costs from the founder's Vobiz console (local ₹500–600/mo + ₹100 setup, 92-series ₹1,000/mo, ₹700 release, trial number ₹159/mo) and the number model decided by the founder (local by default, shared trial numbers, buy on payment, reuse on cancel). Plan prices unchanged.
 > - [2026-10-08 11:45] v1.1 — CEO Agent — **Adopted by the founder** and implemented on branch `feat/pricing-v2` (gaps.md § 15, TASK-BOARD Wave 7). Not built from § 5: a second phone number on Pro (PRC-08) and auto top-up.
 > - [2026-10-08 11:30] v1.0 — CEO Agent — Audit of current plans against verified Oct 2026 vendor prices; redesigned plan set; profit projections. Proposal only. Changing prices is a **T0 founder decision**.
 
@@ -72,6 +73,21 @@ Per-call guard already in place: `maxDurationSeconds: 900` (15 min). There is **
 | Vapi concurrency allowance (4 lines free; $10/line ≈ ₹968; about 1 extra line per 10 customers) | 100 | price [V], ratio [A] |
 | **Per-customer fixed (F)** | **700** | |
 | Stripe | 2.7% of price (2% domestic card + 0.7% Billing) | [V] |
+
+### 2.2a Vobiz number costs (founder's Vobiz console, 2026-10-08) [V]
+
+| Charge | Amount | In the pricing? |
+|---|---|---|
+| Local number rent (080 Karnataka / 079 Gujarat) | ₹500–600/month | ✅ F above (₹600) |
+| One-time setup per number | ₹100 | Covered by Basic/Standard/Pro setup fees; absorbed on Starter |
+| 92-series "mobile" number rent | ₹1,000/month | ❌ Not offered — the app buys local numbers only (cap `NUMBER_MAX_MONTHLY_FEE_INR` = ₹600) |
+| Release fee | ₹700 | ❌ Avoided — numbers of cancelled customers stay as spares and are reused |
+| Shared trial numbers (2–3) | ₹500–600/month each | Platform cost: ≈ ₹1,000–1,800/month in total, ≈ ₹150 per trial if one number serves ~4 trials a month |
+| Call minutes | ₹0.45/min | ✅ In C |
+
+**Decided number model (founder, 2026-10-08):** local numbers by default; trial accounts make outbound calls only, from 2–3 shared numbers bought once; the app buys the customer's own local number when they choose a plan (or uses a spare); on cancellation the number is kept as a spare, not released. Built on branch `feat/number-automation` (`gaps.md` § 16).
+
+**Operational risk:** the Vobiz account is prepaid (₹20.50 on 2026-10-08). Calls, rent and purchases for every customer draw from that one balance — keep it topped up; a failed purchase emails `OPS_ALERT_EMAIL`.
 
 ### 2.3 Platform fixed costs (launch-safe stack, monthly)
 
