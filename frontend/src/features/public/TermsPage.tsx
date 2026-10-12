@@ -95,7 +95,7 @@ const S = {
 };
 
 export default function TermsPage() {
-  const EFFECTIVE_DATE = '8 October 2026';
+  const EFFECTIVE_DATE = '12 October 2026';
 
   return (
     <div style={{ background: T.bg, minHeight: '100vh', color: T.t1 }}>
@@ -250,6 +250,13 @@ export default function TermsPage() {
 
           <h3 style={S.h3}>8.4 Account Closure & Data Deletion</h3>
           <p style={S.p}>To permanently delete your account and all associated data, contact support@agentopsstudio.com. Data deletion will be completed within 30 days in accordance with our Privacy Policy and applicable data retention obligations.</p>
+
+          <h3 style={S.h3}>8.5 Go-Live Guarantee</h3>
+          <p style={S.p}>On plans that carry a one-time setup fee (Basic, Standard and Pro, monthly billing), we guarantee that your AI agent will be live and answering calls on your own phone number within 7 working days (Monday to Saturday, excluding Indian national holidays) of the day we receive everything listed in our setup checklist: your website or price list, business hours, greeting and the details of the person who will test the agent with us.</p>
+          <p style={S.p}>If we miss that date for reasons within our control, we will refund the setup fee in full to the original payment method within 7 business days of your request to support@agentopsstudio.com. Delays caused by missing information, by your phone carrier or by a third-party provider outage are excluded, and the 7 working days restart once the missing item is received. The guarantee covers the setup fee only; subscription fees follow section 8.2. It does not apply to Starter (self-serve, no setup fee) or to annual plans, where the setup fee is already waived.</p>
+
+          <h3 style={S.h3}>8.6 Founding Client Programme</h3>
+          <p style={S.p}>We may accept a limited number of founding clients each calendar quarter, as shown on our Pricing page. A founding client: (a) keeps the plan price in force on the day they are accepted for 12 months, for the same plan and billing interval; (b) pays no setup fee; and (c) agrees that, after at least 30 days live, we may publish a short case study with their business name, quote and results, which they will review before publication and may ask us to remove at any time. Founding status is personal to the Organisation, cannot be transferred, and ends if the subscription is cancelled.</p>
         </div>
 
         {/* Section 9 */}

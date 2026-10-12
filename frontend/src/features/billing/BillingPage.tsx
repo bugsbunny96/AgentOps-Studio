@@ -103,6 +103,8 @@ interface BillingStatus {
   topupMinutes?:    { balance: number; nextExpiry: string | null; canBuy: boolean };
   /** MKT-08: set only when the org bought top-ups in ≥ 2 of the last 3 months */
   upgradeSuggestion?: UpgradeSuggestion | null;
+  /** MKT-04: founding client — price locked, setup fee waived */
+  foundingClient?: { since: string; priceLockUntil: string } | null;
   concurrentCalls?: number;
   billingInterval?: BillingInterval | null;
   setupFeePaid?:    boolean;
@@ -970,6 +972,21 @@ export default function BillingPage() {
         </div>
       ) : null}
 
+      {/* Founding client note (MKT-04) */}
+      {data?.foundingClient && (
+        <div style={{
+          display: 'flex', alignItems: 'center', gap: 10, padding: '12px 16px', borderRadius: 12,
+          background: 'rgba(33,241,168,0.06)', border: '1px solid rgba(33,241,168,0.25)', fontSize: 13, color: T.t1,
+        }}>
+          <CheckCircle2 size={15} style={{ color: T.blueL, flexShrink: 0 }} />
+          <span>
+            <strong>Founding client.</strong> Your plan price is locked until{' '}
+            {new Date(data.foundingClient.priceLockUntil).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })}
+            {' '}and there is no setup fee.
+          </span>
+        </div>
+      )}
+
       {/* Upgrade nudge for regular top-up buyers (MKT-08) */}
       {data?.upgradeSuggestion && <UpgradeNudge s={data.upgradeSuggestion} />}
 
@@ -1016,7 +1033,7 @@ export default function BillingPage() {
               onUpgrade={handleUpgrade}
               upgrading={upgrading}
               interval={interval}
-              setupFeePaid={!!data?.setupFeePaid}
+              setupFeePaid={!!data?.setupFeePaid || !!data?.foundingClient}
             />
           ))}
         </div>

@@ -101,6 +101,7 @@ import {
   saUpdateDealHandler,
   saDeleteDealHandler,
 } from '../sales/sales-deal.controller';
+import { saMarkFoundingHandler, saClearFoundingHandler } from '../founding/founding.controller';
 
 export const superadminRouter = Router();
 
@@ -235,6 +236,10 @@ superadminRouter.get('/sales/summary',       saDealSummaryHandler);
 superadminRouter.post('/sales/deals',        saCreateDealHandler);
 superadminRouter.patch('/sales/deals/:id',   saUpdateDealHandler);
 superadminRouter.delete('/sales/deals/:id',  saDeleteDealHandler);
+
+// MKT-04 Founding client programme
+superadminRouter.post('/orgs/:id/founding',   saMarkFoundingHandler);
+superadminRouter.delete('/orgs/:id/founding', saClearFoundingHandler);
 
 // 19.3 Enterprise Links
 superadminRouter.get('/enterprise-links',           saListEnterpriseLinksHandler);

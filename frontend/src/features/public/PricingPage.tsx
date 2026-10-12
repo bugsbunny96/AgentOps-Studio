@@ -23,6 +23,8 @@
  */
 
 import { useEffect, useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import api from '@/utils/api';
 import { Link } from 'react-router-dom';
 import {
   Check, Plus, ArrowRight, RefreshCw, ShieldCheck, Clock, Languages,
@@ -37,6 +39,7 @@ import {
   PLANS, TOPUP_PACKS, TOPUP_VALIDITY_DAYS, ALL_PLANS_INCLUDE, AVG_CALL_MINUTES,
   inr, withGst, monthlyEquivalent, perMinute,
   annualSaving, maxFirstYearAnnualSaving, SETUP_INCLUDES,
+  GUARANTEE_SHORT, GUARANTEE_WORKING_DAYS, FOUNDING_PER_QUARTER, FOUNDING_PRICE_LOCK_MONTHS, FOUNDING_CONTACT,
   type BillingInterval, type PaidPlanId,
 } from '../../lib/pricing';
 
@@ -113,6 +116,14 @@ const FAQS = [
       `Managed setup (Pro): ${SETUP_INCLUDES.managed.join('; ')}.`,
       `Starter (self-serve, free): ${SETUP_INCLUDES.selfServe.join('; ')}.`,
     ].join(' '),
+  },
+  {
+    q: 'Is there a guarantee?',
+    a: `Yes. On Basic, Standard and Pro, your AI receptionist is live and answering calls on your own number within ${GUARANTEE_WORKING_DAYS} working days of you sending us what we need (your website or price list, business hours and greeting). If it isn’t, we refund your setup fee in full. You keep the plan and we keep working until it is live.`,
+  },
+  {
+    q: 'What is a founding client?',
+    a: `We take ${FOUNDING_PER_QUARTER} founding clients each quarter, because every setup is done personally. Founding clients keep today’s plan price for ${FOUNDING_PRICE_LOCK_MONTHS} months and pay no setup fee. In return, you agree to a short case study with your real results (calls answered, orders taken) once you have been live for a month.`,
   },
   {
     q: 'How does the free trial work?',
@@ -234,6 +245,43 @@ function IntervalToggle({ value, onChange }: { value: BillingInterval; onChange:
   );
 }
 
+// ─── Founding clients (MKT-04) — real spots left this quarter ────────────────
+interface FoundingSpots { cap: number; taken: number; remaining: number; quarterEndsAt: string }
+
+function FoundingBanner() {
+  const { data } = useQuery({
+    queryKey: ['founding-spots'],
+    queryFn: async () => (await api.get<{ success: boolean; data: FoundingSpots }>('/founding-spots')).data.data,
+    staleTime: 5 * 60 * 1000,
+    retry: false,
+  });
+  if (!data) return null; // no number → no claim
+  const full = data.remaining <= 0;
+  const next = new Date(data.quarterEndsAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', timeZone: 'Asia/Kolkata' });
+  return (
+    <div style={{
+      display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 14, flexWrap: 'wrap',
+      padding: '14px 18px', borderRadius: 12, marginBottom: 20,
+      background: 'rgba(33,241,168,.06)', border: '1px solid rgba(33,241,168,.25)',
+    }}>
+      <p style={{ fontSize: 13.5, color: color.text1, margin: 0, lineHeight: 1.55, flex: '1 1 360px' }}>
+        <strong>Founding clients: {data.cap} per quarter.</strong>{' '}
+        {full
+          ? `This quarter’s spots are taken — the next ${data.cap} open on ${next}.`
+          : `${data.remaining} of ${data.cap} left this quarter. Today’s price locked for ${FOUNDING_PRICE_LOCK_MONTHS} months and no setup fee, in return for a short case study.`}
+      </p>
+      {!full && (
+        <a href={FOUNDING_CONTACT} style={{
+          padding: '9px 16px', borderRadius: 8, background: '#21F1A8', color: '#171717',
+          fontSize: 13, fontWeight: 700, textDecoration: 'none', whiteSpace: 'nowrap',
+        }}>
+          Ask for a founding spot
+        </a>
+      )}
+    </div>
+  );
+}
+
 function PricingCards() {
   const [interval, setBillingInterval] = useState<BillingInterval>('month');
 
@@ -248,6 +296,8 @@ function PricingCards() {
               : `Pay yearly and save up to ${inr(maxFirstYearAnnualSaving())} in the first year.`}
           </p>
         </div>
+
+        <FoundingBanner />
 
         <div className="landing-grid-4" style={{ display: 'grid', gap: 16, alignItems: 'stretch' }}>
           {PLANS.map((plan, i) => {
@@ -322,6 +372,11 @@ function PricingCards() {
                       ? `Save ${inr(annualSaving(plan))} a year${plan.setupFeeInr ? ` + ${inr(plan.setupFeeInr)} setup waived` : ''}`
                       : `or ${inr(monthlyEquivalent(plan, 'year'))}/month billed yearly — save ${inr(annualSaving(plan))}`}
                   </div>
+                  {plan.setupFeeInr > 0 && (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 11.5, color: color.text2, marginTop: 6 }}>
+                      <ShieldCheck size={12} style={{ color: color.emerald, flexShrink: 0 }} /> {GUARANTEE_SHORT}
+                    </div>
+                  )}
 
                   <p style={{ fontSize: 12.5, color: color.text2, marginTop: 10, marginBottom: 18, lineHeight: 1.5 }}>
                     {plan.tagline}

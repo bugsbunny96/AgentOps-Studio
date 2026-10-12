@@ -100,6 +100,9 @@ export interface IOrganization extends Document {
   planOverrideBy?: string;
   /** Timestamp when the override was applied. */
   planOverrideAt?: Date;
+  // ── Founding client programme (MKT-04, 2026-10-12) ─────────────────────
+  /** Set by the super-admin: price locked until `priceLockUntil`, setup fee waived. */
+  foundingClient?: { since: Date; priceLockUntil: Date; by: string } | null;
   // ── White-label config ─────────────────────────────────────────────────
   whiteLabel?: {
     enabled:      boolean;
@@ -248,6 +251,14 @@ const OrganizationSchema = new Schema<IOrganization>(
     planOverrideExpiry:   { type: Date, default: null },
     planOverrideBy:       { type: String },
     planOverrideAt:       { type: Date },
+    foundingClient: {
+      type: new Schema({
+        since:          { type: Date, required: true, index: true },
+        priceLockUntil: { type: Date, required: true },
+        by:             { type: String, required: true },
+      }, { _id: false }),
+      default: null,
+    },
     // ── White-label ───────────────────────────────────────────────────
     whiteLabel: {
       enabled:      { type: Boolean, default: false },

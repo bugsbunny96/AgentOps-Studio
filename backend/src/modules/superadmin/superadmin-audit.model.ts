@@ -58,7 +58,10 @@ export type SuperAdminAction =
   // Sales deal log (MKT-11)
   | 'SA_DEAL_CREATE'
   | 'SA_DEAL_UPDATE'
-  | 'SA_DEAL_DELETE';
+  | 'SA_DEAL_DELETE'
+  // Founding client programme (MKT-04)
+  | 'SA_FOUNDING_SET'
+  | 'SA_FOUNDING_CLEAR';
 
 export interface ISuperAdminLog extends Document {
   _id: mongoose.Types.ObjectId;

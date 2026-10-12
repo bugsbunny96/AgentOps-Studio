@@ -316,10 +316,11 @@ export async function createCheckoutSession(
   const priceId = getPlanPriceId(targetPlan, interval);
   const line_items: Stripe.Checkout.SessionCreateParams.LineItem[] = [{ price: priceId, quantity: 1 }];
 
-  // One-time setup fee: monthly billing only, charged once per org
-  const setupFeePaidAt = (org as unknown as { setupFeePaidAt?: Date }).setupFeePaidAt;
+  // One-time setup fee: monthly billing only, charged once per org.
+  // Waived for founding clients (MKT-04).
+  const { setupFeePaidAt, foundingClient } = org as unknown as { setupFeePaidAt?: Date; foundingClient?: unknown };
   let setupFee = false;
-  if (interval === 'month' && !setupFeePaidAt) {
+  if (interval === 'month' && !setupFeePaidAt && !foundingClient) {
     const setupPriceId = getSetupFeePriceId(targetPlan);
     if (setupPriceId) {
       line_items.push({ price: setupPriceId, quantity: 1 });
@@ -683,6 +684,8 @@ export interface BillingStatus {
   billingInterval: BillingInterval | null;
   /** True once the one-time setup fee has been paid. */
   setupFeePaid:    boolean;
+  /** MKT-04: founding client — price locked until, setup fee waived */
+  foundingClient:  { since: string; priceLockUntil: string } | null;
   stripeCustomerId: string | null;
   // ── Trial ─────────────────────────────────────────────────────────
   isInTrial:       boolean;
@@ -727,6 +730,7 @@ export async function getBillingStatus(userId: string): Promise<BillingStatus> {
     planOverride?:       Plan;
     billingInterval?:    BillingInterval;
     setupFeePaidAt?:     Date;
+    foundingClient?:     { since: Date; priceLockUntil: Date } | null;
     minutePacks?:        Array<{ packId: string; purchasedAt: Date; remaining: number; expiresAt: Date; stripeSessionId: string }>;
   };
   const orgData = org as unknown as OrgExtra;
@@ -780,6 +784,9 @@ export async function getBillingStatus(userId: string): Promise<BillingStatus> {
     concurrentCalls: limits.concurrentCalls,
     billingInterval: isPaidPlan(plan) ? (orgData.billingInterval ?? 'month') : null,
     setupFeePaid:    !!orgData.setupFeePaidAt,
+    foundingClient:  orgData.foundingClient
+      ? { since: new Date(orgData.foundingClient.since).toISOString(), priceLockUntil: new Date(orgData.foundingClient.priceLockUntil).toISOString() }
+      : null,
     stripeCustomerId: orgData.stripeCustomerId ?? null,
     isInTrial:        trial.isInTrial,
     isTrialExpired:   trial.isTrialExpired,

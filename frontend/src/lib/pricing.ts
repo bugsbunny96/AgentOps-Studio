@@ -111,6 +111,23 @@ export function monthlyEquivalent(plan: PlanDef, interval: BillingInterval): num
   return interval === 'year' ? Math.round(plan.annualInr / 12) : plan.monthlyInr;
 }
 
+/**
+ * Go-live guarantee (MKT-03, founder decision D7, 2026-10-12): on plans with a
+ * setup fee, the agent is live and answering on the customer's own number within
+ * this many working days of receiving their details, or the setup fee is refunded.
+ */
+export const GUARANTEE_WORKING_DAYS = 7;
+export const GUARANTEE_SHORT = `Live in ${GUARANTEE_WORKING_DAYS} working days or your setup fee back`;
+
+/**
+ * Founding clients (MKT-04, founder decision D8): 5 per quarter; 12-month price
+ * lock + setup fee waived, for consent to a case study. Mirrors
+ * backend/src/modules/founding/founding.ts. Spots left come from GET /founding-spots.
+ */
+export const FOUNDING_PER_QUARTER = 5;
+export const FOUNDING_PRICE_LOCK_MONTHS = 12;
+export const FOUNDING_CONTACT = 'mailto:support@agentopsstudio.com?subject=Founding%20client%20spot';
+
 /** ₹ saved per year on annual billing vs 12 monthly payments (ex-GST). MKT-02 */
 export function annualSaving(plan: PlanDef): number {
   return plan.monthlyInr * 12 - plan.annualInr;

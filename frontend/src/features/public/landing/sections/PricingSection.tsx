@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom';
 import { color, maxW } from '../tokens';
 import { GradientText, Pill, Reveal, SectionEyebrow, SectionHeading, cardStyle } from '../primitives';
-import { PLANS as PLAN_LIST, inr, annualSaving, monthlyEquivalent } from '../../../../lib/pricing';
+import { PLANS as PLAN_LIST, inr, annualSaving, monthlyEquivalent, GUARANTEE_SHORT } from '../../../../lib/pricing';
 
 // Pricing v2 (2026-10-08) — data from src/lib/pricing.ts; only built features (BIZ-07).
 const PLANS = PLAN_LIST.map((p) => ({
@@ -93,7 +93,7 @@ export function PricingSection() {
           ))}
         </div>
         <p style={{ textAlign: 'center', marginTop: 24, fontSize: 13, color: color.text3 }}>
-          Extra minutes from ₹18/min with top-up packs.{' '}
+          Extra minutes from ₹18/min with top-up packs. Paid setups: {GUARANTEE_SHORT.toLowerCase()}.{' '}
           <Link to="/pricing" style={{ color: color.blueLight, textDecoration: 'none', fontWeight: 600 }}>
             Compare all plans →
           </Link>
