@@ -32,6 +32,7 @@ import {
 } from './modules/superadmin/superadmin.controller';
 import { publicFoundingSpotsHandler } from './modules/founding/founding.controller';
 import { isRateLimitExempt, authAccountKey } from './middleware/rateLimitExempt';
+import { stripMongoOperators } from './middleware/stripMongoOperators';
 
 const app = express();
 
@@ -69,8 +70,15 @@ app.use(cookieParser());
 app.use('/api/v1/billing', billingRouter);
 
 // ─── Body Parsing ────────────────────────────────────────────────────
-app.use(express.json({ limit: '10mb' }));
-app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+// Large bodies only where they are real: Vapi call reports (transcripts),
+// knowledge-base text, catalog imports and super-admin blog posts. Everything
+// else is capped at 1 MB. body-parser skips a body that is already parsed.
+const LARGE_BODY_ROUTES = ['/api/v1/webhooks/vapi', '/api/v1/tools', '/api/v1/knowledge-base', '/api/v1/catalog', '/api/v1/orders/submit', '/api/v1/superadmin'];
+app.use(LARGE_BODY_ROUTES, express.json({ limit: '10mb' }));
+app.use(express.json({ limit: '1mb' }));
+app.use(express.urlencoded({ extended: true, limit: '1mb' }));
+// NoSQL-injection guard: drop "$" operator keys from body, query and params
+app.use(stripMongoOperators);
 
 // ─── Request Logging ─────────────────────────────────────────────────
 app.use(requestLogger);
@@ -112,6 +120,26 @@ app.use(['/api/v1/auth/login', '/api/v1/auth/forgot-password'], rateLimit({
   max: 10,
   skip: (req) => skipInTest() || !authAccountKey(req),
   keyGenerator: (req) => authAccountKey(req) ?? 'none',
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { success: false, code: 'RATE_LIMITED', message: 'Too many attempts for this account. Try again in 15 minutes.' },
+}));
+
+// Super-admin login (SEC-10): the most privileged account — 5 attempts per
+// 15 min per IP, and 5 per 15 min per email whatever the IP.
+app.use('/api/v1/superadmin/auth/login', rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 5,
+  skip: skipInTest,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { success: false, code: 'RATE_LIMITED', message: 'Too many login attempts. Try again in 15 minutes.' },
+}));
+app.use('/api/v1/superadmin/auth/login', rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 5,
+  skip: (req) => skipInTest() || !authAccountKey(req),
+  keyGenerator: (req) => `sa:${authAccountKey(req) ?? 'none'}`,
   standardHeaders: true,
   legacyHeaders: false,
   message: { success: false, code: 'RATE_LIMITED', message: 'Too many attempts for this account. Try again in 15 minutes.' },

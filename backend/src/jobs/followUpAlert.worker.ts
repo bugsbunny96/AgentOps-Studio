@@ -19,6 +19,7 @@ import { sendEmail }          from '../utils/email';
 import { logger }             from '../utils/logger';
 import { env }                from '../config/env';
 import type { FollowUpAlertJobData, FollowUpAlertJobName } from './followUpAlert.queue';
+import { escapeHtml } from '../utils/escapeHtml';
 
 // ─── Email template ───────────────────────────────────────────────────────────
 
@@ -41,14 +42,14 @@ function buildFollowUpEmailHtml(opts: {
   const reasonBlock = opts.followUpReason
     ? `<div style="background:#fffbeb;border:1px solid #fde68a;border-radius:8px;padding:16px;margin:16px 0;">
          <p style="margin:0 0 6px;font-weight:700;color:#92400e;">📌 Follow-up reason:</p>
-         <p style="margin:0;color:#374151;">${opts.followUpReason}</p>
+         <p style="margin:0;color:#374151;">${escapeHtml(opts.followUpReason)}</p>
        </div>`
     : '';
 
   const summaryBlock = opts.callSummary
     ? `<div style="background:#f9fafb;border:1px solid #e5e7eb;border-radius:8px;padding:16px;margin:16px 0;">
          <p style="margin:0 0 6px;font-weight:700;color:#374151;">📝 Call summary:</p>
-         <p style="margin:0;color:#4b5563;font-size:14px;">${opts.callSummary}</p>
+         <p style="margin:0;color:#4b5563;font-size:14px;">${escapeHtml(opts.callSummary)}</p>
        </div>`
     : '';
 
@@ -59,11 +60,11 @@ function buildFollowUpEmailHtml(opts: {
       <div style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); border-radius: 12px; padding: 24px 28px; margin-bottom: 24px;">
         <h1 style="color: #ffffff; margin: 0 0 6px; font-size: 20px;">📞 Follow-up needed</h1>
         <p style="color: #fef3c7; margin: 0; font-size: 14px;">
-          A recent call to <strong>${opts.orgName}</strong> was flagged for follow-up.
+          A recent call to <strong>${escapeHtml(opts.orgName)}</strong> was flagged for follow-up.
         </p>
       </div>
 
-      <p style="color: #374151; font-size: 15px;">Hi ${opts.ownerName},</p>
+      <p style="color: #374151; font-size: 15px;">Hi ${escapeHtml(opts.ownerName)},</p>
 
       <p style="color: #374151; font-size: 15px; line-height: 1.6;">
         Your AI voice agent identified that a caller needs a follow-up after their call ended.
@@ -72,7 +73,7 @@ function buildFollowUpEmailHtml(opts: {
       <table style="width:100%;border-collapse:collapse;margin:16px 0;font-size:14px;">
         <tr>
           <td style="padding:8px 12px;background:#f9fafb;border:1px solid #e5e7eb;font-weight:600;color:#374151;width:40%;">Caller</td>
-          <td style="padding:8px 12px;border:1px solid #e5e7eb;color:#111827;">${opts.callerNumber || 'Unknown'}</td>
+          <td style="padding:8px 12px;border:1px solid #e5e7eb;color:#111827;">${escapeHtml(opts.callerNumber || 'Unknown')}</td>
         </tr>
         <tr>
           <td style="padding:8px 12px;background:#f9fafb;border:1px solid #e5e7eb;font-weight:600;color:#374151;">Call ended</td>
