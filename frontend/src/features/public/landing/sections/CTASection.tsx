@@ -30,7 +30,7 @@ export function CTASection() {
           <SecondaryButton to="/contact" size="lg">Book a 30-min Demo</SecondaryButton>
         </div>
         <p style={{ marginTop: 18, fontSize: 11.5, color: color.text3 }}>
-          No credit card · Cancel anytime · ₹ pricing · Indian data residency
+          No credit card · Cancel anytime · ₹ pricing with GST invoices
         </p>
       </Reveal>
     </section>

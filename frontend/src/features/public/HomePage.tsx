@@ -24,8 +24,10 @@ import { CallIntelligenceSection } from './landing/sections/CallIntelligenceSect
 import { VoicesSection } from './landing/sections/VoicesSection';
 import { PricingSection } from './landing/sections/PricingSection';
 import { CTASection } from './landing/sections/CTASection';
+import { usePageMeta } from '@/hooks/usePageMeta';
 
 export default function HomePage() {
+  usePageMeta({ title: "AI Receptionist for Indian Businesses — AgentOps Studio", description: "Answer every customer call 24/7 in Hindi, English and Punjabi. Your AI receptionist takes orders, notes call-backs and sends you a summary of every call. 7-day free trial, no card." });
   return (
     <div className="landing-page">
       <ScrollProgressBar />

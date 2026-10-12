@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { ArrowLeft, LogIn, ArrowRightLeft, AlertTriangle, Download, Palette } from 'lucide-react';
+import { ArrowLeft, LogIn, ArrowRightLeft, AlertTriangle, Download, Palette, Star } from 'lucide-react';
 import api from '@/utils/api';
 
 const T = {
@@ -35,6 +35,7 @@ interface OrgDetail {
     onboardingStatus: string; createdAt: string; industry: string;
     vapiAssistantId?: string; stripeSubscriptionId?: string;
     planOverride?: string;
+    foundingClient?: { since: string; priceLockUntil: string; by: string } | null;
   };
   members: OrgMember[];
 }
@@ -212,6 +213,20 @@ export default function SuperAdminOrgDetailPage() {
     },
   });
 
+  // MKT-04 — founding client: 12-month price lock + no setup fee; 5 per quarter (server-enforced)
+  const [foundingError, setFoundingError] = useState('');
+  const foundingMut = useMutation({
+    mutationFn: (on: boolean) => (on
+      ? api.post(`/superadmin/orgs/${id}/founding`)
+      : api.delete(`/superadmin/orgs/${id}/founding`)),
+    onMutate: () => setFoundingError(''),
+    onSuccess: () => { void qc.invalidateQueries({ queryKey: ['sa', 'orgs', id] }); },
+    onError: (err: unknown) => {
+      const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
+      setFoundingError(msg ?? 'Could not update founding status');
+    },
+  });
+
   if (isLoading) {
     return <p style={{ color: T.t3, fontSize: 13 }}>Loading org…</p>;
   }
@@ -277,6 +292,12 @@ export default function SuperAdminOrgDetailPage() {
             {org.planOverride && (
               <span style={{ marginLeft: 6, fontSize: 10, color: T.amber, fontWeight: 700 }}>OVERRIDDEN</span>
             )}
+            {org.foundingClient && (
+              <span style={{ marginLeft: 6, fontSize: 10, color: T.blue, fontWeight: 700 }}>
+                FOUNDING · price locked to {new Date(org.foundingClient.priceLockUntil).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
+              </span>
+            )}
+
           </p>
         </div>
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
@@ -311,6 +332,24 @@ export default function SuperAdminOrgDetailPage() {
             White-label
           </Link>
           <button
+            onClick={() => {
+              const on = !org.foundingClient;
+              if (on || window.confirm('Remove founding status? The setup-fee waiver and price-lock note go away.')) foundingMut.mutate(on);
+            }}
+            disabled={foundingMut.isPending}
+            title="Founding client: 12-month price lock, no setup fee, case-study consent. 5 per quarter."
+            style={{
+              display: 'flex', alignItems: 'center', gap: 7,
+              padding: '9px 16px', borderRadius: 9, cursor: foundingMut.isPending ? 'not-allowed' : 'pointer',
+              border: `1px solid rgba(33,241,168,0.35)`,
+              background: org.foundingClient ? 'rgba(33,241,168,0.18)' : 'rgba(33,241,168,0.08)',
+              color: T.blue, fontSize: 13, fontWeight: 600,
+            }}
+          >
+            <Star size={13} />
+            {org.foundingClient ? 'Founding ✓' : 'Mark founding'}
+          </button>
+          <button
             onClick={() => setTransferOpen(true)}
             style={{
               display: 'flex', alignItems: 'center', gap: 7,
@@ -340,6 +379,15 @@ export default function SuperAdminOrgDetailPage() {
         </div>
       </div>
 
+      {foundingError && (
+        <div style={{
+          padding: '8px 14px', borderRadius: 9, marginBottom: 16,
+          background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)',
+          fontSize: 12, color: T.redL,
+        }}>
+          {foundingError}
+        </div>
+      )}
       {impError && (
         <div style={{
           padding: '8px 14px', borderRadius: 9, marginBottom: 16,

@@ -30,6 +30,7 @@ import {
   publicEnterpriseLinkHandler,
   publicOrgBrandingHandler,
 } from './modules/superadmin/superadmin.controller';
+import { publicFoundingSpotsHandler } from './modules/founding/founding.controller';
 import { isRateLimitExempt, authAccountKey } from './middleware/rateLimitExempt';
 
 const app = express();
@@ -192,6 +193,9 @@ app.get('/api/v1/enterprise-link/:token', publicEnterpriseLinkHandler);
 
 // Public org branding — 19.7 (allows frontend to read white-label config for its own org)
 app.get('/api/v1/org-branding/:orgId', publicOrgBrandingHandler);
+
+// Public founding-client spots left this quarter — MKT-04 (Pricing page)
+app.get('/api/v1/founding-spots', publicFoundingSpotsHandler);
 
 // Super Admin (isolated prefix, own auth cookies)
 app.use('/api/v1/superadmin', superadminRouter);

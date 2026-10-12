@@ -173,6 +173,7 @@ export const router = createBrowserRouter([
       { path: '/superadmin/vapi-reconciliation', element: lazy_page(() => import('@/features/superadmin/insights/SuperAdminVapiReconciliationPage')) },
       { path: '/superadmin/churn-risk',          element: lazy_page(() => import('@/features/superadmin/insights/SuperAdminChurnRiskPage')) },
       { path: '/superadmin/referrals',           element: lazy_page(() => import('@/features/superadmin/insights/SuperAdminReferralPage')) },
+      { path: '/superadmin/sales',               element: lazy_page(() => import('@/features/superadmin/insights/SuperAdminSalesPage')) },
       { path: '/superadmin/enterprise-links',    element: lazy_page(() => import('@/features/superadmin/insights/SuperAdminEnterpriseLinksPage')) },
       { path: '/superadmin/ab-tests',            element: lazy_page(() => import('@/features/superadmin/insights/SuperAdminABTestPage')) },
       { path: '/superadmin/orgs/:orgId/white-label', element: lazy_page(() => import('@/features/superadmin/insights/SuperAdminWhiteLabelPage')) },

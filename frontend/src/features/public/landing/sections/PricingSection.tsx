@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom';
 import { color, maxW } from '../tokens';
 import { GradientText, Pill, Reveal, SectionEyebrow, SectionHeading, cardStyle } from '../primitives';
-import { PLANS as PLAN_LIST, inr } from '../../../../lib/pricing';
+import { PLANS as PLAN_LIST, inr, annualSaving, monthlyEquivalent, GUARANTEE_SHORT } from '../../../../lib/pricing';
 
 // Pricing v2 (2026-10-08) — data from src/lib/pricing.ts; only built features (BIZ-07).
 const PLANS = PLAN_LIST.map((p) => ({
@@ -11,9 +11,10 @@ const PLANS = PLAN_LIST.map((p) => ({
   badgeBdr: p.featured ? 'rgba(33,241,168,.3)' : color.border,
   price:    inr(p.monthlyInr),
   per:      'per month + GST',
+  annual:   `or ${inr(monthlyEquivalent(p, 'year'))}/month billed yearly — save ${inr(annualSaving(p))}`,
   desc:     p.tagline,
   features: [
-    `${p.includedMinutes.toLocaleString('en-IN')} minutes / month (≈ ${p.approxCalls} calls)`,
+    `≈ ${p.approxCalls} calls answered a month (${p.includedMinutes.toLocaleString('en-IN')} minutes)`,
     `${p.concurrentCalls} simultaneous call${p.concurrentCalls > 1 ? 's' : ''}`,
     'Hindi, English, Punjabi',
     p.premiumVoiceAddonInr === null ? 'Premium voices included' : 'Standard voices (premium add-on)',
@@ -40,7 +41,7 @@ export function PricingSection() {
         </Reveal>
 
         <div className="landing-grid-4" style={{ display: 'grid', gap: 14, marginTop: 44, alignItems: 'start' }}>
-          {PLANS.map(({ badge, badgeBg, badgeColor, badgeBdr, price, per, desc, features, missing, cta, ctaStyle, featured }, i) => (
+          {PLANS.map(({ badge, badgeBg, badgeColor, badgeBdr, price, per, annual, desc, features, missing, cta, ctaStyle, featured }, i) => (
             <Reveal key={i} delay={i * 100}>
               <div
                 style={{
@@ -58,7 +59,8 @@ export function PricingSection() {
                 <div style={{ fontSize: 38, fontWeight: 700, letterSpacing: '-.04em', lineHeight: 1, marginBottom: 3, fontVariantNumeric: 'tabular-nums' }}>
                   {price}
                 </div>
-                <div style={{ fontSize: 12, color: color.text3, marginBottom: 16 }}>{per}</div>
+                <div style={{ fontSize: 12, color: color.text3, marginBottom: 4 }}>{per}</div>
+                <div style={{ fontSize: 12, fontWeight: 600, color: color.blueLight, marginBottom: 16 }}>{annual}</div>
                 <p style={{ fontSize: 13, color: color.text2, marginBottom: 18, lineHeight: 1.5 }}>{desc}</p>
                 <hr style={{ border: 'none', borderTop: `1px solid ${color.border}`, marginBottom: 16 }} />
                 <ul style={{ listStyle: 'none', display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 24, flex: 1 }}>
@@ -91,7 +93,7 @@ export function PricingSection() {
           ))}
         </div>
         <p style={{ textAlign: 'center', marginTop: 24, fontSize: 13, color: color.text3 }}>
-          Extra minutes from ₹18/min with top-up packs.{' '}
+          Extra minutes from ₹18/min with top-up packs. Paid setups: {GUARANTEE_SHORT.toLowerCase()}.{' '}
           <Link to="/pricing" style={{ color: color.blueLight, textDecoration: 'none', fontWeight: 600 }}>
             Compare all plans →
           </Link>

@@ -143,6 +143,7 @@ export function PublicLayout() {
               <>
                 <Link
                   to="/login"
+                  className="public-nav-cta"
                   style={{
                     padding: '7px 14px', borderRadius: 8, fontSize: 13, fontWeight: 600,
                     color: '#fafafa', textDecoration: 'none',
@@ -155,6 +156,7 @@ export function PublicLayout() {
                 </Link>
                 <Link
                   to="/register"
+                  className="public-nav-cta"
                   style={{
                     padding: '7px 16px', borderRadius: 8, fontSize: 13, fontWeight: 600,
                     background: 'linear-gradient(135deg, #21F1A8, #0FC98A)',
@@ -232,6 +234,7 @@ export function PublicLayout() {
       >
         <div style={{ maxWidth: 1100, margin: '0 auto', padding: '0 20px' }}>
           <div
+            className="public-footer-grid"
             style={{
               display: 'grid',
               gridTemplateColumns: '1.6fr 1fr 1fr 1fr',
@@ -248,24 +251,6 @@ export function PublicLayout() {
               <p style={{ fontSize: 13, color: '#8a8a8a', lineHeight: 1.6, maxWidth: 210 }}>
                 AI-powered voice agents for Indian SMBs. Handle every call in the language your customers speak.
               </p>
-              <div style={{ display: 'flex', gap: 8, marginTop: 14 }}>
-                {['in', '𝕏', '▶'].map((icon) => (
-                  <a
-                    key={icon}
-                    href="#"
-                    style={{
-                      width: 30, height: 30, borderRadius: 7,
-                      background: 'rgba(255,255,255,0.03)',
-                      border: '1px solid rgba(255,255,255,0.07)',
-                      display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      color: '#8a8a8a', textDecoration: 'none', fontSize: 12,
-                      transition: 'all 0.2s',
-                    }}
-                  >
-                    {icon}
-                  </a>
-                ))}
-              </div>
             </div>
 
             {/* Link columns */}
@@ -285,7 +270,6 @@ export function PublicLayout() {
                   { label: 'Why Us', to: '/why-us' },
                   { label: 'Blog', to: '/blog' },
                   { label: 'Contact', to: '/contact' },
-                  { label: 'Careers', to: '/contact' },
                 ],
               },
               {
@@ -345,6 +329,13 @@ export function PublicLayout() {
         @media (max-width: 768px) {
           nav[aria-label="Main navigation"] { display: none !important; }
           .public-hamburger { display: flex !important; }
+          /* Log In / Start Free Trial live in the mobile drawer on small screens */
+          .public-nav-cta { display: none !important; }
+          .public-footer-grid { grid-template-columns: repeat(3, minmax(0, 1fr)) !important; gap: 28px 16px !important; }
+          .public-footer-grid > :first-child { grid-column: 1 / -1; }
+        }
+        @media (max-width: 420px) {
+          .public-footer-grid { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
         }
       `}</style>
     </div>

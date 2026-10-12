@@ -14,6 +14,9 @@
  *   6. Have a licensed Indian advocate review before publication
  */
 
+import { MailLink } from '@/components/MailLink';
+import { usePageMeta } from '@/hooks/usePageMeta';
+
 const T = {
   bg:     '#171717',
   bgS:    '#1f1f1f',
@@ -57,6 +60,7 @@ const S = {
     lineHeight: 1.75,
     marginBottom: 6,
   } as React.CSSProperties,
+  tableWrap: { overflowX: 'auto', WebkitOverflowScrolling: 'touch' } as React.CSSProperties,
   table: {
     width: '100%',
     borderCollapse: 'collapse' as const,
@@ -118,6 +122,7 @@ function RightCard({ icon, title, desc }: { icon: string; title: string; desc: s
 }
 
 export default function PrivacyPolicyPage() {
+  usePageMeta({ title: "Privacy Policy", description: "How AgentOps Studio collects, uses, stores and protects personal data, including call recordings and transcripts." });
   const EFFECTIVE_DATE = '29 July 2026';
 
   return (
@@ -197,7 +202,7 @@ export default function PrivacyPolicyPage() {
                     <td style={{ padding: '6px 12px 6px 0', fontSize: 13, fontWeight: 700, color: T.t3, whiteSpace: 'nowrap', verticalAlign: 'top' }}>
                       {label}
                     </td>
-                    <td style={{ padding: '6px 0', fontSize: 13, color: T.t1 }}>{value}</td>
+                    <td style={{ padding: '6px 0', fontSize: 13, color: T.t1 }}>{value.includes('@') ? <MailLink to={value} /> : value}</td>
                   </tr>
                 ))}
               </tbody>
@@ -240,13 +245,13 @@ export default function PrivacyPolicyPage() {
           <p style={S.p}>If you contact our support team, we retain the content of those communications (support tickets, emails, chat transcripts) to resolve your inquiry and improve our service.</p>
 
           <h3 style={S.h3}>3.6 Data We Do Not Collect</h3>
-          <p style={S.p}>We do not intentionally collect special categories of sensitive personal data including biometric data, health/medical information, political opinions, religious beliefs, or financial data beyond billing details. If you believe sensitive data has been shared with us inadvertently, contact privacy@agentopsstudio.com immediately.</p>
+          <p style={S.p}>We do not intentionally collect special categories of sensitive personal data including biometric data, health/medical information, political opinions, religious beliefs, or financial data beyond billing details. If you believe sensitive data has been shared with us inadvertently, contact <MailLink to="privacy@agentopsstudio.com" /> immediately.</p>
         </div>
 
         {/* Section 4 */}
         <div style={S.section}>
           <h2 style={S.h2}>4. How We Use Your Data</h2>
-          <table style={S.table}>
+          <div style={S.tableWrap}><table style={S.table}>
             <thead>
               <tr>
                 <th style={S.th}>Purpose</th>
@@ -270,7 +275,7 @@ export default function PrivacyPolicyPage() {
                 </tr>
               ))}
             </tbody>
-          </table>
+          </table></div>
           <p style={S.p}>We will not use your personal data for purposes incompatible with those stated above without obtaining your prior consent.</p>
         </div>
 
@@ -278,7 +283,7 @@ export default function PrivacyPolicyPage() {
         <div style={S.section}>
           <h2 style={S.h2}>5. Data Sharing & Third-Party Processors</h2>
           <p style={S.p}>We share your data with third-party processors solely to deliver the Service. All processors are engaged under data processing agreements that require them to apply appropriate security and confidentiality measures.</p>
-          <table style={S.table}>
+          <div style={S.tableWrap}><table style={S.table}>
             <thead>
               <tr>
                 <th style={S.th}>Processor</th>
@@ -305,7 +310,7 @@ export default function PrivacyPolicyPage() {
                 </tr>
               ))}
             </tbody>
-          </table>
+          </table></div>
           <p style={S.p}>We do not sell, rent, trade, or share your personal data with third parties for their own marketing or commercial purposes.</p>
           <p style={S.p}>We may disclose personal data if required by a court order, government authority, or applicable law — including Section 69 of the IT Act 2000 or directions from the Department of Telecommunications — and will, where lawfully permitted, notify you of any such disclosure.</p>
         </div>
@@ -314,13 +319,13 @@ export default function PrivacyPolicyPage() {
         <div style={S.section}>
           <h2 style={S.h2}>6. International Data Transfers</h2>
           <p style={S.p}>Several of our processors are located outside India, primarily in the United States. When we transfer personal data internationally, we ensure adequate protection through contractual data processing agreements incorporating standard data protection clauses.</p>
-          <p style={S.p}>Specifically, call recordings and transcripts are processed by US-based AI providers (OpenAI, Deepgram, ElevenLabs). If your organisation has data residency requirements that preclude international transfers, contact privacy@agentopsstudio.com before signing up — the Service may not be suitable for your use case.</p>
+          <p style={S.p}>Specifically, call recordings and transcripts are processed by US-based AI providers (OpenAI, Deepgram, ElevenLabs). If your organisation has data residency requirements that preclude international transfers, contact <MailLink to="privacy@agentopsstudio.com" /> before signing up — the Service may not be suitable for your use case.</p>
         </div>
 
         {/* Section 7 */}
         <div style={S.section}>
           <h2 style={S.h2}>7. Data Retention</h2>
-          <table style={S.table}>
+          <div style={S.tableWrap}><table style={S.table}>
             <thead>
               <tr>
                 <th style={S.th}>Data Category</th>
@@ -343,7 +348,7 @@ export default function PrivacyPolicyPage() {
                 </tr>
               ))}
             </tbody>
-          </table>
+          </table></div>
           <p style={S.p}>After the applicable retention period, data is securely deleted using industry-standard erasure methods, or anonymised such that it can no longer be linked to you. You may request earlier deletion via the process in Section 8.</p>
         </div>
 
@@ -367,7 +372,7 @@ export default function PrivacyPolicyPage() {
             <RightCard icon="🧑‍⚖️" title="Grievance Redressal" desc="Lodge a complaint with our Grievance Officer (see Section 14). We respond within 30 days." />
             <RightCard icon="👤" title="Right to Nominate" desc="Under DPDPA 2023, nominate another individual to exercise data rights on your behalf in the event of your death or incapacity." />
           </div>
-          <p style={S.p}>To exercise any of these rights, email <span style={{ color: T.blue }}>privacy@agentopsstudio.com</span> with your request and sufficient identification. We will respond within <strong style={{ color: T.t1 }}>30 days</strong> as required by the SPDI Rules. Complex or multi-subject requests may take up to 45 days, with notification of the extension.</p>
+          <p style={S.p}>To exercise any of these rights, email <MailLink to="privacy@agentopsstudio.com" /> with your request and sufficient identification. We will respond within <strong style={{ color: T.t1 }}>30 days</strong> as required by the SPDI Rules. Complex or multi-subject requests may take up to 45 days, with notification of the extension.</p>
         </div>
 
         {/* Section 9 — Call Recording (critical) */}
@@ -389,14 +394,14 @@ export default function PrivacyPolicyPage() {
           <h3 style={S.h3}>9.2 Our Role as a Data Processor</h3>
           <p style={S.p}>We act as a data processor for call data collected through your Voice Agents. We process this data on your instructions and do not use it for our own marketing or unrelated purposes. You direct the collection, storage, and deletion of this data.</p>
           <h3 style={S.h3}>9.3 Callee Data Deletion</h3>
-          <p style={S.p}>You may delete individual call recordings from your AgentOps Studio dashboard at any time. Recordings are also automatically purged according to the retention schedule in Section 7. To bulk-delete all recordings associated with a caller upon request, contact support@agentopsstudio.com.</p>
+          <p style={S.p}>You may delete individual call recordings from your AgentOps Studio dashboard at any time. Recordings are also automatically purged according to the retention schedule in Section 7. To bulk-delete all recordings associated with a caller upon request, contact <MailLink to="support@agentopsstudio.com" />.</p>
         </div>
 
         {/* Section 10 — Cookies */}
         <div id="cookies" style={S.section}>
           <h2 style={S.h2}>10. Cookies & Tracking</h2>
           <p style={S.p}>We use cookies and similar technologies to operate the platform and improve your experience. The categories of cookies we use are:</p>
-          <table style={S.table}>
+          <div style={S.tableWrap}><table style={S.table}>
             <thead>
               <tr>
                 <th style={S.th}>Category</th>
@@ -417,7 +422,7 @@ export default function PrivacyPolicyPage() {
                 </tr>
               ))}
             </tbody>
-          </table>
+          </table></div>
           <p style={S.p}>We do not use third-party advertising cookies, cross-site tracking cookies, or behavioural profiling cookies. To manage cookie preferences, adjust your browser settings. Disabling essential cookies will impair or prevent platform functionality.</p>
         </div>
 
@@ -441,7 +446,7 @@ export default function PrivacyPolicyPage() {
         {/* Section 12 */}
         <div style={S.section}>
           <h2 style={S.h2}>12. Children's Privacy</h2>
-          <p style={S.p}>The Service is not directed at, and is not intended for use by, individuals under 18 years of age. We do not knowingly collect personal data from minors. If you are a parent or guardian and believe your child has provided us with personal data without your consent, contact privacy@agentopsstudio.com and we will promptly investigate and delete such data.</p>
+          <p style={S.p}>The Service is not directed at, and is not intended for use by, individuals under 18 years of age. We do not knowingly collect personal data from minors. If you are a parent or guardian and believe your child has provided us with personal data without your consent, contact <MailLink to="privacy@agentopsstudio.com" /> and we will promptly investigate and delete such data.</p>
         </div>
 
         {/* Section 13 */}
@@ -481,7 +486,7 @@ export default function PrivacyPolicyPage() {
                     <td style={{ padding: '6px 12px 6px 0', fontSize: 13, fontWeight: 700, color: T.t3, whiteSpace: 'nowrap', verticalAlign: 'top' }}>
                       {label}
                     </td>
-                    <td style={{ padding: '6px 0', fontSize: 13, color: T.t1 }}>{value}</td>
+                    <td style={{ padding: '6px 0', fontSize: 13, color: T.t1 }}>{value.includes('@') ? <MailLink to={value} /> : value}</td>
                   </tr>
                 ))}
               </tbody>
@@ -497,10 +502,10 @@ export default function PrivacyPolicyPage() {
           <h2 style={S.h2}>15. Contact Us</h2>
           <p style={S.p}>For any privacy-related inquiries, data access requests, or concerns about how we handle your personal data, please contact us:</p>
           <ul style={{ paddingLeft: 20, margin: '0 0 12px' }}>
-            <li style={S.li}>General privacy inquiries: <span style={{ color: T.blue }}>privacy@agentopsstudio.com</span></li>
-            <li style={S.li}>Data access & deletion requests: <span style={{ color: T.blue }}>privacy@agentopsstudio.com</span></li>
-            <li style={S.li}>Grievances & complaints: <span style={{ color: T.blue }}>grievance@agentopsstudio.com</span></li>
-            <li style={S.li}>General support: <span style={{ color: T.blue }}>support@agentopsstudio.com</span></li>
+            <li style={S.li}>General privacy inquiries: <MailLink to="privacy@agentopsstudio.com" /></li>
+            <li style={S.li}>Data access & deletion requests: <MailLink to="privacy@agentopsstudio.com" /></li>
+            <li style={S.li}>Grievances & complaints: <MailLink to="grievance@agentopsstudio.com" /></li>
+            <li style={S.li}>General support: <MailLink to="support@agentopsstudio.com" /></li>
           </ul>
           <p style={S.p}>We take all privacy inquiries seriously and respond within 30 days.</p>
         </div>

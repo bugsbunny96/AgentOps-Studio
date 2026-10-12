@@ -6,6 +6,7 @@ import { z } from 'zod';
 import { Loader2, MailCheck } from 'lucide-react';
 import { api } from '@/utils/api';
 import { AxiosError } from 'axios';
+import { usePageMeta } from '@/hooks/usePageMeta';
 
 // ─── Form schema ───────────────────────────────────────────────────────────
 const ForgotPasswordSchema = z.object({
@@ -15,6 +16,7 @@ type ForgotPasswordFormValues = z.infer<typeof ForgotPasswordSchema>;
 
 // ─── Component ────────────────────────────────────────────────────────────
 export default function ForgotPasswordPage() {
+  usePageMeta({ title: "Reset Your Password", noindex: true });
   const [serverError, setServerError] = useState<string | null>(null);
   const [sent, setSent] = useState(false);
 

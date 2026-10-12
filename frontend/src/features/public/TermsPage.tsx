@@ -14,6 +14,9 @@
  *   6. Have a licensed Indian advocate review before publication
  */
 
+import { MailLink } from '@/components/MailLink';
+import { usePageMeta } from '@/hooks/usePageMeta';
+
 const T = {
   bg:     '#171717',
   bgS:    '#1f1f1f',
@@ -57,6 +60,7 @@ const S = {
     lineHeight: 1.75,
     marginBottom: 6,
   } as React.CSSProperties,
+  tableWrap: { overflowX: 'auto', WebkitOverflowScrolling: 'touch' } as React.CSSProperties,
   table: {
     width: '100%',
     borderCollapse: 'collapse' as const,
@@ -95,7 +99,8 @@ const S = {
 };
 
 export default function TermsPage() {
-  const EFFECTIVE_DATE = '8 October 2026';
+  usePageMeta({ title: "Terms of Service", description: "The terms that govern your use of AgentOps Studio, including plans, billing, refunds, the go-live guarantee and acceptable use." });
+  const EFFECTIVE_DATE = '12 October 2026';
 
   return (
     <div style={{ background: T.bg, minHeight: '100vh', color: T.t1 }}>
@@ -179,7 +184,7 @@ export default function TermsPage() {
           <p style={S.p}>4.2 You are solely responsible for maintaining the confidentiality of your account credentials, including passwords and API keys.</p>
           <p style={S.p}>4.3 You are responsible for all activities that occur under your account, whether or not authorised by you.</p>
           <p style={S.p}>4.4 One Organisation may have multiple team members. The Organisation Owner is responsible for all team members' compliance with these Terms.</p>
-          <p style={S.p}>4.5 If you become aware of any unauthorised use of your account, notify us immediately at support@agentopsstudio.com. We are not liable for any loss arising from unauthorised use prior to notification.</p>
+          <p style={S.p}>4.5 If you become aware of any unauthorised use of your account, notify us immediately at <MailLink to="support@agentopsstudio.com" />. We are not liable for any loss arising from unauthorised use prior to notification.</p>
         </div>
 
         {/* Section 5 */}
@@ -243,13 +248,20 @@ export default function TermsPage() {
             <li style={S.li}>Where required by applicable consumer protection law in India, including the Consumer Protection Act, 2019; or</li>
             <li style={S.li}>Where you notify us of a material, reproducible service failure within 7 days of occurrence and we are unable to remediate it within a reasonable timeframe.</li>
           </ul>
-          <p style={S.p}>Refund requests must be submitted to support@agentopsstudio.com with a description of the issue. We will review and respond within 7 business days.</p>
+          <p style={S.p}>Refund requests must be submitted to <MailLink to="support@agentopsstudio.com" /> with a description of the issue. We will review and respond within 7 business days.</p>
 
           <h3 style={S.h3}>8.3 Downgrade</h3>
           <p style={S.p}>Downgrading to a lower plan takes effect at the end of the current billing period. No partial-month refunds are issued for unused days on the higher plan.</p>
 
           <h3 style={S.h3}>8.4 Account Closure & Data Deletion</h3>
-          <p style={S.p}>To permanently delete your account and all associated data, contact support@agentopsstudio.com. Data deletion will be completed within 30 days in accordance with our Privacy Policy and applicable data retention obligations.</p>
+          <p style={S.p}>To permanently delete your account and all associated data, contact <MailLink to="support@agentopsstudio.com" />. Data deletion will be completed within 30 days in accordance with our Privacy Policy and applicable data retention obligations.</p>
+
+          <h3 style={S.h3}>8.5 Go-Live Guarantee</h3>
+          <p style={S.p}>On plans that carry a one-time setup fee (Basic, Standard and Pro, monthly billing), we guarantee that your AI agent will be live and answering calls on your own phone number within 7 working days (Monday to Saturday, excluding Indian national holidays) of the day we receive everything listed in our setup checklist: your website or price list, business hours, greeting and the details of the person who will test the agent with us.</p>
+          <p style={S.p}>If we miss that date for reasons within our control, we will refund the setup fee in full to the original payment method within 7 business days of your request to <MailLink to="support@agentopsstudio.com" />. Delays caused by missing information, by your phone carrier or by a third-party provider outage are excluded, and the 7 working days restart once the missing item is received. The guarantee covers the setup fee only; subscription fees follow section 8.2. It does not apply to Starter (self-serve, no setup fee) or to annual plans, where the setup fee is already waived.</p>
+
+          <h3 style={S.h3}>8.6 Founding Client Programme</h3>
+          <p style={S.p}>We may accept a limited number of founding clients each calendar quarter, as shown on our Pricing page. A founding client: (a) keeps the plan price in force on the day they are accepted for 12 months, for the same plan and billing interval; (b) pays no setup fee; and (c) agrees that, after at least 30 days live, we may publish a short case study with their business name, quote and results, which they will review before publication and may ask us to remove at any time. Founding status is personal to the Organisation, cannot be transferred, and ends if the subscription is cancelled.</p>
         </div>
 
         {/* Section 9 */}
@@ -308,7 +320,7 @@ export default function TermsPage() {
         <div style={S.section}>
           <h2 style={S.h2}>12. Third-Party Services & Data Processors</h2>
           <p style={S.p}>The Service integrates with the following third-party providers to deliver its functionality:</p>
-          <table style={S.table}>
+          <div style={S.tableWrap}><table style={S.table}>
             <thead>
               <tr>
                 <th style={S.th}>Provider</th>
@@ -330,7 +342,7 @@ export default function TermsPage() {
                 </tr>
               ))}
             </tbody>
-          </table>
+          </table></div>
           <p style={S.p}>Use of each provider's services is subject to their respective terms of service and privacy policies. We are not liable for any acts, omissions, data breaches, or service failures of any third-party provider.</p>
         </div>
 
@@ -377,7 +389,7 @@ export default function TermsPage() {
         <div style={S.section}>
           <h2 style={S.h2}>16. Governing Law & Dispute Resolution</h2>
           <p style={S.p}><strong style={{ color: T.t1 }}>Governing Law.</strong> These Terms shall be governed by and construed in accordance with the laws of the Republic of India, without regard to its conflict of law provisions.</p>
-          <p style={S.p}><strong style={{ color: T.t1 }}>Informal Resolution.</strong> Before initiating formal proceedings, the parties agree to attempt in good faith to resolve any dispute by contacting us at legal@agentopsstudio.com. We will respond within 30 days.</p>
+          <p style={S.p}><strong style={{ color: T.t1 }}>Informal Resolution.</strong> Before initiating formal proceedings, the parties agree to attempt in good faith to resolve any dispute by contacting us at <MailLink to="legal@agentopsstudio.com" />. We will respond within 30 days.</p>
           <p style={S.p}><strong style={{ color: T.t1 }}>Arbitration.</strong> If informal resolution fails within 60 days, any dispute arising out of or in connection with these Terms shall be referred to binding arbitration under the Arbitration and Conciliation Act, 1996 (as amended). The arbitration shall be conducted in English, seated in Bengaluru, Karnataka, by a sole arbitrator mutually agreed upon by the parties. The arbitrator's decision shall be final and binding.</p>
           <p style={S.p}><strong style={{ color: T.t1 }}>Jurisdiction.</strong> For any disputes not subject to arbitration, you irrevocably consent to the exclusive jurisdiction of the civil courts of Bengaluru, Karnataka, India.</p>
           <p style={S.p}><strong style={{ color: T.t1 }}>Injunctive Relief.</strong> Nothing in this section prevents either party from seeking urgent injunctive or other equitable relief from a court of competent jurisdiction.</p>
@@ -394,7 +406,7 @@ export default function TermsPage() {
         <div style={S.section}>
           <h2 style={S.h2}>18. Termination</h2>
           <p style={S.p}>18.1 We may terminate or suspend your account immediately and without prior notice if you breach any material provision of these Terms, engage in conduct that poses a risk to us or other users, or if required to do so by law or regulatory authority.</p>
-          <p style={S.p}>18.2 You may terminate your account at any time by cancelling your subscription via the Customer Portal and contacting support@agentopsstudio.com to request permanent account deletion.</p>
+          <p style={S.p}>18.2 You may terminate your account at any time by cancelling your subscription via the Customer Portal and contacting <MailLink to="support@agentopsstudio.com" /> to request permanent account deletion.</p>
           <p style={S.p}>18.3 Upon termination for any reason: your right to access the Service ceases immediately; data deletion follows the schedule set out in our Privacy Policy; and any outstanding fees become immediately due and payable.</p>
           <p style={S.p}>18.4 Sections 2, 7 (refunds for the current billing period), 10 (recording obligations), 11, 13, 14, 15, 16, and 20 shall survive termination.</p>
         </div>
@@ -439,15 +451,15 @@ export default function TermsPage() {
                     <td style={{ padding: '6px 12px 6px 0', fontSize: 13, fontWeight: 700, color: T.t3, whiteSpace: 'nowrap', verticalAlign: 'top' }}>
                       {label}
                     </td>
-                    <td style={{ padding: '6px 0', fontSize: 13, color: T.t1 }}>{value}</td>
+                    <td style={{ padding: '6px 0', fontSize: 13, color: T.t1 }}>{value.includes('@') ? <MailLink to={value} /> : value}</td>
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
-          <p style={S.p}>For general support: <span style={{ color: T.blue }}>support@agentopsstudio.com</span></p>
-          <p style={S.p}>For billing inquiries: <span style={{ color: T.blue }}>support@agentopsstudio.com</span></p>
-          <p style={S.p}>For legal notices: <span style={{ color: T.blue }}>legal@agentopsstudio.com</span></p>
+          <p style={S.p}>For general support: <MailLink to="support@agentopsstudio.com" /></p>
+          <p style={S.p}>For billing inquiries: <MailLink to="support@agentopsstudio.com" /></p>
+          <p style={S.p}>For legal notices: <MailLink to="legal@agentopsstudio.com" /></p>
         </div>
 
         {/* Bottom note */}

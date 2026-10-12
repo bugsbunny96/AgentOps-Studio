@@ -2,13 +2,18 @@
 
 > **Founder**: Rishabh Sharma  
 > **CEO Agent**: Claude (orchestrator)  
-> **Last updated**: 2026-10-08 11:45 IST (Pricing v2 built on branch `feat/pricing-v2`, not committed; Waves 1–3 + cost reduction merged and deployed)
+> **Last updated**: 2026-10-12 19:40 IST (site polish on `feat/site-polish`)
 > **Operating model**: All 5 agents work in parallel on every task. No idle agents.  
 > **Gaps register**: `main-project-docs/gaps.md` — every task ID below links to a gap ID there  
 > **Go-to-market plan**: `main-project-docs/AI-Implementation-Offer-Plan.md` — sprints after S-HARDEN  
 > **Execution Framework**: `agents/EXECUTION-FRAMEWORK.md` · **SOP**: `agents/SOP.md` · **R&D Log**: `main-project-docs/RD-LOG.md`
 
 **Version history**
+- [2026-10-12 19:40] v3.7 — CEO Agent — Site polish (founder's 20-point website checklist) on branch `feat/site-polish`: mobile overflow fixed on every public page, per-page titles/descriptions, clickable legal emails, 404 with logo, dead links removed, false "Indian data residency" claim removed, PNG favicon + manifest. Open items needing founder input: legal entity details, business phone/WhatsApp, one support email, contact-form endpoint, social URLs.
+- [2026-10-12 19:00] v3.6 — CEO Agent — D7 + D8 decided; P9 built on `feat/outcome-copy`: go-live guarantee (cards, FAQ, landing, Terms § 8.5) and founding clients (org flag, super-admin toggle with 5/quarter cap, public spots endpoint + Pricing banner, setup fee skipped at checkout, Billing note, Terms § 8.6). Backend + frontend `tsc` clean; 4 new pure tests; frontend 40/40 + build OK.
+- [2026-10-12 18:20] v3.5 — CEO Agent — P8 (MKT-08 upgrade nudge: email + Billing banner) and B3 part 1 (MKT-11: Super-admin → Sales Deals, lost-reason ranking, price questions) built on `feat/outcome-copy`. Backend + frontend `tsc` clean; 14 new pure backend tests pass; frontend 40/40 + build OK. DB-backed backend suite not run here (MongoDB binary download blocked) → run backend `npm test` before merge.
+- [2026-10-12 17:35] v3.4 — CEO Agent — Built H5.15 (MKT-01), H5.16 (MKT-02) and the MKT-05 setup list on branch `feat/outcome-copy` (from `feat/number-automation`, uncommitted); P7 done (`Discovery-Call-Script.md`). Frontend `tsc` clean, vitest 40/40 (+4 pricing-savings tests), `vite build` OK. ESLint not run: no `eslint.config.js` for ESLint 9.
+- [2026-10-12 17:05] v3.3 — CEO Agent — Marketing and pricing content review (founder request): MKT-01…MKT-11 added (`gaps.md` § 17). Wave 5: H5.15 (outcome copy), H5.16 (annual ₹ saving). S-PROOF: P6–P9. New Backlog table (B1–B3). Founder decisions D7 (guarantee) and D8 (founding-client cap). Copy draft: `main-project-docs/Marketing-Copy-Outcomes-2026-10.md`. Docs only, no code changed.
 - [2026-10-08 12:30] v3.2 — CEO Agent — Number automation (founder request): Wave 8 (N1–N7) built on local branch `feat/number-automation` (from `dev`, uncommitted): own number bought on payment (spare first, local only), shared trial numbers for outbound-only trials, call lists, callback routing, outbound limits (BIZ-06 → H4.4 done). Backend + frontend `tsc` clean, lint clean, frontend 36/36 + build OK; pure tests pass; Backend `npm test` 422/422 (founder, 2026-10-11).
 - [2026-10-08 11:45] v3.1 — CEO Agent — Pricing v2 (founder request): new Wave 7 (P1–P8) built on local branch `feat/pricing-v2` (from `main`, uncommitted): Starter ₹4,999 plan, Pro ₹29,999 / 1,500 min, annual billing, setup fees, prepaid top-up packs, per-plan simultaneous-call limit, fallback-number transfer, 80/100% usage emails; Pricing/Billing/landing/Terms/super-admin updated; H4.2 pricing-page claims done. Backend + frontend `tsc` clean, frontend 36/36 tests + build OK, 11 pure pricing tests + 82 non-DB backend tests pass; 20 DB-backed pricing tests written but not run (no MongoDB binary in the sandbox) → run `npm test` before merge.
 - [2026-10-08 10:30] v3.0 — CEO Agent — Status refresh from git: Waves 1, 1b, 1c, 2, 3 and `feat/cost-reduction` are merged to `dev` and `main` (PRs #6–#15; Render/Vercel auto-deploy). Founder confirmed: Vapi tool secret set, Render secrets set, test phone order placed → SEC-01, SEC-04 closed. Added `scripts/create-premium-voice-prices.ts` (C7). Active task → production verification, then H4.2. Typecheck clean (backend + frontend); frontend tests 36/36 (AuthGuard/GuestGuard fixed in wave 1b).
@@ -156,17 +161,19 @@ Mostly frontend; can run in parallel with Waves 1–2. Checklist status: `gaps.m
 | H5.1 | FE-10 | Cloudflare Turnstile on Register + Contact, verified on the backend | 🟢 | ⏳ |
 | H5.2 | FE-11, FE-12 | Cookieless analytics (Plausible or Vercel) + funnel events (`signup`, `email_verified`, `onboarding_complete`, `first_call`); align cookie banner + Privacy Policy with Sentry Replay | 🟢 + 🟣 | ⏳ |
 | H5.3 | FE-13 | Defer Sentry init + lazy Replay; Vapi SDK only on test-call pages; Lighthouse baseline (mobile ≥ 90, LCP < 2.5 s) on `/`, `/pricing`, `/register` | 🟢 | ⏳ |
-| H5.4 | FE-14 | Per-route `<title>`/`<meta>` (React 19 native) for public pages and blog posts | 🟢 + 🟡 | ⏳ |
+| H5.4 | FE-14 | Per-route `<title>`/`<meta>` (React 19 native) for public pages and blog posts | 🟢 + 🟡 | 🟡 code on `feat/site-polish` — `usePageMeta` hook: own title + description on every public/auth page, blog article title, app pages titled from the sidebar; auth/app/404 `noindex` |
 | H5.5 | FE-15 | Site URL from one env var; generated sitemap (blog posts, `lastmod`, no `/login`); fix `og:url`/robots — after CORE-05 custom domain | 🟢 | ⏳ |
 | H5.6 | FE-16 | Replace the ~16 failing grey text colours with AA-passing tokens | 🟢 | ⏳ |
 | H5.7 | FE-17 | Responsive grids (`auto-fit`) + 375 px pass on Dashboard, Calls, Billing, Onboarding, Pricing, Register | 🟢 + 🟣 | ⏳ |
-| H5.8 | FE-18, FE-08 | PNG favicon + manifest, CSP in `vercel.json`, `noindex` on 404, blog cover alt, footer social links, delete `files.zip` | 🟢 | ⏳ |
+| H5.8 | FE-18, FE-08 | PNG favicon + manifest, CSP in `vercel.json`, `noindex` on 404, blog cover alt, footer social links, delete `files.zip` | 🟢 | 🟡 part on `feat/site-polish` — PNG favicons (16/32) + `site.webmanifest` (192/512), 404 `noindex`, dead footer social links + "Careers" removed, `files.zip` deleted. Still open: CSP, blog cover alt |
 | H5.9 | FE-19, FE-02 | **Remove false / unmeasured claims** — Critical (trust, consumer-protection risk) | 🟢 + 🟡 | 🟡 landing + Pricing pill done (on `dev`); Services + Industries copy with GTM-01, Pricing features with H4.2 |
-| H5.10 | FE-20, FE-17 | Mobile first screen: no horizontal overflow at 320/375/414 px, short header CTA, compact cookie bar | 🟢 | ⏳ |
+| H5.10 | FE-20, FE-17 | Mobile first screen: no horizontal overflow at 320/375/414 px, short header CTA, compact cookie bar | 🟢 | 🟡 code on `feat/site-polish` — 0 px horizontal overflow on all 14 public pages at 375 px (footer grid 3→2 columns, Privacy/Terms tables scroll inside, header CTAs move into the drawer, Contact stacks); verified in Chromium at 375 + 1366 px |
 | H5.11 | FE-21 | Hero rewrite (5-second test): eyebrow (who), H1 (what), outcome line, one CTA + "Hear the voices", 3-fact row | 🟡 + 🟢 | ⏳ (final copy after D2) |
 | H5.12 | FE-22 | Remove the AI look: blobs, grid bg, "New" pill, extra gradients/pills/CTAs; merge or drop low-value sections | 🟢 | ⏳ |
 | H5.13 | FE-23, FE-24 | Colour + motion rules: rename tokens, one accent, neutral step numbers; one hero entrance, drop repeated `Reveal`, progress bar, decorative loops | 🟢 | ⏳ |
 | H5.14 | — (process) | Designer pass each release: screenshot public pages at 375 px and 1366 px, list the top 10 issues, fix, re-check; later Playwright visual snapshots in CI | 🟢 + 🔵 | ⏳ recurring |
+| H5.15 | MKT-01 | Outcome-first copy: landing Capabilities section (header, 4 cards, stat tiles) and plan taglines in `lib/pricing.ts`; drop "indistinguishable from a human" | 🟡 + 🟢 | 🟡 code on `feat/outcome-copy` |
+| H5.16 | MKT-02 | Annual saving in ₹ per plan card (computed from the catalog) + "≈ N calls answered a month" line; Pricing page and landing pricing | 🟢 + 🟡 | 🟡 code on `feat/outcome-copy` + 4 tests |
 
 ### Wave 6 — Cost reduction (founder request 2026-10-02) — `gaps.md` § 14
 
@@ -255,9 +262,21 @@ Source and full specs: `main-project-docs/AI-Implementation-Offer-Plan.md`. Gap 
 | P3 | OFR-02 | `Client-Delivery-SOP.md` | 🔵 + 🟣 | ⏳ |
 | P4 | GTM-02 | Demo org + public demo number on the beachhead template | 🟠 + 🟡 | ⏳ |
 | P5 | GTM-03 | 30-day first-client plan: prospect list, outreach, discovery questions | 🟡 + Founder | ⏳ |
+| P6 | MKT-06 | Ritu Electricals case study (written consent; calls answered, after-hours calls, orders, owner quote) on landing + Pricing | 🟡 + 🟣 + Founder | ⏳ |
+| P7 | MKT-07 | Discovery-call script (outcome-led questions + phrases to avoid) in the GTM-03 plan and `Client-Delivery-SOP.md` | 🟡 + 🔵 | ✅ `main-project-docs/Discovery-Call-Script.md` (link from the SOP when OFR-02 is written) |
+| P8 | MKT-08 | Upgrade nudge in the 80/100% minutes emails and on Billing for orgs that keep buying packs | 🟢 + 🟣 | 🟡 code on `feat/outcome-copy` + 6 tests |
+| P9 | MKT-03, MKT-04, MKT-05 | Managed-offer terms: guarantee (D7), founding-client cap (D8), itemised setup deliverables + bonuses; Pricing FAQ + Terms | 🔵 + 🟡 + Founder | 🟡 all three built on `feat/outcome-copy` (D7 + D8 decided 2026-10-12) |
 
 **Exit goal**: 3 paying clients in the beachhead niche, each with a monthly ROI report.  
 **Not before S-PROOF exits**: native CRM connectors, a second niche, new super-admin features.
+
+### Backlog — after S-PROOF (from `gaps.md` § 17)
+
+| Task | Gap | Description | Lead | Status |
+|---|---|---|---|---|
+| B1 | MKT-09 | Customer referral programme: per-org link, reward after the referred org's first paid month | 🟢 + 🟡 | ⏳ after 3 happy clients |
+| B2 | MKT-10 | Returning-caller memory: last calls/orders summarised into the assistant at `assistant-request` (latency + privacy check first) | 🟠 R&D → 🟢 | ⏳ R&D / RFC |
+| B3 | MKT-11 | LTV:CAC, trial→paid conversion and CAC per channel in the super-admin; lost-deal log; Van Westendorp questions with first 10 prospects | 🟣 + 🟢 | 🟡 Sales Deals log + price questions built on `feat/outcome-copy` (8 tests); LTV:CAC + conversion after H5.2 (FE-11) |
 
 ---
 
@@ -277,6 +296,9 @@ Source and full specs: `main-project-docs/AI-Implementation-Offer-Plan.md`. Gap 
 | 🔴 P0 (before merging Wave 8) | **Numbers**: top up Vobiz (balance ₹20.50); buy 2–3 local numbers for trials; set `VOBIZ_INBOUND_TRUNK_GROUP_ID`, `VOBIZ_TRIAL_NUMBERS`, `OPS_ALERT_EMAIL` in `.env`; run `npx tsx scripts/setup-trial-numbers.ts --apply`; put the printed `VAPI_TRIAL_PHONE_NUMBER_IDS` + the others on Render; run backend `npm test` | NUM-01…08 |
 | 🟡 P1 | Ask each customer to set a **fallback number** in Settings (calls transfer there when minutes run out or lines are busy) | PRC-04 |
 | 🟢 P2 | **D3–D5**: managed service in Pro or paid add-on; which plans get webhooks/n8n; first CRM for templates | Plan § 8 |
+| 🟡 P1 | **Guarantee (D7 done)**: keep a "setup checklist complete" date per client (Sales Deals notes) — the 7-working-day clock starts there; refunds are manual in Stripe; have the advocate review Terms § 8.5–8.6 with FE-03 | MKT-03 |
+| 🟡 P1 | **Founding clients (D8 done)**: mark each one in Super-admin → Org → "Mark founding" *before* their first checkout (that waives the setup fee); confirm `support@agentopsstudio.com` receives mail (the Pricing banner's button emails it) | MKT-04 |
+| 🟡 P1 | Ask Ritu Electricals for written consent to a case study (numbers + quote) | MKT-06 |
 | 🟢 P2 | Formspree form ID (or approve a backend contact endpoint); real testimonials | FE-01, FE-02 |
 | 🟢 P2 | Set `VITE_SENTRY_DSN` in production; UptimeRobot on `/api/v1/health` | Monitoring |
 | 🟢 P2 | Update `CLIENT_URL` in `render.yaml` / Render to the real Vercel URL | OPS-05 |
@@ -343,6 +365,7 @@ Source and full specs: `main-project-docs/AI-Implementation-Offer-Plan.md`. Gap 
 
 | Date | Decision | Owner | Rationale |
 |---|---|---|---|
+| 2026-10-12 | **D7**: go-live guarantee — live on the customer's own number within 7 working days of a complete setup checklist, or the setup fee is refunded; paid setups only. **D8**: 5 founding clients per quarter; 12-month price lock + no setup fee, for case-study consent. Scarcity shown only from the real count | Founder (T0) | Lowers first-buyer risk without discounting the plans (`gaps.md` § 17, MKT-03/04) |
 | 2026-10-08 | **Numbers**: local numbers by default; trial = outbound only from 2–3 shared numbers; own number bought automatically on payment (spare first); kept as a spare on cancel (no release fee) | Founder (T0) | Removes manual buying; avoids ₹1,000 92-series and ₹700 release fees (`gaps.md` § 16) |
 | 2026-10-08 | **Pricing v2**: Starter ₹4,999 (new) · Basic ₹9,999 · Standard ₹17,999 · Pro ₹29,999 (was ₹25,999, 1,500 min, no 3,000 cap); annual = 2 months free; setup ₹0/₹4,999/₹4,999/₹14,999 waived on annual; prepaid top-ups ₹20/₹18 per min; premium add-on ₹1,499 on Starter | Founder (T0) | Pro could lose up to ₹9,303/customer/month; blended margin ≈63%, floor ≈37% (`Pricing-Redesign-2026-10.md`) |
 | 2026-10-02 | Keep the backend on Render (not Vercel); API reached through a Vercel `/api` rewrite; stay on the Redis Cloud free tier | Founder (T0) | Backend needs a long-running process (BullMQ workers, fast Vapi webhooks); rewrite makes cookies first-party without a domain; shared worker client fits 8 workers in ~11 connections |

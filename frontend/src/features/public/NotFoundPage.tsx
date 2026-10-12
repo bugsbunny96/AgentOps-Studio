@@ -3,11 +3,17 @@
  * Route: * (catch-all) in PublicLayout, and app routes.
  */
 import { Link } from 'react-router-dom';
+import { usePageMeta } from '@/hooks/usePageMeta';
+import { useAuth } from '@/hooks/useAuth';
+import agentopsIcon from '@/assets/logos/agentops-icon-reversed.svg';
 
 export default function NotFoundPage() {
+  usePageMeta({ title: "Page Not Found", noindex: true });
+  const { isAuthenticated } = useAuth();
   return (
     <div
       style={{
+        position: 'relative',
         minHeight: '100vh',
         background: '#171717',
         display: 'flex',
@@ -18,6 +24,16 @@ export default function NotFoundPage() {
         textAlign: 'center',
       }}
     >
+      {/* Logo — back to the home page */}
+      <Link
+        to="/"
+        aria-label="AgentOps Studio home"
+        style={{ position: 'absolute', top: 20, left: 20, display: 'flex', alignItems: 'center', gap: 10, textDecoration: 'none', zIndex: 1 }}
+      >
+        <img src={agentopsIcon} alt="" style={{ width: 28, height: 28, borderRadius: 8, display: 'block' }} />
+        <span style={{ fontWeight: 800, fontSize: 15, color: '#fafafa' }}>AgentOps Studio</span>
+      </Link>
+
       {/* Glowing number */}
       <div style={{ position: 'relative', marginBottom: 24 }}>
         <span
@@ -81,6 +97,7 @@ export default function NotFoundPage() {
         >
           ← Back to Home
         </Link>
+        {isAuthenticated ? (
         <Link
           to="/dashboard"
           style={{
@@ -96,6 +113,23 @@ export default function NotFoundPage() {
         >
           Go to Dashboard
         </Link>
+        ) : (
+        <Link
+          to="/contact"
+          style={{
+            padding: '11px 24px',
+            borderRadius: 10,
+            border: '1px solid rgba(255,255,255,0.12)',
+            color: '#a3a3a3',
+            textDecoration: 'none',
+            fontWeight: 600,
+            fontSize: 15,
+            background: 'transparent',
+          }}
+        >
+          Contact us
+        </Link>
+        )}
       </div>
 
       {/* Decorative grid dots */}

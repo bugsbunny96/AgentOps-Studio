@@ -1,0 +1,13 @@
+{
+  "name": "AgentOps Studio",
+  "short_name": "AgentOps",
+  "description": "AI receptionist for Indian businesses — answers every call in Hindi, English and Punjabi.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#171717",
+  "theme_color": "#171717",
+  "icons": [
+    { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png" }
+  ]
+}

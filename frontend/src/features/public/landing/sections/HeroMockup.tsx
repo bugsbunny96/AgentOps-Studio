@@ -242,14 +242,14 @@ export function HeroMockup() {
           </div>
 
           <div style={{ display: 'flex', gap: 7 }}>
-            <button style={{
+            <div aria-hidden="true" style={{
               flex: 1, padding: 7, borderRadius: 7, background: 'rgba(33,241,168,.15)', color: color.blueLight,
-              border: '1px solid rgba(33,241,168,.2)', fontSize: 10.5, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit',
-            }}>↗ Transfer</button>
-            <button style={{
+              border: '1px solid rgba(33,241,168,.2)', fontSize: 10.5, fontWeight: 600, cursor: 'default', fontFamily: 'inherit', textAlign: 'center',
+            }}>↗ Transfer</div>
+            <div aria-hidden="true" style={{
               flex: 1, padding: 7, borderRadius: 7, background: 'rgba(239,68,68,.1)', color: color.red,
-              border: '1px solid rgba(239,68,68,.2)', fontSize: 10.5, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit',
-            }}>✕ End Call</button>
+              border: '1px solid rgba(239,68,68,.2)', fontSize: 10.5, fontWeight: 600, cursor: 'default', fontFamily: 'inherit', textAlign: 'center',
+            }}>✕ End Call</div>
           </div>
         </div>
       </div>
