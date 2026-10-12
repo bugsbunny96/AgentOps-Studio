@@ -1,6 +1,8 @@
 # AgentOps Studio — Gaps Register
 
 > **Version history**
+> - [2026-10-12 17:35] v3.1 — CEO Agent — MKT-01, 02, 05 built on branch `feat/outcome-copy` (stacked on `feat/number-automation`, uncommitted); MKT-07 done as `Discovery-Call-Script.md`.
+> - [2026-10-12 17:05] v3.0 — CEO Agent — Marketing and pricing content review (15 posts, founder request 2026-10-11): added § 17 (MKT-01…MKT-11) — outcome-first copy, real proof, offer guarantee and founding-client cap, sales script, expansion nudges, referrals, caller memory, LTV:CAC. Draft copy for MKT-01/02 in `Marketing-Copy-Outcomes-2026-10.md`. Existing gaps unchanged.
 > - [2026-10-08 12:30] v2.9 — CEO Agent — Number automation (founder request): added § 16 (NUM-01…NUM-08), built on branch `feat/number-automation`. BIZ-06 (ungated outbound) fixed in code. SEC-06 manual UUID entry removed from Settings. PRC-08 superseded by the number model in § 16.
 > - [2026-10-08 11:45] v2.8 — CEO Agent — Pricing v2 (founder request): added § 15 (PRC-01…PRC-08), built on local branch `feat/pricing-v2`. BIZ-04 fixed in code (one catalog; Pro 1,500 min + packs). BIZ-05 partly: setup fees and top-up packs are billable; `invoice.payment_failed` + event idempotency still open. OFR-01 setup-fee part done. Existing gaps otherwise unchanged.
 > - [2026-10-08 10:30] v2.7 — CEO Agent — P0 status refresh: all P0 code fixes merged to `main` (PRs #6–#15) and deployed; founder confirmed the Vapi tool secret, Render secrets and a test order. Closed: SEC-01, 02, 04, 05, CORE-03, 04, BIZ-01, COST-03, 08, BIZ-07, OPS-01. Open: SEC-03 (founder), SEC-06 (manual UUID entry), live checks for CORE-01, 02, 05. See "P0 status" below the summary.
@@ -39,6 +41,7 @@
 | Documentation | — | — | 3 |
 | AI implementation offer (GTM, integrations, ROI) | — | 6 | 4 |
 | Agent operating system (PROPOSED) | — | — | 2 |
+| Sales, offer and proof (marketing review) | — | 4 | 7 |
 
 ### P0 status (2026-10-08)
 
@@ -327,4 +330,26 @@ Founder request 2026-10-08: no manual number buying in Vobiz; customers pick a n
 | NUM-08 | P1 | Vobiz is prepaid (₹20.50 on 2026-10-08); a purchase or calls fail silently when it runs out. | ops | Failed purchase → `OPS_ALERT_EMAIL`; founder keeps the balance topped up. Balance polling not built (Vobiz balance endpoint not verified). | ⏳ founder |
 
 Compliance note: trial lists are capped and limited to 09:00–21:00 IST, but DND/NCPR scrubbing is not built. Outbound lists to people who have not agreed to be called can breach TRAI rules — keep lists to customers' own contacts.
+
+---
+
+## 17. Sales, offer and proof — marketing/pricing content review (2026-10-11)
+
+Source: founder-supplied review of 15 marketing, pricing and sales posts (benefits over features, pricing psychology, irresistible offer, trust before selling, revenue without raising prices, building AI agents), compared with the codebase on 2026-10-11. Most of the pricing advice is already built (Pricing v2, § 15). These are the remaining gaps. Draft copy for MKT-01/02: `Marketing-Copy-Outcomes-2026-10.md`.
+
+Guard rails: scarcity and urgency only when true (no fake countdowns or "limited-time" offers); no invented testimonials (FE-19); no ₹-value claims before ROI-01.
+
+| ID | Pri | Gap | Evidence | Impact | Fix | Status |
+|---|---|---|---|---|---|---|
+| MKT-01 | P1 | Landing capabilities and plan taglines describe features and customer size ("Natural Voice AI", "Real-time Analytics", "Small shops, a few calls a day"), not outcomes. "Indistinguishable from a human" is an unmeasured claim. | `landing/sections/FeaturesSection.tsx`; `frontend/src/lib/pricing.ts` (`tagline`) | Visitors must work out the benefit themselves; weaker conversion. | Apply the outcome copy in `Marketing-Copy-Outcomes-2026-10.md` §§ 1–2. Hero stays with FE-21 (after D2). | 🟡 code on `feat/outcome-copy` (Capabilities section + plan taglines; hero still FE-21) |
+| MKT-02 | P2 | Annual plan shown only as "2 months free"; the ₹ saving and the waived setup fee are not shown per plan. | `PricingPage.tsx`, `landing/sections/PricingSection.tsx` | Savings in ₹ persuade more than a % or "months free". | Card line computed from the catalog (`monthlyInr × 12 − annualInr`, `setupFeeInr`); copy in `Marketing-Copy-Outcomes-2026-10.md` § 3. | 🟡 code on `feat/outcome-copy` (Pricing page cards + toggle hint, landing pricing; computed from the catalog, tested) |
+| MKT-03 | P1 | The managed offer has no guarantee. | `AI-Implementation-Offer-Plan.md` § 4 | Highest-risk step for a first-time SMB buyer is paying the setup fee. | Results guarantee on managed setup (e.g. setup fee refunded if the agent is not live and answering within N days, or answers fewer than X calls in the first 30 days). Terms + Pricing FAQ. **Founder decision D7.** | ⏳ founder |
+| MKT-04 | P2 | No real, honest scarcity. | — | Missed urgency lever; fake scarcity would break trust. | "Founding clients" programme: a fixed number of managed setups per quarter (true — the founder runs every setup), with founding price lock and case-study consent. **Founder decision D8.** | ⏳ founder |
+| MKT-05 | P1 | The setup fee does not list what the client gets; no bonus stack. | `lib/pricing.ts` `setupLabel` ("Guided setup ₹4,999") | Buyers cannot see the value of the fee. | Itemise deliverables (website crawl + KB review, number, voice choice, test calls with the owner, go-live check) and bonuses (Google Sheets call log via n8n once INT-02 exists, first monthly results review). Pricing FAQ + setup tooltip. Depends on D7/D8 and OFR-02. | 🟡 code on `feat/outcome-copy` — `SETUP_INCLUDES` in `lib/pricing.ts` + Pricing FAQ; no n8n bonus until INT-02. **Founder: confirm the service promises (45-min setup call, week-1 review on Pro)** |
+| MKT-06 | P1 | No real proof on the site; fake testimonials and "Trusted by" names were removed (FE-19), leaving nothing. | FE-02, FE-19 | Trust before price is missing. | Ritu Electricals case study with written consent: before/after, calls answered, after-hours calls, orders taken (from analytics), owner quote. Landing + Pricing above the plan cards. | ⏳ needs consent |
+| MKT-07 | P2 | No discovery-call script. | GTM-03; plan § 7.7 | Sales calls drift to price instead of outcome. | Question set that leads with outcomes and timelines ("What happens to a call you miss at 8 pm?", "What would success look like in 30 days?", "Who else should be part of this decision?"), plus phrases to avoid ("Do you have a budget?", "Are you ready to buy today?", "Limited-time offer"). Add to the GTM-03 plan and the client delivery SOP (OFR-02). | ✅ `main-project-docs/Discovery-Call-Script.md` (niche wording after D2) |
+| MKT-08 | P2 | The 80% / 100% minutes emails offer a top-up but no plan upgrade. | PRC-05; `utils/email.ts` | Expansion revenue from customers who regularly run out is lost. | If the org bought packs in 2 of the last 3 months, add "Upgrade to {next plan} — {N} more minutes for ₹{diff}/month" next to the top-up link; same nudge on the Billing page. | ⏳ |
+| MKT-09 | P2 | No customer referral programme (referral tracking exists only in the super-admin). | `superadmin/referral.service.ts`; `SuperAdminReferralPage.tsx` | Referrals close faster and cost nothing in ads. | Per-org referral link + reward (e.g. one month free for both after the referred org's first paid month). Start after 3 happy clients (S-PROOF exit). | ⏳ backlog |
+| MKT-10 | P2 | The agent has no memory of returning callers. | No caller-history lookup in `backend/src` | Repeat customers repeat themselves; weaker "knows my shop" experience. | Look up the caller's last N calls/orders at `assistant-request` and pass a short summary as a variable (watch latency and privacy). AI R&D first, then RFC. | ⏳ R&D |
+| MKT-11 | P2 | No LTV:CAC, conversion or lost-deal tracking. | FE-11 (no analytics); super-admin metrics | Cannot test pricing or tell which channel pays. | After FE-11: trial→paid conversion, CAC per channel, LTV by plan in the super-admin; a simple lost-deal log (reason, plan, date). Target LTV:CAC ≥ 3:1. Van Westendorp price questions with the first 10 prospects. | ⏳ after FE-11 |
 

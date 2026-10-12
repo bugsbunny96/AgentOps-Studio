@@ -36,6 +36,7 @@ import {
 import {
   PLANS, TOPUP_PACKS, TOPUP_VALIDITY_DAYS, ALL_PLANS_INCLUDE, AVG_CALL_MINUTES,
   inr, withGst, monthlyEquivalent, perMinute,
+  annualSaving, maxFirstYearAnnualSaving, SETUP_INCLUDES,
   type BillingInterval, type PaidPlanId,
 } from '../../lib/pricing';
 
@@ -104,6 +105,14 @@ const FAQS = [
   {
     q: 'Is there a setup fee?',
     a: 'Starter is self-serve and has no setup fee. Basic and Standard include guided setup for a one-time ₹4,999, and Pro includes managed setup for ₹14,999. The fee is charged once, on your first monthly invoice, and is waived on annual plans.',
+  },
+  {
+    q: 'What does the setup fee include?',
+    a: [
+      `Guided setup (Basic, Standard): ${SETUP_INCLUDES.guided.join('; ')}.`,
+      `Managed setup (Pro): ${SETUP_INCLUDES.managed.join('; ')}.`,
+      `Starter (self-serve, free): ${SETUP_INCLUDES.selfServe.join('; ')}.`,
+    ].join(' '),
   },
   {
     q: 'How does the free trial work?',
@@ -231,15 +240,20 @@ function PricingCards() {
   return (
     <section style={{ padding: '32px 0 80px' }}>
       <div style={{ maxWidth: maxW, margin: '0 auto', padding: '0 20px' }}>
-        <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 28 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10, marginBottom: 28 }}>
           <IntervalToggle value={interval} onChange={setBillingInterval} />
+          <p style={{ fontSize: 12.5, color: color.text2, margin: 0, textAlign: 'center' }}>
+            {interval === 'year'
+              ? 'Pay for 10 months, get 12 — and the setup fee is waived.'
+              : `Pay yearly and save up to ${inr(maxFirstYearAnnualSaving())} in the first year.`}
+          </p>
         </div>
 
         <div className="landing-grid-4" style={{ display: 'grid', gap: 16, alignItems: 'stretch' }}>
           {PLANS.map((plan, i) => {
             const shown = monthlyEquivalent(plan, interval);
             const features = [
-              `${plan.includedMinutes.toLocaleString('en-IN')} minutes / month (≈ ${plan.approxCalls} calls)`,
+              `≈ ${plan.approxCalls} calls answered a month (${plan.includedMinutes.toLocaleString('en-IN')} minutes)`,
               `${plan.concurrentCalls} simultaneous call${plan.concurrentCalls > 1 ? 's' : ''}`,
               plan.premiumVoiceAddonInr === null
                 ? 'Premium voices included'
@@ -302,6 +316,11 @@ function PricingCards() {
                     {interval === 'year' || plan.setupFeeInr === 0
                       ? (plan.setupFeeInr === 0 ? 'No setup fee' : 'Setup fee waived')
                       : `+ ${inr(plan.setupFeeInr)} one-time setup`}
+                  </div>
+                  <div style={{ fontSize: 12, fontWeight: 600, color: color.blueLight, marginTop: 2 }}>
+                    {interval === 'year'
+                      ? `Save ${inr(annualSaving(plan))} a year${plan.setupFeeInr ? ` + ${inr(plan.setupFeeInr)} setup waived` : ''}`
+                      : `or ${inr(monthlyEquivalent(plan, 'year'))}/month billed yearly — save ${inr(annualSaving(plan))}`}
                   </div>
 
                   <p style={{ fontSize: 12.5, color: color.text2, marginTop: 10, marginBottom: 18, lineHeight: 1.5 }}>
