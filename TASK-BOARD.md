@@ -2,13 +2,14 @@
 
 > **Founder**: Rishabh Sharma  
 > **CEO Agent**: Claude (orchestrator)  
-> **Last updated**: 2026-10-12 17:35 IST (MKT-01/02/05 built on `feat/outcome-copy`; discovery-call script written)
+> **Last updated**: 2026-10-12 18:20 IST (MKT-08 upgrade nudge + MKT-11 Sales Deals log on `feat/outcome-copy`)
 > **Operating model**: All 5 agents work in parallel on every task. No idle agents.  
 > **Gaps register**: `main-project-docs/gaps.md` — every task ID below links to a gap ID there  
 > **Go-to-market plan**: `main-project-docs/AI-Implementation-Offer-Plan.md` — sprints after S-HARDEN  
 > **Execution Framework**: `agents/EXECUTION-FRAMEWORK.md` · **SOP**: `agents/SOP.md` · **R&D Log**: `main-project-docs/RD-LOG.md`
 
 **Version history**
+- [2026-10-12 18:20] v3.5 — CEO Agent — P8 (MKT-08 upgrade nudge: email + Billing banner) and B3 part 1 (MKT-11: Super-admin → Sales Deals, lost-reason ranking, price questions) built on `feat/outcome-copy`. Backend + frontend `tsc` clean; 14 new pure backend tests pass; frontend 40/40 + build OK. DB-backed backend suite not run here (MongoDB binary download blocked) → run backend `npm test` before merge.
 - [2026-10-12 17:35] v3.4 — CEO Agent — Built H5.15 (MKT-01), H5.16 (MKT-02) and the MKT-05 setup list on branch `feat/outcome-copy` (from `feat/number-automation`, uncommitted); P7 done (`Discovery-Call-Script.md`). Frontend `tsc` clean, vitest 40/40 (+4 pricing-savings tests), `vite build` OK. ESLint not run: no `eslint.config.js` for ESLint 9.
 - [2026-10-12 17:05] v3.3 — CEO Agent — Marketing and pricing content review (founder request): MKT-01…MKT-11 added (`gaps.md` § 17). Wave 5: H5.15 (outcome copy), H5.16 (annual ₹ saving). S-PROOF: P6–P9. New Backlog table (B1–B3). Founder decisions D7 (guarantee) and D8 (founding-client cap). Copy draft: `main-project-docs/Marketing-Copy-Outcomes-2026-10.md`. Docs only, no code changed.
 - [2026-10-08 12:30] v3.2 — CEO Agent — Number automation (founder request): Wave 8 (N1–N7) built on local branch `feat/number-automation` (from `dev`, uncommitted): own number bought on payment (spare first, local only), shared trial numbers for outbound-only trials, call lists, callback routing, outbound limits (BIZ-06 → H4.4 done). Backend + frontend `tsc` clean, lint clean, frontend 36/36 + build OK; pure tests pass; Backend `npm test` 422/422 (founder, 2026-10-11).
@@ -261,7 +262,7 @@ Source and full specs: `main-project-docs/AI-Implementation-Offer-Plan.md`. Gap 
 | P5 | GTM-03 | 30-day first-client plan: prospect list, outreach, discovery questions | 🟡 + Founder | ⏳ |
 | P6 | MKT-06 | Ritu Electricals case study (written consent; calls answered, after-hours calls, orders, owner quote) on landing + Pricing | 🟡 + 🟣 + Founder | ⏳ |
 | P7 | MKT-07 | Discovery-call script (outcome-led questions + phrases to avoid) in the GTM-03 plan and `Client-Delivery-SOP.md` | 🟡 + 🔵 | ✅ `main-project-docs/Discovery-Call-Script.md` (link from the SOP when OFR-02 is written) |
-| P8 | MKT-08 | Upgrade nudge in the 80/100% minutes emails and on Billing for orgs that keep buying packs | 🟢 + 🟣 | ⏳ |
+| P8 | MKT-08 | Upgrade nudge in the 80/100% minutes emails and on Billing for orgs that keep buying packs | 🟢 + 🟣 | 🟡 code on `feat/outcome-copy` + 6 tests |
 | P9 | MKT-03, MKT-04, MKT-05 | Managed-offer terms: guarantee (D7), founding-client cap (D8), itemised setup deliverables + bonuses; Pricing FAQ + Terms | 🔵 + 🟡 + Founder | 🟡 MKT-05 setup list built on `feat/outcome-copy`; guarantee + founding cap need D7/D8 |
 
 **Exit goal**: 3 paying clients in the beachhead niche, each with a monthly ROI report.  
@@ -273,7 +274,7 @@ Source and full specs: `main-project-docs/AI-Implementation-Offer-Plan.md`. Gap 
 |---|---|---|---|---|
 | B1 | MKT-09 | Customer referral programme: per-org link, reward after the referred org's first paid month | 🟢 + 🟡 | ⏳ after 3 happy clients |
 | B2 | MKT-10 | Returning-caller memory: last calls/orders summarised into the assistant at `assistant-request` (latency + privacy check first) | 🟠 R&D → 🟢 | ⏳ R&D / RFC |
-| B3 | MKT-11 | LTV:CAC, trial→paid conversion and CAC per channel in the super-admin; lost-deal log; Van Westendorp questions with first 10 prospects | 🟣 + 🟢 | ⏳ after H5.2 (FE-11) |
+| B3 | MKT-11 | LTV:CAC, trial→paid conversion and CAC per channel in the super-admin; lost-deal log; Van Westendorp questions with first 10 prospects | 🟣 + 🟢 | 🟡 Sales Deals log + price questions built on `feat/outcome-copy` (8 tests); LTV:CAC + conversion after H5.2 (FE-11) |
 
 ---
 

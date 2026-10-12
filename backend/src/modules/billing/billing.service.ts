@@ -25,6 +25,7 @@ import { computeTrialState } from './trial.service';
 import { getPremiumVoiceAccess, getPaidPlan, PREMIUM_VOICE_ADDON_PRICE_INR, type PremiumVoiceAccess } from '../agents/voice-pricing';
 import { currentMonthMinutesUsed } from '../../utils/callMinutes';
 import { validPackBalance, nextPackExpiry } from '../../utils/minutePacks';
+import { suggestUpgrade, type UpgradeSuggestion } from '../../utils/upgradeSuggestion';
 import {
   PLAN_CATALOG, TOPUP_PACKS, TOPUP_VALIDITY_DAYS, isPaidPlan, isTopupPackId,
   type BillingInterval, type PaidPlan, type TopupPackId,
@@ -691,6 +692,8 @@ export interface BillingStatus {
   /** Whether premium voices (ElevenLabs, PlayHT, Azure, Cartesia) can be used right now */
   premiumVoices:   boolean;
   /** Premium Voices add-on state + price for the current plan — see agents/voice-pricing.ts */
+  /** MKT-08: next plan for orgs that buy top-ups most months; null otherwise */
+  upgradeSuggestion: UpgradeSuggestion | null;
   premiumVoiceAddon: PremiumVoiceAccess & {
     /** Display prices for every plan that sells the add-on (₹/month + GST) */
     pricesInr: { lite: number; starter: number; growth: number };
@@ -701,6 +704,15 @@ export interface BillingStatus {
  * Returns the current billing plan + feature usage counts + trial state.
  * Available to the org Owner only.
  */
+function regularUpgrade(
+  plan: Plan,
+  packs: Parameters<typeof suggestUpgrade>[1],
+  now: Date,
+): UpgradeSuggestion | null {
+  const s = suggestUpgrade(plan, packs, now);
+  return s?.regular ? s : null;
+}
+
 export async function getBillingStatus(userId: string): Promise<BillingStatus> {
   const { org, orgId } = await resolveOwnerOrgForBilling(userId);
 
@@ -715,7 +727,7 @@ export async function getBillingStatus(userId: string): Promise<BillingStatus> {
     planOverride?:       Plan;
     billingInterval?:    BillingInterval;
     setupFeePaidAt?:     Date;
-    minutePacks?:        Array<{ remaining: number; expiresAt: Date; stripeSessionId: string }>;
+    minutePacks?:        Array<{ packId: string; purchasedAt: Date; remaining: number; expiresAt: Date; stripeSessionId: string }>;
   };
   const orgData = org as unknown as OrgExtra;
 
@@ -763,6 +775,8 @@ export async function getBillingStatus(userId: string): Promise<BillingStatus> {
       nextExpiry: nextPackExpiry(orgData.minutePacks, now)?.toISOString() ?? null,
       canBuy:     isPaidPlan(orgData.planOverride ?? plan),
     },
+    // MKT-08: only when the org tops up regularly (packs in ≥ 2 of the last 3 months)
+    upgradeSuggestion: regularUpgrade(orgData.planOverride ?? plan, orgData.minutePacks, now),
     concurrentCalls: limits.concurrentCalls,
     billingInterval: isPaidPlan(plan) ? (orgData.billingInterval ?? 'month') : null,
     setupFeePaid:    !!orgData.setupFeePaidAt,

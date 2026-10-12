@@ -53,6 +53,45 @@ const T = {
 // ─── Types ────────────────────────────────────────────────────────────────────
 type Plan = PlanId;
 
+interface UpgradeSuggestion {
+  toPlan:         PaidPlanId;
+  toPlanName:     string;
+  extraMinutes:   number;
+  monthlyDiffInr: number;
+  packMonths:     number;
+  packSpendInr:   number;
+}
+
+/** MKT-08 — shown when the org keeps buying top-up packs; points at the next plan. */
+function UpgradeNudge({ s }: { s: UpgradeSuggestion }) {
+  return (
+    <div style={{
+      display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 14, flexWrap: 'wrap',
+      padding: '14px 18px', borderRadius: 12,
+      background: 'rgba(33,241,168,0.07)', border: '1px solid rgba(33,241,168,0.3)',
+    }}>
+      <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10, flex: '1 1 320px' }}>
+        <Rocket size={15} style={{ color: T.blueL, flexShrink: 0, marginTop: 2 }} />
+        <span style={{ fontSize: 13, color: T.t1, lineHeight: 1.55 }}>
+          You've bought top-ups in <strong>{s.packMonths} of the last 3 months</strong> ({inr(s.packSpendInr)} + GST).{' '}
+          <strong>{s.toPlanName}</strong> includes {s.extraMinutes.toLocaleString('en-IN')} more minutes every month
+          for {inr(s.monthlyDiffInr)} more per month — no packs to buy.
+        </span>
+      </div>
+      <button
+        type="button"
+        onClick={() => document.getElementById('plans')?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
+        style={{
+          padding: '9px 16px', borderRadius: 8, border: 'none', cursor: 'pointer',
+          background: '#21F1A8', color: '#171717', fontSize: 13, fontWeight: 700, fontFamily: 'inherit',
+        }}
+      >
+        See {s.toPlanName}
+      </button>
+    </div>
+  );
+}
+
 interface BillingStatus {
   plan:             Plan;
   effectivePlan:    Plan;
@@ -62,6 +101,8 @@ interface BillingStatus {
   callMinutes:      { used: number; limit: number | null; resetAt: string };
   /** Prepaid top-up minutes left (used after the plan allowance) */
   topupMinutes?:    { balance: number; nextExpiry: string | null; canBuy: boolean };
+  /** MKT-08: set only when the org bought top-ups in ≥ 2 of the last 3 months */
+  upgradeSuggestion?: UpgradeSuggestion | null;
   concurrentCalls?: number;
   billingInterval?: BillingInterval | null;
   setupFeePaid?:    boolean;
@@ -628,6 +669,13 @@ export default function BillingPage() {
     },
   });
 
+  // Email links point at #plans / #topups — scroll there once the page has data.
+  useEffect(() => {
+    if (!data) return;
+    const id = window.location.hash.slice(1);
+    if (id) document.getElementById(id)?.scrollIntoView({ block: 'start' });
+  }, [data]);
+
   const checkoutMutation = useMutation({
     mutationFn: async (plan: PaidPlanId) => {
       const res = await api.post<{ success: boolean; data: { url: string } }>('/billing/checkout', { plan, interval });
@@ -922,6 +970,9 @@ export default function BillingPage() {
         </div>
       ) : null}
 
+      {/* Upgrade nudge for regular top-up buyers (MKT-08) */}
+      {data?.upgradeSuggestion && <UpgradeNudge s={data.upgradeSuggestion} />}
+
       {/* Top-up packs */}
       {data?.topupMinutes && (
         <TopupCard topup={data.topupMinutes} onBuy={handleBuyPack} buying={buyingPack} />
@@ -940,7 +991,7 @@ export default function BillingPage() {
       )}
 
       {/* Section header — plan grid */}
-      <div>
+      <div id="plans" style={{ scrollMarginTop: 16 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
           <div style={{
             display: 'flex', alignItems: 'center', justifyContent: 'center',

@@ -1,6 +1,7 @@
 import { Resend } from 'resend';
 import { env } from '../config/env';
 import { logger } from './logger';
+import type { UpgradeSuggestion } from './upgradeSuggestion';
 
 let resendClient: Resend | null = null;
 
@@ -249,8 +250,31 @@ export async function sendUsageAlertEmail(opts: {
   used:        number;
   limit:       number;
   packBalance: number;
+  /** MKT-08: next plan, when there is one. `regular` → org tops up most months. */
+  upgrade?:    UpgradeSuggestion | null;
 }): Promise<void> {
   const billingUrl = `${env.CLIENT_URL}/billing#topups`;
+  const plansUrl   = `${env.CLIENT_URL}/billing#plans`;
+  const inr = (n: number) => `₹${Math.round(n).toLocaleString('en-IN')}`;
+  const up = opts.upgrade ?? null;
+  const upgradeBlock = up?.regular
+    ? `
+        <div style="border:1px solid #21F1A8;border-radius:10px;padding:16px;margin:16px 0;background:#f0fdf8;">
+          <p style="color:#171717;font-size:15px;line-height:1.6;margin:0 0 8px;">
+            <strong>You've bought top-ups in ${up.packMonths} of the last 3 months</strong> (${inr(up.packSpendInr)} + GST).
+            The <strong>${up.toPlanName}</strong> plan includes <strong>${up.extraMinutes.toLocaleString('en-IN')} more minutes every month</strong>
+            for ${inr(up.monthlyDiffInr)} more per month (+ GST), with no packs to buy.
+          </p>
+          <a href="${plansUrl}"
+             style="display:inline-block;padding:12px 24px;background:#21F1A8;color:#171717;
+                    text-decoration:none;border-radius:8px;font-weight:700;font-size:15px;margin:4px 0;">
+            Upgrade to ${up.toPlanName}
+          </a>
+        </div>`
+    : '';
+  const footer = up && !up.regular
+    ? `Included minutes reset on the 1st of each month. Need more every month? ${up.toPlanName} includes ${up.extraMinutes.toLocaleString('en-IN')} more minutes for ${inr(up.monthlyDiffInr)} more per month — <a href="${plansUrl}" style="color:#0FC98A;">compare plans</a>.`
+    : 'Included minutes reset on the 1st of each month.';
   const full = opts.percent >= 100;
   const headline = full
     ? `You've used all ${opts.limit} included minutes this month`
@@ -277,13 +301,16 @@ export async function sendUsageAlertEmail(opts: {
         <p style="color: #374151; font-size: 15px; line-height: 1.6;">
           Top-up packs: 100 min for ₹2,000 or 500 min for ₹9,000 (+ GST), valid 90 days.
         </p>
-        <a href="${billingUrl}"
+        ${upgradeBlock}
+        ${up?.regular
+          ? `<p style="color: #374151; font-size: 14px;">Or <a href="${billingUrl}" style="color:#0FC98A;">buy a top-up pack</a> for this month only.</p>`
+          : `<a href="${billingUrl}"
            style="display:inline-block;padding:12px 24px;background:#21F1A8;color:#171717;
                   text-decoration:none;border-radius:8px;font-weight:700;font-size:15px;margin:8px 0;">
           Buy a top-up pack
-        </a>
+        </a>`}
         <p style="color: #6b7280; font-size: 13px; margin-top: 20px;">
-          Included minutes reset on the 1st of each month. Need more every month? Upgrading gives a lower price per minute.
+          ${footer}
         </p>
         <hr style="border:none;border-top:1px solid #e5e7eb;margin:24px 0;"/>
         <p style="color: #9ca3af; font-size: 12px;">AgentOps Studio — AI Voice Agent Operations Platform</p>

@@ -33,6 +33,7 @@ import { USAGE_ALERT_THRESHOLDS, PLAN_DISPLAY_NAME } from '../billing/plan-catal
 import { UserModel } from '../auth/auth.model';
 import { MembershipModel, type IOrganization } from '../organization/organization.model';
 import { sendUsageAlertEmail } from '../../utils/email';
+import { suggestUpgrade } from '../../utils/upgradeSuggestion';
 
 // ─── Helper: start of current UTC month ──────────────────────────────────────
 function startOfCurrentMonthUTC(): Date {
@@ -567,6 +568,7 @@ async function sendUsageAlertSafe(org: OrgDoc, percent: number, used: number, li
       used,
       limit,
       packBalance:   validPackBalance(org.minutePacks),
+      upgrade:       suggestUpgrade(plan, org.minutePacks), // MKT-08
     });
   } catch (err) {
     logger.error('Usage alert email failed', {

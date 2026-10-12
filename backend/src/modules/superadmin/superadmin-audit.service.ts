@@ -6,7 +6,7 @@ interface WriteLogParams {
   superAdminId: string;
   superAdminEmail: string;
   action: SuperAdminAction;
-  targetType?: 'Organization' | 'User' | 'BlogPost' | 'PromoCode' | 'FeatureFlag' | 'Queue' | 'Announcement' | 'Changelog' | 'ABTest';
+  targetType?: 'Organization' | 'User' | 'BlogPost' | 'PromoCode' | 'FeatureFlag' | 'Queue' | 'Announcement' | 'Changelog' | 'ABTest' | 'SalesDeal';
   targetId?: string;
   targetLabel?: string;
   metadata?: Record<string, unknown>;
