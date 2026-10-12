@@ -6,6 +6,7 @@ import { z } from 'zod';
 import { Eye, EyeOff, Loader2 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { AxiosError } from 'axios';
+import { usePageMeta } from '@/hooks/usePageMeta';
 
 // ─── Form schema ───────────────────────────────────────────────────────────
 const LoginSchema = z.object({
@@ -16,6 +17,7 @@ type LoginFormValues = z.infer<typeof LoginSchema>;
 
 // ─── Component ────────────────────────────────────────────────────────────
 export default function LoginPage() {
+  usePageMeta({ title: "Log In", description: "Log in to your AgentOps Studio account.", noindex: true });
   const { login } = useAuth();
   const [searchParams]  = useSearchParams();
   const nextPath        = searchParams.get('next')  ?? undefined;

@@ -11,6 +11,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import api from '@/utils/api';
+import { usePageMeta } from '@/hooks/usePageMeta';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -111,6 +112,8 @@ function ArticleView({ slug, onClose }: { slug: string; onClose: () => void }) {
     },
   });
 
+  usePageMeta({ title: post?.title ?? 'Blog', description: post?.subtitle || undefined });
+
   const color = tagColor(0);
 
   if (isLoading) {
@@ -184,6 +187,7 @@ function SkeletonCard() {
 // ─── BlogPage ─────────────────────────────────────────────────────────────────
 
 export default function BlogPage() {
+  usePageMeta({ title: "Blog — Guides for AI Voice Operations", description: "Practical guides on answering every customer call, AI receptionists and voice automation for Indian businesses." });
   const [openSlug, setOpenSlug] = useState<string | null>(null);
   const [tagFilter, setTagFilter] = useState<string | undefined>(undefined);
   const [page, setPage] = useState(1);

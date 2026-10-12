@@ -5,7 +5,7 @@
  */
 import { useState, useEffect } from 'react';
 import { Outlet, NavLink, useNavigate, useLocation } from 'react-router-dom';
-import { LayoutDashboard, Building2, Users, ScrollText, LogOut, ShieldCheck, FileText, Tag, CreditCard, BarChart2, Flag, Layers, AlertOctagon, HeartPulse, Megaphone, BookOpen, Send, Heart, Mic, DollarSign, TrendingDown, Gift, Link2, FlaskConical, Menu, X } from 'lucide-react';
+import { LayoutDashboard, Building2, Users, ScrollText, LogOut, ShieldCheck, FileText, Tag, CreditCard, BarChart2, Flag, Layers, AlertOctagon, HeartPulse, Megaphone, BookOpen, Send, Heart, Mic, DollarSign, TrendingDown, Gift, Link2, FlaskConical, Briefcase, Menu, X } from 'lucide-react';
 import api from '@/utils/api';
 
 const SA_MOBILE_CSS = `
@@ -79,6 +79,7 @@ const NAV: NavEntry[] = [
   { to: '/superadmin/referrals',          label: 'Referrals',        icon: Gift         },
   { to: '/superadmin/enterprise-links',   label: 'Ent. Links',       icon: Link2        },
   { to: '/superadmin/ab-tests',           label: 'A/B Tests',        icon: FlaskConical },
+  { to: '/superadmin/sales',              label: 'Sales Deals',      icon: Briefcase    },
   // ── Admin ─────────────────────────────────────────
   { divider: 'Admin' },
   { to: '/superadmin/audit',      label: 'Audit Log',   icon: ScrollText },

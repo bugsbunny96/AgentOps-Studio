@@ -10,6 +10,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { usePageMeta } from '@/hooks/usePageMeta';
 
 const T = {
   bg: '#171717', bgS: '#1f1f1f',
@@ -24,7 +25,14 @@ const pill = (bg: string, color: string, border: string): React.CSSProperties =>
   padding: '4px 10px', borderRadius: 999, background: bg, color, border: `1px solid ${border}`,
 });
 
-const KF = `@keyframes cp-float{0%,100%{transform:translate(0,0) scale(1)}40%{transform:translate(-15px,-10px) scale(1.02)}70%{transform:translate(12px,14px) scale(.98)}}`;
+const KF = `@keyframes cp-float{0%,100%{transform:translate(0,0) scale(1)}40%{transform:translate(-15px,-10px) scale(1.02)}70%{transform:translate(12px,14px) scale(.98)}}
+@media (max-width: 760px) {
+  .contact-grid { grid-template-columns: minmax(0, 1fr) !important; }
+}
+@media (max-width: 480px) {
+  .contact-fields { grid-template-columns: minmax(0, 1fr) !important; }
+}
+`;
 
 function useKF() {
   useEffect(() => {
@@ -105,6 +113,7 @@ const CONTACT_OPTIONS = [
 ];
 
 export default function ContactPage() {
+  usePageMeta({ title: "Contact Us", description: "Talk to the AgentOps Studio team about setting up an AI receptionist for your business." });
   useKF();
   const [formState, setFormState] = useState<FormState>('idle');
   const formRef = useRef<HTMLFormElement>(null);
@@ -160,7 +169,7 @@ export default function ContactPage() {
 
       {/* Main content */}
       <section style={{ padding: '0 24px 80px' }}>
-        <div style={{ maxWidth: 960, margin: '0 auto', display: 'grid', gridTemplateColumns: 'minmax(0,1.4fr) minmax(0,1fr)', gap: 32, alignItems: 'start' }}>
+        <div className="contact-grid" style={{ maxWidth: 960, margin: '0 auto', display: 'grid', gridTemplateColumns: 'minmax(0,1.4fr) minmax(0,1fr)', gap: 32, alignItems: 'start' }}>
 
           {/* Form */}
           <Reveal>
@@ -189,7 +198,7 @@ export default function ContactPage() {
                     style={{ position: 'absolute', left: '-9999px', opacity: 0, pointerEvents: 'none', width: 0, height: 0 }}
                     aria-hidden="true"
                   />
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+                  <div className="contact-fields" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
                     <Field label="Name" name="name" required placeholder="Rishabh Sharma" />
                     <Field label="Email" name="email" type="email" required placeholder="you@company.com" />
                   </div>

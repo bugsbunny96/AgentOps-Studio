@@ -29,6 +29,7 @@ import {
 } from 'lucide-react';
 import agentopsIcon from '@/assets/logos/agentops-icon.svg';
 import type { MemberPermissions } from '@/types';
+import { usePageMeta } from '@/hooks/usePageMeta';
 
 // ── Dark-layout global text remapping ─────────────────────────────────────────
 // Pages that pre-date the dark theme use Tailwind's light-theme utilities
@@ -271,6 +272,7 @@ export function DashboardLayout() {
   const { user, logout } = useAuth();
   const { currentOrg, currentRole, currentPermissions } = useAppSelector((s) => s.org);
   const pageTitle  = usePageTitle();
+  usePageMeta({ title: pageTitle || 'Dashboard', noindex: true });
   const isOwner    = currentRole === 'Owner';
   const visibleNav = NAV.filter((item) => canSeeNav(item, isOwner, currentPermissions));
 

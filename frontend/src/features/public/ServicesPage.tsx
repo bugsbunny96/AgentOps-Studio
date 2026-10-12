@@ -12,6 +12,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { usePageMeta } from '@/hooks/usePageMeta';
 
 const T = {
   bg: '#171717', bgS: '#1f1f1f',
@@ -86,6 +87,7 @@ const STEPS = [
 const STACK = ['Vapi AI', 'Deepgram STT', 'GPT-4o', 'ElevenLabs TTS', 'Vobiz SIP', 'MongoDB Atlas'];
 
 export default function ServicesPage() {
+  usePageMeta({ title: "Features: AI Call Answering, Orders and Call Summaries", description: "What your AI receptionist does: answers calls 24/7, speaks Hindi, English and Punjabi, takes orders, learns from your website and logs every call with a transcript and summary." });
   useKF();
   return (
     <div style={{ background: T.bg, color: T.t1, minHeight: '100vh', fontFamily: 'Inter, system-ui, sans-serif' }}>

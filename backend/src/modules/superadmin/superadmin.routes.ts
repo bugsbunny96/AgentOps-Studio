@@ -94,6 +94,14 @@ import {
   saPromoDeleteHandler,
   saPromoApplyHandler,
 } from '../promo/promo.controller';
+import {
+  saListDealsHandler,
+  saDealSummaryHandler,
+  saCreateDealHandler,
+  saUpdateDealHandler,
+  saDeleteDealHandler,
+} from '../sales/sales-deal.controller';
+import { saMarkFoundingHandler, saClearFoundingHandler } from '../founding/founding.controller';
 
 export const superadminRouter = Router();
 
@@ -221,6 +229,17 @@ superadminRouter.post('/orgs/:id/referral-code', saReferralCodeHandler);
 superadminRouter.get('/orgs/:id/referral-tree',  saReferralTreeHandler);
 superadminRouter.get('/referrals/top',           saTopReferrersHandler);
 superadminRouter.post('/referrals/apply',        saApplyReferralCodeHandler);
+
+// MKT-11 Sales deal log (lost-deal review + price answers)
+superadminRouter.get('/sales/deals',         saListDealsHandler);
+superadminRouter.get('/sales/summary',       saDealSummaryHandler);
+superadminRouter.post('/sales/deals',        saCreateDealHandler);
+superadminRouter.patch('/sales/deals/:id',   saUpdateDealHandler);
+superadminRouter.delete('/sales/deals/:id',  saDeleteDealHandler);
+
+// MKT-04 Founding client programme
+superadminRouter.post('/orgs/:id/founding',   saMarkFoundingHandler);
+superadminRouter.delete('/orgs/:id/founding', saClearFoundingHandler);
 
 // 19.3 Enterprise Links
 superadminRouter.get('/enterprise-links',           saListEnterpriseLinksHandler);

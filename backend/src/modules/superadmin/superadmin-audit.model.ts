@@ -54,14 +54,21 @@ export type SuperAdminAction =
   | 'SA_ORG_EXPORT'
   | 'SA_WHITE_LABEL_SET'
   | 'SA_ENTERPRISE_LINK_CREATE'
-  | 'SA_ABTEST_CREATE';
+  | 'SA_ABTEST_CREATE'
+  // Sales deal log (MKT-11)
+  | 'SA_DEAL_CREATE'
+  | 'SA_DEAL_UPDATE'
+  | 'SA_DEAL_DELETE'
+  // Founding client programme (MKT-04)
+  | 'SA_FOUNDING_SET'
+  | 'SA_FOUNDING_CLEAR';
 
 export interface ISuperAdminLog extends Document {
   _id: mongoose.Types.ObjectId;
   superAdminId: mongoose.Types.ObjectId;
   superAdminEmail: string;
   action: SuperAdminAction;
-  targetType?: 'Organization' | 'User' | 'BlogPost' | 'PromoCode' | 'FeatureFlag' | 'Queue' | 'Announcement' | 'Changelog' | 'ABTest';
+  targetType?: 'Organization' | 'User' | 'BlogPost' | 'PromoCode' | 'FeatureFlag' | 'Queue' | 'Announcement' | 'Changelog' | 'ABTest' | 'SalesDeal';
   targetId?: string;
   targetLabel?: string;  // human-readable (org name, user email)
   metadata?: Record<string, unknown>;
@@ -75,7 +82,7 @@ const SuperAdminLogSchema = new Schema<ISuperAdminLog>(
     superAdminId:    { type: Schema.Types.ObjectId, ref: 'User', required: true, index: true },
     superAdminEmail: { type: String, required: true },
     action:          { type: String, required: true, index: true },
-    targetType:      { type: String, enum: ['Organization', 'User', 'BlogPost', 'PromoCode', 'FeatureFlag', 'Queue', 'Announcement', 'Changelog', 'ABTest'] },
+    targetType:      { type: String, enum: ['Organization', 'User', 'BlogPost', 'PromoCode', 'FeatureFlag', 'Queue', 'Announcement', 'Changelog', 'ABTest', 'SalesDeal'] },
     targetId:        { type: String, index: true },
     targetLabel:     { type: String },
     metadata:        { type: Schema.Types.Mixed },

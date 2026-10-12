@@ -6,6 +6,7 @@ import { z } from 'zod';
 import { Eye, EyeOff, Loader2, CheckCircle2, Mail } from 'lucide-react';
 import { api } from '@/utils/api';
 import { AxiosError } from 'axios';
+import { usePageMeta } from '@/hooks/usePageMeta';
 
 // ─── Form schema ───────────────────────────────────────────────────────────
 const RegisterSchema = z
@@ -28,6 +29,7 @@ type RegisterFormValues = z.infer<typeof RegisterSchema>;
 
 // ─── Component ────────────────────────────────────────────────────────────
 export default function RegisterPage() {
+  usePageMeta({ title: "Start Your Free Trial", description: "Create your AgentOps Studio account and try an AI receptionist free for 7 days. No credit card required." });
   const navigate            = useNavigate();
   const [searchParams]      = useSearchParams();
   const [showPassword, setShowPassword] = useState(false);
