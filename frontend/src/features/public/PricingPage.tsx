@@ -42,6 +42,7 @@ import {
   GUARANTEE_SHORT, GUARANTEE_WORKING_DAYS, FOUNDING_PER_QUARTER, FOUNDING_PRICE_LOCK_MONTHS, FOUNDING_CONTACT,
   type BillingInterval, type PaidPlanId,
 } from '../../lib/pricing';
+import { usePageMeta } from '@/hooks/usePageMeta';
 
 // ─── Feature comparison table data ───────────────────────────────────────────
 type CellValue = string | boolean;
@@ -731,6 +732,7 @@ function CtaSection() {
 
 // ─── ROOT COMPONENT ───────────────────────────────────────────────────────────
 export default function PricingPage() {
+  usePageMeta({ title: "Pricing — Plans from ₹4,999/month", description: "Simple ₹ pricing with GST invoices: Starter ₹4,999, Basic ₹9,999, Standard ₹17,999 and Pro ₹29,999 per month. Annual plans get 2 months free. 7-day free trial, no card." });
   useEffect(() => { window.scrollTo(0, 0); }, []);
 
   return (

@@ -11,6 +11,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { usePageMeta } from '@/hooks/usePageMeta';
 
 const T = {
   bg: '#171717', bgS: '#1f1f1f',
@@ -104,6 +105,7 @@ const SHARED_BENEFITS = [
 ];
 
 export default function IndustriesPage() {
+  usePageMeta({ title: "Industries We Serve", description: "How Indian businesses use an AI receptionist to answer every call, capture orders and follow up with customers." });
   useKF();
   const [activeTab, setActiveTab] = useState(0);
   const industry = INDUSTRIES[activeTab];

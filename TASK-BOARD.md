@@ -2,13 +2,14 @@
 
 > **Founder**: Rishabh Sharma  
 > **CEO Agent**: Claude (orchestrator)  
-> **Last updated**: 2026-10-12 19:00 IST (D7 guarantee + D8 founding clients built on `feat/outcome-copy`)
+> **Last updated**: 2026-10-12 19:40 IST (site polish on `feat/site-polish`)
 > **Operating model**: All 5 agents work in parallel on every task. No idle agents.  
 > **Gaps register**: `main-project-docs/gaps.md` — every task ID below links to a gap ID there  
 > **Go-to-market plan**: `main-project-docs/AI-Implementation-Offer-Plan.md` — sprints after S-HARDEN  
 > **Execution Framework**: `agents/EXECUTION-FRAMEWORK.md` · **SOP**: `agents/SOP.md` · **R&D Log**: `main-project-docs/RD-LOG.md`
 
 **Version history**
+- [2026-10-12 19:40] v3.7 — CEO Agent — Site polish (founder's 20-point website checklist) on branch `feat/site-polish`: mobile overflow fixed on every public page, per-page titles/descriptions, clickable legal emails, 404 with logo, dead links removed, false "Indian data residency" claim removed, PNG favicon + manifest. Open items needing founder input: legal entity details, business phone/WhatsApp, one support email, contact-form endpoint, social URLs.
 - [2026-10-12 19:00] v3.6 — CEO Agent — D7 + D8 decided; P9 built on `feat/outcome-copy`: go-live guarantee (cards, FAQ, landing, Terms § 8.5) and founding clients (org flag, super-admin toggle with 5/quarter cap, public spots endpoint + Pricing banner, setup fee skipped at checkout, Billing note, Terms § 8.6). Backend + frontend `tsc` clean; 4 new pure tests; frontend 40/40 + build OK.
 - [2026-10-12 18:20] v3.5 — CEO Agent — P8 (MKT-08 upgrade nudge: email + Billing banner) and B3 part 1 (MKT-11: Super-admin → Sales Deals, lost-reason ranking, price questions) built on `feat/outcome-copy`. Backend + frontend `tsc` clean; 14 new pure backend tests pass; frontend 40/40 + build OK. DB-backed backend suite not run here (MongoDB binary download blocked) → run backend `npm test` before merge.
 - [2026-10-12 17:35] v3.4 — CEO Agent — Built H5.15 (MKT-01), H5.16 (MKT-02) and the MKT-05 setup list on branch `feat/outcome-copy` (from `feat/number-automation`, uncommitted); P7 done (`Discovery-Call-Script.md`). Frontend `tsc` clean, vitest 40/40 (+4 pricing-savings tests), `vite build` OK. ESLint not run: no `eslint.config.js` for ESLint 9.
@@ -160,13 +161,13 @@ Mostly frontend; can run in parallel with Waves 1–2. Checklist status: `gaps.m
 | H5.1 | FE-10 | Cloudflare Turnstile on Register + Contact, verified on the backend | 🟢 | ⏳ |
 | H5.2 | FE-11, FE-12 | Cookieless analytics (Plausible or Vercel) + funnel events (`signup`, `email_verified`, `onboarding_complete`, `first_call`); align cookie banner + Privacy Policy with Sentry Replay | 🟢 + 🟣 | ⏳ |
 | H5.3 | FE-13 | Defer Sentry init + lazy Replay; Vapi SDK only on test-call pages; Lighthouse baseline (mobile ≥ 90, LCP < 2.5 s) on `/`, `/pricing`, `/register` | 🟢 | ⏳ |
-| H5.4 | FE-14 | Per-route `<title>`/`<meta>` (React 19 native) for public pages and blog posts | 🟢 + 🟡 | ⏳ |
+| H5.4 | FE-14 | Per-route `<title>`/`<meta>` (React 19 native) for public pages and blog posts | 🟢 + 🟡 | 🟡 code on `feat/site-polish` — `usePageMeta` hook: own title + description on every public/auth page, blog article title, app pages titled from the sidebar; auth/app/404 `noindex` |
 | H5.5 | FE-15 | Site URL from one env var; generated sitemap (blog posts, `lastmod`, no `/login`); fix `og:url`/robots — after CORE-05 custom domain | 🟢 | ⏳ |
 | H5.6 | FE-16 | Replace the ~16 failing grey text colours with AA-passing tokens | 🟢 | ⏳ |
 | H5.7 | FE-17 | Responsive grids (`auto-fit`) + 375 px pass on Dashboard, Calls, Billing, Onboarding, Pricing, Register | 🟢 + 🟣 | ⏳ |
-| H5.8 | FE-18, FE-08 | PNG favicon + manifest, CSP in `vercel.json`, `noindex` on 404, blog cover alt, footer social links, delete `files.zip` | 🟢 | ⏳ |
+| H5.8 | FE-18, FE-08 | PNG favicon + manifest, CSP in `vercel.json`, `noindex` on 404, blog cover alt, footer social links, delete `files.zip` | 🟢 | 🟡 part on `feat/site-polish` — PNG favicons (16/32) + `site.webmanifest` (192/512), 404 `noindex`, dead footer social links + "Careers" removed, `files.zip` deleted. Still open: CSP, blog cover alt |
 | H5.9 | FE-19, FE-02 | **Remove false / unmeasured claims** — Critical (trust, consumer-protection risk) | 🟢 + 🟡 | 🟡 landing + Pricing pill done (on `dev`); Services + Industries copy with GTM-01, Pricing features with H4.2 |
-| H5.10 | FE-20, FE-17 | Mobile first screen: no horizontal overflow at 320/375/414 px, short header CTA, compact cookie bar | 🟢 | ⏳ |
+| H5.10 | FE-20, FE-17 | Mobile first screen: no horizontal overflow at 320/375/414 px, short header CTA, compact cookie bar | 🟢 | 🟡 code on `feat/site-polish` — 0 px horizontal overflow on all 14 public pages at 375 px (footer grid 3→2 columns, Privacy/Terms tables scroll inside, header CTAs move into the drawer, Contact stacks); verified in Chromium at 375 + 1366 px |
 | H5.11 | FE-21 | Hero rewrite (5-second test): eyebrow (who), H1 (what), outcome line, one CTA + "Hear the voices", 3-fact row | 🟡 + 🟢 | ⏳ (final copy after D2) |
 | H5.12 | FE-22 | Remove the AI look: blobs, grid bg, "New" pill, extra gradients/pills/CTAs; merge or drop low-value sections | 🟢 | ⏳ |
 | H5.13 | FE-23, FE-24 | Colour + motion rules: rename tokens, one accent, neutral step numbers; one hero entrance, drop repeated `Reveal`, progress bar, decorative loops | 🟢 | ⏳ |

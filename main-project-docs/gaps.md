@@ -1,6 +1,7 @@
 # AgentOps Studio — Gaps Register
 
 > **Version history**
+> - [2026-10-12 19:40] v3.4 — CEO Agent — Website checklist audit (20 points, Chromium at 375/1366 px). Fixed on `feat/site-polish`: FE-14 (titles/descriptions), FE-20 overflow part, FE-08 (social links, Careers, files.zip), FE-18 (PNG favicon, manifest, 404 noindex), FE-19 "Indian data residency" claim. Still open and needing founder input: FE-01 (contact form), FE-03 (legal placeholders), FE-04 (one support email; Contact shows a personal Gmail), fake WhatsApp number `wa.me/919999999999` on Contact, no business phone number on the site.
 > - [2026-10-12 19:00] v3.3 — CEO Agent — D7 (go-live guarantee) and D8 (founding clients) decided by the founder; MKT-03 and MKT-04 built on `feat/outcome-copy`.
 > - [2026-10-12 18:20] v3.2 — CEO Agent — MKT-08 (upgrade nudge) and the deal-log part of MKT-11 built on `feat/outcome-copy`.
 > - [2026-10-12 17:35] v3.1 — CEO Agent — MKT-01, 02, 05 built on branch `feat/outcome-copy` (stacked on `feat/number-automation`, uncommitted); MKT-07 done as `Discovery-Call-Script.md`.

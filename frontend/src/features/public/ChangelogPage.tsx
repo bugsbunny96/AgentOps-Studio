@@ -12,6 +12,7 @@ import { useInfiniteQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import { Sparkles, TrendingUp, Wrench, ChevronDown } from 'lucide-react';
 import api from '@/utils/api';
+import { usePageMeta } from '@/hooks/usePageMeta';
 
 // ─── Design tokens ────────────────────────────────────────────────────────────
 
@@ -73,6 +74,7 @@ const fetchPage = async ({ pageParam = 1 }: { pageParam: number }): Promise<Chan
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export default function ChangelogPage() {
+  usePageMeta({ title: "Changelog — What's New", description: "New features, improvements and fixes in AgentOps Studio." });
   const {
     data,
     fetchNextPage,

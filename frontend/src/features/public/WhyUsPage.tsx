@@ -13,6 +13,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { usePageMeta } from '@/hooks/usePageMeta';
 
 const T = {
   bg: '#171717', bgS: '#1f1f1f',
@@ -88,6 +89,7 @@ const OBJECTIONS = [
 ];
 
 export default function WhyUsPage() {
+  usePageMeta({ title: "Why AgentOps Studio", description: "An AI receptionist built for Indian businesses: Hindi, English and Punjabi, Indian phone numbers, ₹ pricing with GST invoices, and setup done with you." });
   useKF();
   const [openQ, setOpenQ] = useState<number | null>(null);
 

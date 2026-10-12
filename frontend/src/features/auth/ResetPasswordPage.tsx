@@ -6,6 +6,7 @@ import { z } from 'zod';
 import { Loader2, CheckCircle2, XCircle } from 'lucide-react';
 import { api } from '@/utils/api';
 import { AxiosError } from 'axios';
+import { usePageMeta } from '@/hooks/usePageMeta';
 
 // ─── Form schema ───────────────────────────────────────────────────────────
 const ResetPasswordSchema = z
@@ -26,6 +27,7 @@ type ResetPasswordFormValues = z.infer<typeof ResetPasswordSchema>;
 
 // ─── Component ────────────────────────────────────────────────────────────
 export default function ResetPasswordPage() {
+  usePageMeta({ title: "Choose a New Password", noindex: true });
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const [serverError, setServerError] = useState<string | null>(null);
