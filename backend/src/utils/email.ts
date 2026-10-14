@@ -2,6 +2,7 @@ import { Resend } from 'resend';
 import { env } from '../config/env';
 import { logger } from './logger';
 import type { UpgradeSuggestion } from './upgradeSuggestion';
+import { escapeHtml } from './escapeHtml';
 
 let resendClient: Resend | null = null;
 
@@ -75,7 +76,7 @@ export async function sendVerificationEmail(
       <!DOCTYPE html>
       <html>
       <body style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 24px;">
-        <h2 style="color: #1e1b4b;">Welcome to AgentOps Studio, ${name}!</h2>
+        <h2 style="color: #1e1b4b;">Welcome to AgentOps Studio, ${escapeHtml(name)}!</h2>
         <p style="color: #374151;">Please verify your email address to activate your account.</p>
         <a href="${verifyUrl}"
            style="display:inline-block;padding:12px 24px;background:#6366f1;color:white;
@@ -113,11 +114,11 @@ export async function sendTrialDay5Email(
       <body style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 24px; background: #ffffff;">
         <div style="background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%); border-radius: 12px; padding: 28px 32px; margin-bottom: 24px;">
           <h1 style="color: #ffffff; margin: 0 0 8px; font-size: 22px;">Your free trial ends in 2 days</h1>
-          <p style="color: #c7d2fe; margin: 0; font-size: 15px;">Hi ${name}, don't lose access to your AI voice agent.</p>
+          <p style="color: #c7d2fe; margin: 0; font-size: 15px;">Hi ${escapeHtml(name)}, don't lose access to your AI voice agent.</p>
         </div>
 
         <p style="color: #374151; font-size: 15px; line-height: 1.6;">
-          Your 7-day free trial for <strong>${orgName}</strong> ends in <strong>2 days</strong>.
+          Your 7-day free trial for <strong>${escapeHtml(orgName)}</strong> ends in <strong>2 days</strong>.
           After that, you'll revert to the free plan — which means limited knowledge base documents
           and no team members.
         </p>
@@ -169,11 +170,11 @@ export async function sendTrialDay7Email(
       <body style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 24px; background: #ffffff;">
         <div style="background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); border-radius: 12px; padding: 28px 32px; margin-bottom: 24px;">
           <h1 style="color: #ffffff; margin: 0 0 8px; font-size: 22px;">Your trial ends today</h1>
-          <p style="color: #fecaca; margin: 0; font-size: 15px;">Hi ${name}, this is your final reminder.</p>
+          <p style="color: #fecaca; margin: 0; font-size: 15px;">Hi ${escapeHtml(name)}, this is your final reminder.</p>
         </div>
 
         <p style="color: #374151; font-size: 15px; line-height: 1.6;">
-          Your 7-day free trial for <strong>${orgName}</strong> expires <strong>today</strong>.
+          Your 7-day free trial for <strong>${escapeHtml(orgName)}</strong> expires <strong>today</strong>.
         </p>
 
         <div style="background: #fff7ed; border: 1px solid #fed7aa; border-radius: 8px; padding: 20px; margin: 20px 0;">
@@ -221,7 +222,7 @@ export async function sendPasswordResetEmail(
       <html>
       <body style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 24px;">
         <h2 style="color: #1e1b4b;">Password Reset Request</h2>
-        <p style="color: #374151;">Hi ${name}, we received a request to reset your AgentOps Studio password.</p>
+        <p style="color: #374151;">Hi ${escapeHtml(name)}, we received a request to reset your AgentOps Studio password.</p>
         <a href="${resetUrl}"
            style="display:inline-block;padding:12px 24px;background:#6366f1;color:white;
                   text-decoration:none;border-radius:6px;font-weight:600;margin:16px 0;">
@@ -293,9 +294,9 @@ export async function sendUsageAlertEmail(opts: {
       <html>
       <body style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 24px; background: #ffffff;">
         <h1 style="color: #171717; font-size: 20px; margin: 0 0 12px;">${headline}</h1>
-        <p style="color: #374151; font-size: 15px; line-height: 1.6;">Hi ${opts.name},</p>
+        <p style="color: #374151; font-size: 15px; line-height: 1.6;">Hi ${escapeHtml(opts.name)},</p>
         <p style="color: #374151; font-size: 15px; line-height: 1.6;">
-          <strong>${opts.orgName}</strong> has used <strong>${opts.used} of ${opts.limit}</strong> call minutes
+          <strong>${escapeHtml(opts.orgName)}</strong> has used <strong>${opts.used} of ${opts.limit}</strong> call minutes
           included in the ${opts.planName} plan this month. ${body}
         </p>
         <p style="color: #374151; font-size: 15px; line-height: 1.6;">
@@ -331,9 +332,9 @@ export async function sendChooseNumberEmail(email: string, name: string, orgName
       <html>
       <body style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 24px; background: #ffffff;">
         <h1 style="color: #171717; font-size: 20px; margin: 0 0 12px;">Your plan is active — pick your number</h1>
-        <p style="color: #374151; font-size: 15px; line-height: 1.6;">Hi ${name},</p>
+        <p style="color: #374151; font-size: 15px; line-height: 1.6;">Hi ${escapeHtml(name)},</p>
         <p style="color: #374151; font-size: 15px; line-height: 1.6;">
-          Thanks for choosing a plan for <strong>${orgName}</strong>. Your own Indian phone number is included.
+          Thanks for choosing a plan for <strong>${escapeHtml(orgName)}</strong>. Your own Indian phone number is included.
           Choose one (or let us pick one for you) so customers can call your AI receptionist and your agent
           can call out from your number.
         </p>

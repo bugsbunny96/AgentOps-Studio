@@ -62,6 +62,9 @@ async function registerUser(overrides: Record<string, unknown> = {}) {
 
 /** Retrieve the plaintext verification token stored in the DB (field is select:false) */
 async function getVerificationToken(email: string): Promise<string> {
+  // SEC-11: the DB stores only a hash — take the raw token from the (mocked) email
+  const sent = mockSendVerificationEmail.mock.calls.filter((c: unknown[]) => c[0] === email).at(-1);
+  if (sent && typeof sent[2] === 'string') return sent[2];
   const user = await UserModel.findOne({ email })
     .select('+emailVerificationToken')
     .lean();

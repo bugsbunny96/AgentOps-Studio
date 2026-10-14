@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import { env } from '../config/env';
+import { UserModel } from '../modules/auth/auth.model';
 
 export interface SuperAdminTokenPayload {
   superAdminId: string;
@@ -27,7 +28,7 @@ export function signSuperAdminToken(payload: SuperAdminTokenPayload): string {
 }
 
 export function verifySuperAdminToken(token: string): SuperAdminTokenPayload {
-  return jwt.verify(token, env.SA_JWT_SECRET) as SuperAdminTokenPayload;
+  return jwt.verify(token, env.SA_JWT_SECRET, { algorithms: ['HS256'] }) as SuperAdminTokenPayload;
 }
 
 export const SA_COOKIE_OPTIONS = {
@@ -55,17 +56,36 @@ export function requireSuperAdmin(req: Request, res: Response, next: NextFunctio
     return;
   }
 
+  let payload: SuperAdminTokenPayload;
   try {
-    const payload = verifySuperAdminToken(token);
-    req.superAdminId    = payload.superAdminId;
-    req.superAdminEmail = payload.email;
-    req.superAdminRole  = payload.role;
-    next();
+    payload = verifySuperAdminToken(token);
   } catch {
     res.status(401).json({
       success: false,
       code: 'SA_INVALID_TOKEN',
       message: 'Invalid or expired super admin session',
     });
+    return;
   }
+
+  // Re-check the account on every request, so removing super-admin rights or
+  // suspending the account ends a 12-hour session immediately.
+  UserModel.findById(payload.superAdminId)
+    .select('isSuperAdmin status')
+    .lean<{ isSuperAdmin?: boolean; status?: string } | null>()
+    .then((user) => {
+      if (!user || !user.isSuperAdmin || user.status === 'Suspended') {
+        res.status(401).json({
+          success: false,
+          code: 'SA_INVALID_TOKEN',
+          message: 'Invalid or expired super admin session',
+        });
+        return;
+      }
+      req.superAdminId    = payload.superAdminId;
+      req.superAdminEmail = payload.email;
+      req.superAdminRole  = payload.role;
+      next();
+    })
+    .catch(next);
 }

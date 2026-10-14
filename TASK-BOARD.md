@@ -9,6 +9,7 @@
 > **Execution Framework**: `agents/EXECUTION-FRAMEWORK.md` · **SOP**: `agents/SOP.md` · **R&D Log**: `main-project-docs/RD-LOG.md`
 
 **Version history**
+- [2026-10-12 20:30] v3.8 — CEO Agent — Security audit on branch `harden/security-audit` (`main-project-docs/Security-Audit-2026-10-12.md`): SEC-09/10/11/15–18 fixed in code, SEC-16/19 partly. New founder P0: make the GitHub repo private (SEC-14).
 - [2026-10-12 19:40] v3.7 — CEO Agent — Site polish (founder's 20-point website checklist) on branch `feat/site-polish`: mobile overflow fixed on every public page, per-page titles/descriptions, clickable legal emails, 404 with logo, dead links removed, false "Indian data residency" claim removed, PNG favicon + manifest. Open items needing founder input: legal entity details, business phone/WhatsApp, one support email, contact-form endpoint, social URLs.
 - [2026-10-12 19:00] v3.6 — CEO Agent — D7 + D8 decided; P9 built on `feat/outcome-copy`: go-live guarantee (cards, FAQ, landing, Terms § 8.5) and founding clients (org flag, super-admin toggle with 5/quarter cap, public spots endpoint + Pricing banner, setup fee skipped at checkout, Billing note, Terms § 8.6). Backend + frontend `tsc` clean; 4 new pure tests; frontend 40/40 + build OK.
 - [2026-10-12 18:20] v3.5 — CEO Agent — P8 (MKT-08 upgrade nudge: email + Billing banner) and B3 part 1 (MKT-11: Super-admin → Sales Deals, lost-reason ranking, price questions) built on `feat/outcome-copy`. Backend + frontend `tsc` clean; 14 new pure backend tests pass; frontend 40/40 + build OK. DB-backed backend suite not run here (MongoDB binary download blocked) → run backend `npm test` before merge.
@@ -284,6 +285,8 @@ Source and full specs: `main-project-docs/AI-Implementation-Offer-Plan.md`. Gap 
 
 | Priority | Action | Why |
 |---|---|---|
+| 🔴 P0 | **Make the GitHub repo private** (Settings → General → Change visibility) — it is public, including `gaps.md` | SEC-14 |
+| 🟡 P1 | **MongoDB Atlas**: restrict Network Access, least-privilege DB user, backups on; after pulling `harden/security-audit` run `npm ci` in backend + frontend and `npm test` in backend | SEC-15, `Security-Audit-2026-10-12.md` |
 | 🔴 P0 | Rotate the **Redis Cloud password** (update `REDIS_URL` on Render + local `.env`); delete the `redis-cli -u …` comment at the end of `backend/.env` | SEC-03 |
 | 🔴 P0 | Log in on `https://agent-ops-studio-eight.vercel.app` and confirm the dashboard loads | CORE-05 (H2.5) |
 | 🔴 P0 | Run one website crawl in onboarding; add one KB document and confirm it reaches `ready` (8/8 workers running, 11 Redis connections — confirmed in Render logs 2026-10-08) | CORE-02 (H2.6) |

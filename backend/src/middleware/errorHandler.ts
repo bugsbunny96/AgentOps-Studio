@@ -44,6 +44,17 @@ export function errorHandler(
   res: Response,
   _next: NextFunction
 ): void {
+  // 0. Body-parser errors: oversized body (413) or malformed JSON (400)
+  const parserType = (err as { type?: string }).type;
+  if (parserType === 'entity.too.large') {
+    res.status(413).json({ success: false, code: 'PAYLOAD_TOO_LARGE', message: 'Request body is too large' });
+    return;
+  }
+  if (parserType === 'entity.parse.failed') {
+    res.status(400).json({ success: false, code: 'INVALID_JSON', message: 'Request body is not valid JSON' });
+    return;
+  }
+
   // 1. Zod validation error
   if (err instanceof ZodError) {
     res.status(400).json({

@@ -8,6 +8,7 @@ import { signAccessToken } from '../../utils/jwt';
 import { signSuperAdminToken } from '../../middleware/superAdminAuthenticate';
 import { Unauthorized, BadRequest, NotFound } from '../../middleware/errorHandler';
 import { sendEmail } from '../../utils/email';
+import { redis } from '../../config/redis';
 
 // ── Plan pricing constants (INR / month) ─────────────────────────────────────
 // Source of truth: billing/plan-catalog.ts (pricing v2, 2026-10-08)
@@ -239,6 +240,8 @@ export async function suspendUser(userId: string, suspend: boolean) {
 
   user.status = suspend ? 'Suspended' : 'Active';
   await user.save();
+  // SEC-11: end the session now; the access token expires within 15 minutes
+  if (suspend) await redis.del(`refresh:${user._id.toString()}`);
 
   return { id: user._id.toString(), status: user.status };
 }
@@ -254,6 +257,7 @@ export async function deleteUser(userId: string) {
   // Remove memberships, then the user
   await MembershipModel.deleteMany({ userId: user._id });
   await user.deleteOne();
+  await redis.del(`refresh:${userId}`);
 
   return { deleted: true, id: userId };
 }

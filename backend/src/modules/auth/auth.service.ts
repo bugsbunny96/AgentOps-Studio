@@ -37,6 +37,8 @@ export const REFRESH_COOKIE_OPTIONS = {
 
 const REFRESH_PREFIX = 'refresh:';
 
+const sha256 = (value: string) => crypto.createHash('sha256').update(value).digest('hex');
+
 // ─── Helpers ───────────────────────────────────────────────────────────────
 function buildOrgList(
   memberships: Array<{ organizationId: unknown; role: string; permissions?: IMemberPermissions }>
@@ -64,13 +66,15 @@ export async function register(dto: RegisterDto) {
 
   const passwordHash = await bcrypt.hash(dto.password, 12);
   const verificationToken = crypto.randomBytes(32).toString('hex');
+  // SEC-11: store only the SHA-256 of the token; the raw token goes in the email
+  const verificationTokenHash = sha256(verificationToken);
   const verificationExpires = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24h
 
   const user = await UserModel.create({
     name: dto.name,
     email: dto.email,
     passwordHash,
-    emailVerificationToken: verificationToken,
+    emailVerificationToken: verificationTokenHash,
     emailVerificationExpires: verificationExpires,
   });
 
@@ -93,8 +97,10 @@ export async function register(dto: RegisterDto) {
 
 // ─── Verify Email ──────────────────────────────────────────────────────────
 export async function verifyEmail(dto: VerifyEmailDto) {
+  // Hashed lookup; the raw value is accepted only for links issued before
+  // tokens were hashed (they expire within 24 h of this change).
   const user = await UserModel.findOne({
-    emailVerificationToken: dto.token,
+    emailVerificationToken: { $in: [sha256(dto.token), dto.token] },
     emailVerificationExpires: { $gt: new Date() },
   }).select('+emailVerificationToken +emailVerificationExpires');
 
@@ -170,6 +176,11 @@ export async function refreshTokens(token: string) {
 
   const user = await UserModel.findById(payload.userId).lean();
   if (!user) throw Unauthorized('User not found', 'USER_NOT_FOUND');
+  // SEC-11: a suspended account cannot extend its session
+  if (user.status === 'Suspended') {
+    await redis.del(`${REFRESH_PREFIX}${payload.userId}`);
+    throw Unauthorized('Your account has been suspended. Contact support.', 'ACCOUNT_SUSPENDED');
+  }
 
   // Rotate: issue a fresh pair and update Redis
   const newTokenId = crypto.randomUUID();
@@ -241,7 +252,13 @@ export async function changePassword(userId: string, dto: ChangePasswordDto) {
   user.passwordHash = await bcrypt.hash(dto.newPassword, 12);
   await user.save();
 
-  return { message: 'Password changed successfully.' };
+  // SEC-11: end every other session and give this one a fresh token pair
+  const tokenId      = crypto.randomUUID();
+  const accessToken  = signAccessToken({ userId: user._id.toString(), email: user.email });
+  const refreshToken = signRefreshToken({ userId: user._id.toString(), tokenId });
+  await redis.setex(`${REFRESH_PREFIX}${user._id.toString()}`, 7 * 24 * 60 * 60, tokenId);
+
+  return { message: 'Password changed successfully.', accessToken, refreshToken };
 }
 
 // ─── Update Profile (authenticated) ───────────────────────────────────────
@@ -275,7 +292,9 @@ export async function resetPassword(dto: ResetPasswordDto) {
   user.passwordHash = await bcrypt.hash(dto.password, 12);
   user.passwordResetToken = undefined;
   user.passwordResetExpires = undefined;
-  user.status = 'Active';
+  // A reset proves email ownership, so it can activate a Pending account —
+  // but it must never lift a suspension (SEC-11).
+  if (user.status === 'Pending') user.status = 'Active';
   await user.save();
 
   // Invalidate any active sessions

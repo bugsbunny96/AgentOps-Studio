@@ -39,6 +39,7 @@ import { logger } from '../../utils/logger';
 import { PLAN_LIMITS } from '../billing/billing.service';
 import { computeTrialState } from '../billing/trial.service';
 import { membershipFilter } from '../../utils/requestContext';
+import { escapeHtml } from '../../utils/escapeHtml';
 
 // ─── Internal helpers ─────────────────────────────────────────────────────────
 
@@ -92,10 +93,10 @@ async function sendInviteEmail(opts: {
       <!DOCTYPE html>
       <html>
       <body style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 24px;">
-        <h2 style="color: #1e1b4b;">You're invited to ${opts.orgName}</h2>
+        <h2 style="color: #1e1b4b;">You're invited to ${escapeHtml(opts.orgName)}</h2>
         <p style="color: #374151;">
-          <strong>${opts.inviterName}</strong> has invited you to collaborate on
-          <strong>${opts.orgName}</strong> as a <strong>Member</strong>.
+          <strong>${escapeHtml(opts.inviterName)}</strong> has invited you to collaborate on
+          <strong>${escapeHtml(opts.orgName)}</strong> as a <strong>Member</strong>.
         </p>
         <p style="color: #374151; font-size: 14px;">
           <strong>Your access:</strong> ${permissionsSummary(opts.permissions)}
