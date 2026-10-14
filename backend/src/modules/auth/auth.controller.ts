@@ -152,8 +152,11 @@ export async function changePassword(
       return;
     }
     const dto = ChangePasswordSchema.parse(req.body);
-    const data = await authService.changePassword(req.userId, dto);
-    res.status(200).json({ success: true, data });
+    const { message, accessToken, refreshToken } = await authService.changePassword(req.userId, dto);
+    // Other sessions are revoked; this one continues with a fresh pair (SEC-11)
+    res.cookie('accessToken', accessToken, ACCESS_COOKIE_OPTIONS);
+    res.cookie('refreshToken', refreshToken, REFRESH_COOKIE_OPTIONS);
+    res.status(200).json({ success: true, data: { message } });
   } catch (err) {
     next(err);
   }
